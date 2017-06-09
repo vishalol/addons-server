@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import random
+import string
 import urlparse
 
 import jwt
@@ -48,7 +49,17 @@ def my_base_url(base_url, request, pytestconfig):
 def capabilities(capabilities):
     # In order to run these tests in Firefox 48, marionette is required
     capabilities['marionette'] = True
+    capabilities['acceptInsecureCerts'] = True
     return capabilities
+
+
+@pytest.fixture
+def firefox_options(firefox_options):
+    firefox_options.set_preference(
+        'extensions.install.requireBuiltInCerts', False)
+    firefox_options.set_preference('xpinstall.signatures.required', False)
+    firefox_options.set_preference('extensions.webapi.testing', True)
+    return firefox_options
 
 
 @pytest.fixture
@@ -58,21 +69,21 @@ def fxa_account(my_base_url):
     return FxATestAccount(url)
 
 
-@pytest.fixture(scope='session')
-def jwt_issuer(base_url, variables):
+@pytest.fixture()
+def jwt_issuer(my_base_url, variables):
     """JWT Issuer from variables file or env variable named 'JWT_ISSUER'"""
     try:
-        hostname = urlparse.urlsplit(base_url).hostname
+        hostname = urlparse.urlsplit(my_base_url).hostname
         return variables['api'][hostname]['jwt_issuer']
     except KeyError:
         return os.getenv('JWT_ISSUER')
 
 
-@pytest.fixture(scope='session')
-def jwt_secret(base_url, variables):
+@pytest.fixture()
+def jwt_secret(my_base_url, variables):
     """JWT Secret from variables file or env vatiable named "JWT_SECRET"""
     try:
-        hostname = urlparse.urlsplit(base_url).hostname
+        hostname = urlparse.urlsplit(my_base_url).hostname
         return variables['api'][hostname]['jwt_secret']
     except KeyError:
         return os.getenv('JWT_SECRET')
@@ -160,11 +171,10 @@ def addon(transactional_db, create_superuser, pytestconfig):
         average_rating=5,
         description=u'My Addon description',
         file_kw={
-            'hash': 'fakehash',
             'platform': amo.PLATFORM_ALL.id,
             'size': 42,
         },
-        guid=generate_addon_guid(),
+        guid='test-desktop@nowhere',
         homepage=u'https://www.example.org/',
         icon_type=random.choice(default_icons),
         name=u'Ui-Addon',
@@ -276,6 +286,99 @@ def collections(transactional_db, pytestconfig):
 
 
 @pytest.fixture
+def gen_webext(create_superuser, pytestconfig, tmpdir, transactional_db):
+    """Creates a a blank webextenxtension."""
+    if not pytestconfig.option.usingliveserver:
+        return
+
+    from olympia.files.models import File, FileUpload
+    from olympia.versions.models import Version
+    from olympia.amo.tests.test_helpers import get_addon_file
+    from django.utils.translation import activate
+    import os
+
+    manifest = tmpdir.mkdir('webext').join('manifest.json')
+    # print(manifest)
+    webext = {
+        'applications': {
+            'gecko': {
+                'id': 'ui-addon@mozilla.org',
+            }
+        },
+        'manifest_version': 2,
+        'name': 'Ui-Addon',
+        'version': 3.1,
+        'description': 'Blank Webextension for testing',
+        'permissions': [],
+        'background': {
+            'scripts': 'background.js',
+        }
+    }
+    activate('en')
+    # manifest.write(json.dump(webext, manifest, indent=2))
+    # json.dump(webext, manifest, indent=2)
+    with open(str(manifest), 'w') as outfile:
+        json.dump(webext, outfile, indent=2)
+    default_icons = [x[0] for x in icons() if x[0].startswith('icon/')]
+    addon = addon_factory(
+        status=STATUS_PUBLIC,
+        type=ADDON_EXTENSION,
+        average_daily_users=5567,
+        users=[UserProfile.objects.get(username='uitest')],
+        average_rating=5,
+        description=u'My Addon description',
+        file_kw={
+            'hash': 'fakehash',
+            'platform': amo.PLATFORM_ALL.id,
+            'size': 42,
+        },
+        guid='firebug@software.joehewitt.com',
+        homepage=u'https://www.example.org/',
+        icon_type=random.choice(default_icons),
+        name=u'Ui-Addon',
+        public_stats=True,
+        slug='ui-test',
+        summary=u'My Addon summary',
+        support_email=u'support@example.org',
+        support_url=u'https://support.example.org/support/ui-test-addon/',
+        tags=['some_tag', 'another_tag', 'ui-testing',
+              'selenium', 'python'],
+        total_reviews=888,
+        weekly_downloads=2147483647,
+        developer_comments='This is a testing addon, used within pytest.',
+    )
+    Preview.objects.create(addon=addon, position=1)
+    version = version_factory(addon=addon, file_kw={'status': amo.STATUS_BETA},
+                    version='1.1beta')
+    addon.reload()
+    # zip as .xpi
+    # os.system('zip -r {0} {1}'.format(tmpdir.join('webext_comp.xpi'), manifest))
+    # return tmpdir.join('webext_comp.xpi').open()
+    # print(tmpdir.listdir())
+    # with open(str(tmpdir.join('webext_comp.xpi')), 'r') as outfile:
+    Version.from_upload(upload=upload, addon=addon, platforms=[amo.PLATFORM_ALL.id], channel=amo.RELEASE_CHANNEL_LISTED)
+    addon.save()
+
+
+@pytest.fixture
+def gen_webext2(addon):
+    import django
+
+    from olympia.files.models import File, FileUpload
+    from olympia.versions.models import Version
+    from olympia.amo.tests.test_helpers import get_addon_file
+    from django.utils.translation import activate
+    from olympia.files.tests.test_helpers import get_file
+
+    activate('en')
+
+    f = File()
+    upload = FileUpload.objects.create(path=get_file('webextension_no_id.xpi'), hash=f.generate_hash(get_file('webextension_no_id.xpi')))
+    # upload = FileUpload.objects.create(path=tmpdir.join('webext_comp.xpi'))
+    Version.from_upload(upload=upload, addon=addon, platforms=[amo.PLATFORM_ALL.id], channel=amo.RELEASE_CHANNEL_LISTED)
+
+
+@pytest.fixture
 def create_superuser(transactional_db, my_base_url, tmpdir, variables):
     """Creates a superuser."""
     create_switch('super-create-accounts')
@@ -352,7 +455,7 @@ def live_server(request, transactional_db, pytestconfig):
 
 
 @pytest.fixture
-def jwt_token(base_url, jwt_issuer, jwt_secret):
+def jwt_token(my_base_url, jwt_issuer, jwt_secret):
     """This creates a JWT Token"""
     payload = {
         'iss': jwt_issuer,
