@@ -13,7 +13,6 @@
       <input type="hidden" name="queue_type" value="{{ 'rereview' if rereview else 'flagged' if flagged else '' }}">
       <button class="search button" type="submit"><span>{{ _('Search') }}</span></button>
       <a href="#" class="clear-queue-search hidden">{{ _('Clear Search') }}</a>
-      {{ theme_search_form.limit }}
     </form>
   </div>
 
