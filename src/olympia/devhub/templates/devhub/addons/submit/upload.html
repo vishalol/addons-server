@@ -63,7 +63,7 @@
     <div class="platform">
       <div class="supported-platforms">
         <label>{{ _('Which platforms is this file compatible with?') }}</label>
-        {{ new_addon_form.errors.supported_platforms }}
+        {% if new_addon_form.errors.supported_platforms %}{{ new_addon_form.errors.supported_platforms }}{% endif %}
         {{ new_addon_form.supported_platforms }}
       </div>
 
