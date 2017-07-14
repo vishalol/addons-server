@@ -379,7 +379,7 @@ def gen_webext(create_superuser, pytestconfig, tmpdir):
 
 
 @pytest.fixture
-def create_superuser(my_base_url, tmpdir, variables):
+def create_superuser(my_base_url, tmpdir, variables, pytestconfig):
     """Creates a superuser."""
     if not pytestconfig.option.usingliveserver:
         return
