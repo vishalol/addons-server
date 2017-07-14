@@ -2,6 +2,7 @@
 import json
 import time
 import urlparse
+from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -9,7 +10,6 @@ from django.core import mail
 from django.core.cache import cache
 from django.core.files import temp
 from django.core.files.base import File as DjangoFile
-from django.utils.datastructures import SortedDict
 from django.test.utils import override_settings
 
 from lxml.html import fromstring, HTMLParser
@@ -38,7 +38,7 @@ from olympia.zadmin.models import get_config, set_config
 
 
 class EditorTest(TestCase):
-    fixtures = ['base/users', 'base/approvals', 'editors/pending-queue']
+    fixtures = ['base/users', 'base/approvals']
 
     def login_as_admin(self):
         assert self.client.login(email='admin@mozilla.com')
@@ -350,6 +350,31 @@ class TestReviewLog(EditorTest):
         assert pq(r.content)('#log-listing tr td a').eq(1).text() == (
             'commented')
 
+    def test_review_url(self):
+        self.login_as_admin()
+        addon = addon_factory()
+        unlisted_version = version_factory(
+            addon=addon, channel=amo.RELEASE_CHANNEL_UNLISTED)
+
+        al = ActivityLog.create(
+            amo.LOG.APPROVE_VERSION, addon, addon.current_version,
+            user=self.get_user(), details={'comments': 'foo'})
+
+        al.update(created=self.days_ago(1))
+        r = self.client.get(self.url)
+        url = reverse('editors.review', args=[addon.slug])
+        assert pq(r.content)('#log-listing tr td a').eq(1).attr('href') == url
+
+        ActivityLog.create(
+            amo.LOG.APPROVE_VERSION, addon,
+            unlisted_version,
+            user=self.get_user(), details={'comments': 'foo'})
+        r = self.client.get(self.url)
+        url = reverse(
+            'editors.review',
+            args=['unlisted', addon.slug])
+        assert pq(r.content)('#log-listing tr td a').eq(1).attr('href') == url
+
 
 class TestHome(EditorTest):
     fixtures = EditorTest.fixtures + ['base/addon_3615']
@@ -587,13 +612,13 @@ class QueueTest(EditorTest):
         else:  # Testing unlisted views: needs Addons:ReviewUnlisted perm.
             self.login_as_senior_editor()
         self.url = reverse('editors.queue_pending')
-        self.addons = SortedDict()
+        self.addons = OrderedDict()
         self.expected_addons = []
 
     def generate_files(self, subset=None, files=None):
         if subset is None:
             subset = []
-        files = files or SortedDict([
+        files = files or OrderedDict([
             ('Pending One', {
                 'version_str': '0.1',
                 'addon_status': amo.STATUS_PUBLIC,
@@ -620,7 +645,7 @@ class QueueTest(EditorTest):
                 'file_status': amo.STATUS_PUBLIC,
             }),
         ])
-        results = SortedDict()
+        results = OrderedDict()
         channel = (amo.RELEASE_CHANNEL_LISTED if self.listed else
                    amo.RELEASE_CHANNEL_UNLISTED)
         for name, attrs in files.iteritems():
@@ -884,12 +909,12 @@ class TestQueueBasics(QueueTest):
         assert rows.find('td').eq(1).text() == 'Jetpack 0.1'
         assert rows.find('.ed-sprite-jetpack').length == 1
 
-    def test_flags_requires_restart(self):
+    def test_flags_is_restart_required(self):
         addon = addon_factory(
             status=amo.STATUS_NOMINATED, name='Some Add-on',
             version_kw={'version': '0.1'},
             file_kw={'status': amo.STATUS_AWAITING_REVIEW,
-                     'no_restart': False})
+                     'is_restart_required': True})
 
         r = self.client.get(reverse('editors.queue_nominated'))
 
@@ -898,14 +923,14 @@ class TestQueueBasics(QueueTest):
         assert rows.attr('data-addon') == str(addon.id)
         assert rows.find('td').eq(1).text() == 'Some Add-on 0.1'
         assert rows.find('.ed-sprite-jetpack').length == 0
-        assert rows.find('.ed-sprite-requires_restart').length == 1
+        assert rows.find('.ed-sprite-is_restart_required').length == 1
 
-    def test_flags_no_restart(self):
+    def test_flags_is_restart_required_false(self):
         addon = addon_factory(
             status=amo.STATUS_NOMINATED, name='Restartless',
             version_kw={'version': '0.1'},
             file_kw={'status': amo.STATUS_AWAITING_REVIEW,
-                     'no_restart': True})
+                     'is_restart_required': False})
 
         r = self.client.get(reverse('editors.queue_nominated'))
 
@@ -914,7 +939,7 @@ class TestQueueBasics(QueueTest):
         assert rows.attr('data-addon') == str(addon.id)
         assert rows.find('td').eq(1).text() == 'Restartless 0.1'
         assert rows.find('.ed-sprite-jetpack').length == 0
-        assert rows.find('.ed-sprite-requires_restart').length == 0
+        assert rows.find('.ed-sprite-is_restart_required').length == 0
 
     def test_theme_redirect(self):
         users = []
@@ -1266,14 +1291,18 @@ class TestAutoApprovedQueue(QueueTest):
         AutoApprovalSummary.objects.create(
             version=extra_addon2.current_version,
             verdict=amo.WOULD_HAVE_BEEN_AUTO_APPROVED)
+
         # Has been auto-approved and reviewed by a human before.
         addon1 = addon_factory(name=u'Addôn 1')
         AutoApprovalSummary.objects.create(
             version=addon1.current_version, verdict=amo.AUTO_APPROVED)
         AddonApprovalsCounter.objects.create(
             addon=addon1, counter=1, last_human_review=self.days_ago(42))
-        # Has been auto-approved twice, last_human_review is somehow None.
+
+        # Has been auto-approved twice, last_human_review is somehow None,
+        # the 'created' date will be used to order it (older is higher).
         addon2 = addon_factory(name=u'Addôn 2')
+        addon2.update(created=self.days_ago(10))
         AutoApprovalSummary.objects.create(
             version=addon2.current_version, verdict=amo.AUTO_APPROVED)
         AddonApprovalsCounter.objects.create(
@@ -1281,11 +1310,23 @@ class TestAutoApprovedQueue(QueueTest):
         addon2_version2 = version_factory(addon=addon2)
         AutoApprovalSummary.objects.create(
             version=addon2_version2, verdict=amo.AUTO_APPROVED)
-        # Has been auto-approved and never been seen by a human.
-        addon3 = addon_factory(name=u'Addôn 3', created=self.days_ago(10))
+
+        # Has been auto-approved and never been seen by a human,
+        # the 'created' date will be used to order it (newer is lower).
+        addon3 = addon_factory(name=u'Addôn 3')
+        addon3.update(created=self.days_ago(2))
         AutoApprovalSummary.objects.create(
             version=addon3.current_version, verdict=amo.AUTO_APPROVED)
-        self.expected_addons = [addon2, addon3, addon1]
+        AddonApprovalsCounter.objects.create(
+            addon=addon3, counter=1, last_human_review=None)
+
+        # Has been auto-approved, should be first because of its weight.
+        addon4 = addon_factory(name=u'Addôn 4')
+        addon4.update(created=self.days_ago(14))
+        AutoApprovalSummary.objects.create(
+            version=addon4.current_version, verdict=amo.AUTO_APPROVED,
+            weight=500)
+        self.expected_addons = [addon4, addon2, addon3, addon1]
 
     def test_only_viewable_with_specific_permission(self):
         # Regular addon reviewer does not have access.
@@ -1311,10 +1352,10 @@ class TestAutoApprovedQueue(QueueTest):
         assert response.status_code == 200
         doc = pq(response.content)
         link = doc('.tabnav li a').eq(3)
-        assert link.text() == 'Auto Approved Add-ons (3)'
+        assert link.text() == 'Auto Approved Add-ons (4)'
         assert link.attr('href') == self.url
         assert doc('.data-grid-top .num-results').text() == (
-            u'Results 1 \u2013 1 of 3')
+            u'Results 1 \u2013 1 of 4')
 
     def test_navbar_queue_counts(self):
         self.login_with_permission()
@@ -1324,12 +1365,12 @@ class TestAutoApprovedQueue(QueueTest):
         assert response.status_code == 200
         doc = pq(response.content)
         assert doc('#navbar #listed-queues li').eq(3).text() == (
-            'Auto Approved Add-ons (3)'
+            'Auto Approved Add-ons (4)'
         )
 
 
 class TestPerformance(QueueTest):
-    fixtures = ['base/users', 'editors/pending-queue', 'base/addon_3615']
+    fixtures = ['base/users', 'base/addon_3615']
 
     """Test the page at /editors/performance."""
 
@@ -1461,7 +1502,7 @@ class BaseTestQueueSearch(SearchTest):
     def generate_files(self, subset=None):
         if subset is None:
             subset = []
-        files = SortedDict([
+        files = OrderedDict([
             ('Not Admin Reviewed', {
                 'version_str': '0.1',
                 'addon_status': amo.STATUS_NOMINATED,
@@ -1816,19 +1857,19 @@ class TestReview(ReviewBase):
         assert self.client.head(self.url).status_code == 200
 
     def test_not_flags(self):
-        self.addon.current_version.files.update(no_restart=True)
+        self.addon.current_version.files.update(is_restart_required=False)
         response = self.client.get(self.url)
         assert response.status_code == 200
         assert len(response.context['flags']) == 0
 
     def test_flag_admin_review(self):
-        self.addon.current_version.files.update(no_restart=True)
+        self.addon.current_version.files.update(is_restart_required=False)
         self.addon.update(admin_review=True)
         response = self.client.get(self.url)
         assert len(response.context['flags']) == 1
 
     def test_info_comments_requested(self):
-        response = self.client.post(self.url, {'action': 'info'})
+        response = self.client.post(self.url, {'action': 'reply'})
         assert response.context['form'].errors['comments'][0] == (
             'This field is required.')
 
@@ -1843,7 +1884,7 @@ class TestReview(ReviewBase):
             action=comment_version.id).count() == 1
 
     def test_info_requested(self):
-        response = self.client.post(self.url, {'action': 'info',
+        response = self.client.post(self.url, {'action': 'reply',
                                                'comments': 'hello sailor'})
         assert response.status_code == 302
         assert len(mail.outbox) == 1
@@ -1858,7 +1899,7 @@ class TestReview(ReviewBase):
                                 'editors/emails/author_super_review.ltxt')
 
     def test_info_requested_canned_response(self):
-        response = self.client.post(self.url, {'action': 'info',
+        response = self.client.post(self.url, {'action': 'reply',
                                                'comments': 'hello sailor',
                                                'canned_response': 'foo'})
         assert response.status_code == 302
@@ -1866,14 +1907,14 @@ class TestReview(ReviewBase):
         self.assertTemplateUsed(response, 'activity/emails/from_reviewer.txt')
 
     def test_notify(self):
-        response = self.client.post(self.url, {'action': 'info',
+        response = self.client.post(self.url, {'action': 'reply',
                                                'comments': 'hello sailor',
                                                'notify': True})
         assert response.status_code == 302
         assert EditorSubscription.objects.count() == 1
 
     def test_no_notify(self):
-        response = self.client.post(self.url, {'action': 'info',
+        response = self.client.post(self.url, {'action': 'reply',
                                                'comments': 'hello sailor'})
         assert response.status_code == 302
         assert EditorSubscription.objects.count() == 0
@@ -1941,7 +1982,7 @@ class TestReview(ReviewBase):
             assert td.find('.history-comment').text() == 'something'
             assert td.find('th').text() == {
                 'public': 'Approved',
-                'info': 'More information requested'}[action]
+                'reply': 'Reviewer Reply'}[action]
             editor_name = td.find('td a').text()
             assert ((editor_name == self.editor.display_name) or
                     (editor_name == self.senior_editor.display_name))
@@ -1996,7 +2037,7 @@ class TestReview(ReviewBase):
 
         self.addon.current_version.delete(hard=True)
 
-    @patch('olympia.editors.helpers.sign_file')
+    @patch('olympia.editors.utils.sign_file')
     def test_item_history_deleted(self, mock_sign):
         self.generate_deleted_versions()
 
@@ -2225,7 +2266,7 @@ class TestReview(ReviewBase):
     def test_unadmin_flag_as_admin(self):
         self.addon.update(admin_review=True)
         self.login_as_admin()
-        response = self.client.post(self.url, {'action': 'info',
+        response = self.client.post(self.url, {'action': 'reply',
                                                'comments': 'hello sailor',
                                                'adminflag': True})
         self.assert3xx(response, reverse('editors.queue_pending'),
@@ -2235,13 +2276,25 @@ class TestReview(ReviewBase):
     def test_unadmin_flag_as_editor(self):
         self.addon.update(admin_review=True)
         self.login_as_editor()
-        response = self.client.post(self.url, {'action': 'info',
+        response = self.client.post(self.url, {'action': 'reply',
                                                'comments': 'hello sailor',
                                                'adminflag': True})
         # Should silently fail to set adminflag but work otherwise.
         self.assert3xx(response, reverse('editors.queue_pending'),
                        status_code=302)
         assert Addon.objects.get(pk=self.addon.pk).admin_review
+
+    def test_info_request_checkbox(self):
+        self.login_as_editor()
+        assert not self.version.has_info_request
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+        assert 'checked' not in doc('#id_info_request')[0].attrib
+
+        self.version.update(has_info_request=True)
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+        assert doc('#id_info_request')[0].attrib['checked'] == 'checked'
 
     def test_no_public(self):
         has_public = self.version.files.filter(
@@ -2335,13 +2388,13 @@ class TestReview(ReviewBase):
         self.assert3xx(response, reverse('editors.queue_pending'),
                        status_code=302)
 
-    @patch('olympia.editors.helpers.sign_file')
+    @patch('olympia.editors.utils.sign_file')
     def review_version(self, version, url, mock_sign):
         if version.channel == amo.RELEASE_CHANNEL_LISTED:
             version.files.all()[0].update(status=amo.STATUS_AWAITING_REVIEW)
             action = 'public'
         else:
-            action = 'info'
+            action = 'reply'
 
         data = dict(action=action, operating_systems='win',
                     applications='something', comments='something')
@@ -2550,7 +2603,7 @@ class TestReview(ReviewBase):
         response = self.client.get(url, follow=True)
         assert 'The developer has provided source code.' in response.content
 
-    @patch('olympia.editors.helpers.sign_file')
+    @patch('olympia.editors.utils.sign_file')
     def test_admin_flagged_addon_actions_as_admin(self, mock_sign_file):
         self.version.files.update(status=amo.STATUS_AWAITING_REVIEW)
         self.addon.update(admin_review=True, status=amo.STATUS_NOMINATED)
@@ -2805,6 +2858,72 @@ class TestReview(ReviewBase):
             )
         )
 
+    def test_data_value_attributes(self):
+        AutoApprovalSummary.objects.create(
+            verdict=amo.AUTO_APPROVED, version=self.version)
+        self.login_as_senior_editor()
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+
+        expected_actions_values = [
+            'confirm_auto_approved|', 'reject_multiple_versions|', 'reply|',
+            'super|', 'comment|']
+        assert [
+            act.attrib['data-value'] for act in
+            doc('.data-toggle.review-actions-desc')] == expected_actions_values
+
+        assert (
+            doc('select#id_versions.data-toggle')[0].attrib['data-value'] ==
+            'reject_multiple_versions|')
+
+        assert (
+            doc('.data-toggle.review-comments')[0].attrib['data-value'] ==
+            'reject_multiple_versions|reply|super|comment|')
+        # We don't have approve/reject actions so these have an empty
+        # data-value.
+        assert (
+            doc('.data-toggle.review-files')[0].attrib['data-value'] == '|')
+        assert (
+            doc('.data-toggle.review-tested')[0].attrib['data-value'] == '|')
+
+        assert (
+            doc('.data-toggle.review-info-request')[0].attrib['data-value'] ==
+            'reply|')
+
+        # If we set info request checkbox should be available on comment too.
+        self.version.update(has_info_request=True)
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+        assert (
+            doc('.data-toggle.review-info-request')[0].attrib['data-value'] ==
+            'reply|comment|')
+
+    def test_data_value_attributes_unreviewed(self):
+        self.file.update(status=amo.STATUS_AWAITING_REVIEW)
+        self.login_as_senior_editor()
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+
+        expected_actions_values = [
+            'public|', 'reject|', 'reply|', 'super|', 'comment|']
+        assert [
+            act.attrib['data-value'] for act in
+            doc('.data-toggle.review-actions-desc')] == expected_actions_values
+
+        assert (
+            doc('select#id_versions.data-toggle')[0].attrib['data-value'] ==
+            'reject_multiple_versions|')
+
+        assert (
+            doc('.data-toggle.review-comments')[0].attrib['data-value'] ==
+            'public|reject|reply|super|comment|')
+        assert (
+            doc('.data-toggle.review-files')[0].attrib['data-value'] ==
+            'public|reject|')
+        assert (
+            doc('.data-toggle.review-tested')[0].attrib['data-value'] ==
+            'public|reject|')
+
 
 class TestReviewPending(ReviewBase):
 
@@ -2818,7 +2937,7 @@ class TestReviewPending(ReviewBase):
     def pending_dict(self):
         return self.get_dict(action='public')
 
-    @patch('olympia.editors.helpers.sign_file')
+    @patch('olympia.editors.utils.sign_file')
     def test_pending_to_public(self, mock_sign):
         statuses = (self.version.files.values_list('status', flat=True)
                     .order_by('status'))
@@ -2855,7 +2974,7 @@ class TestReviewPending(ReviewBase):
         assert unreviewed.filename in response.content
         assert self.file.filename in response.content
 
-    @patch('olympia.editors.helpers.sign_file')
+    @patch('olympia.editors.utils.sign_file')
     def test_review_unreviewed_files(self, mock_sign):
         """Review all the unreviewed files when submitting a review."""
         reviewed = File.objects.create(version=self.version,
@@ -2892,7 +3011,9 @@ class TestReviewPending(ReviewBase):
         AutoApprovalSummary.objects.create(
             version=self.version,
             verdict=amo.NOT_AUTO_APPROVED,
-            uses_custom_csp=True
+            uses_custom_csp=True,
+            approved_updates=1,
+            average_daily_users=10000,
         )
         set_config('AUTO_APPROVAL_MAX_AVERAGE_DAILY_USERS', 10000)
         set_config('AUTO_APPROVAL_MIN_APPROVED_UPDATES', 2)
@@ -2904,6 +3025,9 @@ class TestReviewPending(ReviewBase):
             'Has too few consecutive human-approved updates.')
         assert (
             doc('.auto_approval li').eq(1).text() ==
+            'Has too many daily users.')
+        assert (
+            doc('.auto_approval li').eq(2).text() ==
             'Uses a custom CSP.')
 
 
@@ -3069,8 +3193,8 @@ class TestLeaderboard(EditorTest):
 
     def test_leaderboard_ranks(self):
         users = (self.user,
-                 UserProfile.objects.get(email='regular@mozilla.com'),
-                 UserProfile.objects.get(email='clouserw@gmail.com'))
+                 UserProfile.objects.get(email='persona-reviewer@mozilla.com'),
+                 UserProfile.objects.get(email='senioreditor@mozilla.com'))
 
         self._award_points(users[0], amo.REVIEWED_LEVELS[0]['points'] - 1)
         self._award_points(users[1], amo.REVIEWED_LEVELS[0]['points'] + 1)
@@ -3164,7 +3288,7 @@ class TestLimitedReviewerQueue(QueueTest, LimitedReviewerBase):
         self.login_as_limited_reviewer()
 
     def generate_files(self, subset=None):
-        files = SortedDict([
+        files = OrderedDict([
             ('Nominated new', {
                 'version_str': '0.1',
                 'addon_status': amo.STATUS_NOMINATED,
@@ -3213,7 +3337,7 @@ class TestLimitedReviewerReview(ReviewBase, LimitedReviewerBase):
             u'Select a valid choice. public is not one of the available '
             u'choices.']
 
-    @patch('olympia.editors.helpers.sign_file')
+    @patch('olympia.editors.utils.sign_file')
     def test_old_addon_review_action_as_limited_editor(self, mock_sign_file):
         self.version.files.update(status=amo.STATUS_AWAITING_REVIEW)
         self.version.update(nomination=datetime.now() - timedelta(days=1))

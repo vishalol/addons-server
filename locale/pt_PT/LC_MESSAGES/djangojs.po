@@ -1,10 +1,10 @@
-#
+# 
 msgid ""
 msgstr ""
 "Project-Id-Version: AMO-JS 0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-05-17 11:23+0000\n"
-"PO-Revision-Date: 2017-04-14 16:22+0000\n"
+"POT-Creation-Date: 2017-06-15 03:41+0000\n"
+"PO-Revision-Date: 2017-07-11 03:48+0000\n"
 "Last-Translator: Rodrigo <rodrigo.mcunha@hotmail.com>\n"
 "Language-Team: \n"
 "Language: pt_PT\n"
@@ -198,7 +198,7 @@ msgid "Search themes for <b>{0}</b>"
 msgstr "Procurar temas para <b>{0}</b>"
 
 msgid "Search apps for <b>{0}</b>"
-msgstr "Procurar apps para o <b>{0}</b>"
+msgstr "Pesquisar apps para o <b>{0}</b>"
 
 msgid "Search add-ons for <b>{0}</b>"
 msgstr "Pesquise extras para o <b>{0}</b>"
@@ -690,7 +690,7 @@ msgid "Download now"
 msgstr "Descarregar agora"
 
 msgid "Only available on Firefox Desktop"
-msgstr "Apenas disponível no Firefox para Computadores"
+msgstr "Apenas disponível no Firefox para Computador"
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
 msgstr "Desculpe, mas precisa de um navegador baseado na Mozilla (como o Firefox) para instalar um plugin de pesquisa."
@@ -741,7 +741,7 @@ msgid "Remove from favorites"
 msgstr "Remover dos favoritos"
 
 msgid "Stop following"
-msgstr "Parar o seguimento"
+msgstr "Deixar de seguir"
 
 msgid "Your browser does not support the video tag"
 msgstr "O seu navegador não suporta a etiqueta de vídeo"
@@ -828,14 +828,6 @@ msgstr "Esta funcionalidade está temporariamente desativada enquanto nós proce
 msgid "Remove this localization"
 msgstr "Remover esta tradução"
 
-msgid "Password strength:"
-msgstr "Força da palavra-passe:"
-
-msgid "At least {0} character left."
-msgid_plural "At least {0} characters left."
-msgstr[0] "Falta pelo menos {0} caractere."
-msgstr[1] "Faltam pelo menos {0} caracteres."
-
 msgid "Requested Info"
 msgstr "Solicitadas mais informações"
 
@@ -905,8 +897,8 @@ msgstr[1] "{0} avisos"
 
 msgid "{0} notice"
 msgid_plural "{0} notices"
-msgstr[0] "{0} nota"
-msgstr[1] "{0} notas"
+msgstr[0] "{0} aviso"
+msgstr[1] "{0} avisos"
 
 msgid "Validation task could not complete or completed with errors"
 msgstr "A tarefa de validação não foi concluída ou foi concluída com erros"

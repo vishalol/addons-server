@@ -15,7 +15,7 @@ from pyquery import PyQuery as pq
 from olympia import amo
 from olympia.activity.models import ActivityLog
 from olympia.amo.tests import TestCase
-from olympia.amo.helpers import user_media_path
+from olympia.amo.templatetags.jinja_helpers import user_media_path
 from olympia.amo.tests import (
     addon_factory, formset, initial, req_factory_factory)
 from olympia.amo.tests.test_helpers import get_image_path
@@ -1433,6 +1433,21 @@ class TestAdmin(TestCase):
         url = reverse('devhub.addons.admin', args=['a3615'])
         response = self.client.post(url)
         assert response.status_code == 403
+
+    def test_change_reputation_and_type(self):
+        addon = Addon.objects.get(pk=3615)
+        self.login_admin()
+        url = reverse('devhub.addons.admin', args=['a3615'])
+        data = {
+            'reputation': 3,
+            'type': amo.ADDON_THEME,
+        }
+        response = self.client.post(url, data)
+        assert response.status_code == 200
+        assert response.context['admin_form'].is_valid()
+        addon.reload()
+        assert addon.reputation == 3
+        assert addon.type == amo.ADDON_THEME
 
 
 class TestThemeEdit(TestCase):

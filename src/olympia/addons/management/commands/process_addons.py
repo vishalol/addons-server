@@ -1,5 +1,3 @@
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 
@@ -11,6 +9,7 @@ from olympia.addons.tasks import (
     add_firefox57_tag, find_inconsistencies_between_es_and_db)
 from olympia.amo.utils import chunked
 from olympia.devhub.tasks import convert_purified, get_preview_sizes
+from olympia.editors.tasks import recalculate_post_review_weight
 from olympia.lib.crypto.tasks import sign_addons
 from olympia.reviews.tasks import addon_review_aggregates
 
@@ -21,6 +20,11 @@ tasks = {
     'get_preview_sizes': {'method': get_preview_sizes, 'qs': []},
     'convert_purified': {'method': convert_purified, 'qs': []},
     'addon_review_aggregates': {'method': addon_review_aggregates, 'qs': []},
+    'recalculate_post_review_weight': {
+        'method': recalculate_post_review_weight,
+        'qs': [
+            Q(_current_version__autoapprovalsummary__verdict=amo.AUTO_APPROVED)
+        ]},
     'sign_addons': {'method': sign_addons, 'qs': []},
     'add_firefox57_tag_to_webextensions': {
         'method': add_firefox57_tag,
@@ -40,14 +44,21 @@ class Command(BaseCommand):
     qs: a list of Q objects to apply to the method
     kwargs: any extra kwargs you want to apply to the delay method (optional)
     """
-    option_list = BaseCommand.option_list + (
-        make_option('--task', action='store', type='string',
-                    dest='task', help='Run task on the addons.'),
-        make_option('--with-deleted', action='store_true',
-                    dest='with_deleted',
-                    help='Include deleted add-ons when determining which '
-                         'add-ons to process.'),
-    )
+    def add_arguments(self, parser):
+        """Handle command arguments."""
+        parser.add_argument(
+            '--task',
+            action='store',
+            dest='task',
+            type=str,
+            help='Run task on the addons.')
+
+        parser.add_argument(
+            '--with-deleted',
+            action='store_true',
+            dest='with_deleted',
+            help='Include deleted add-ons when determining which '
+                 'add-ons to process.')
 
     def handle(self, *args, **options):
         task = tasks.get(options.get('task'))

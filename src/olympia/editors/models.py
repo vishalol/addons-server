@@ -1,25 +1,28 @@
 import json
+from collections import OrderedDict
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Sum
-from django.template import Context, loader
-from django.utils.datastructures import SortedDict
+from django.db.models import Q, Sum
+from django.template import loader
 from django.utils.translation import ugettext, ugettext_lazy as _
 
 import olympia.core.logger
 from olympia import amo
-from olympia.amo.models import ManagerBase, ModelBase, skip_cache
+from olympia.abuse.models import AbuseReport
+from olympia.access import acl
 from olympia.access.models import Group
 from olympia.activity.models import ActivityLog
-from olympia.amo.helpers import absolutify
+from olympia.amo.templatetags.jinja_helpers import absolutify
+from olympia.amo.models import ManagerBase, ModelBase, skip_cache
 from olympia.amo.urlresolvers import reverse
 from olympia.amo.utils import cache_ns_key, send_mail
 from olympia.addons.models import Addon, AddonApprovalsCounter, Persona
 from olympia.editors.sql_model import RawSQLModel
 from olympia.files.models import FileValidation
+from olympia.reviews.models import Review
 from olympia.users.models import UserForeignKey, UserProfile
 from olympia.versions.models import Version, version_uploaded
 
@@ -29,7 +32,7 @@ user_log = olympia.core.logger.getLogger('z.users')
 VIEW_QUEUE_FLAGS = (
     ('admin_review', 'admin-review', _('Admin Review')),
     ('is_jetpack', 'jetpack', _('Jetpack Add-on')),
-    ('requires_restart', 'requires_restart', _('Requires Restart')),
+    ('is_restart_required', 'is_restart_required', _('Requires Restart')),
     ('has_info_request', 'info', _('More Information Requested')),
     ('has_editor_comment', 'editor', _('Contains Reviewer Comment')),
     ('sources_provided', 'sources-provided', _('Sources provided')),
@@ -126,7 +129,7 @@ class ViewQueue(RawSQLModel):
     addon_status = models.IntegerField()
     addon_type_id = models.IntegerField()
     admin_review = models.BooleanField()
-    is_restartless = models.BooleanField()
+    is_restart_required = models.BooleanField()
     is_jetpack = models.BooleanField()
     source = models.CharField(max_length=100)
     is_webextension = models.BooleanField()
@@ -139,7 +142,7 @@ class ViewQueue(RawSQLModel):
 
     def base_query(self):
         return {
-            'select': SortedDict([
+            'select': OrderedDict([
                 ('id', 'addons.id'),
                 ('addon_name', 'tr.localized_string'),
                 ('addon_status', 'addons.status'),
@@ -150,7 +153,7 @@ class ViewQueue(RawSQLModel):
                 ('has_editor_comment', 'versions.has_editor_comment'),
                 ('has_info_request', 'versions.has_info_request'),
                 ('is_jetpack', 'MAX(files.jetpack_version IS NOT NULL)'),
-                ('is_restartless', 'MAX(files.no_restart)'),
+                ('is_restart_required', 'MAX(files.is_restart_required)'),
                 ('source', 'versions.source'),
                 ('is_webextension', 'MAX(files.is_webextension)'),
                 ('waiting_time_days',
@@ -177,10 +180,6 @@ class ViewQueue(RawSQLModel):
                 'files.status = %s' % amo.STATUS_AWAITING_REVIEW,
             ],
             'group_by': 'id'}
-
-    @property
-    def requires_restart(self):
-        return not self.is_restartless
 
     @property
     def sources_provided(self):
@@ -226,7 +225,7 @@ class ViewUnlistedAllList(RawSQLModel):
     def base_query(self):
         review_ids = ','.join([str(r) for r in amo.LOG_EDITOR_REVIEW_ACTION])
         return {
-            'select': SortedDict([
+            'select': OrderedDict([
                 ('id', 'addons.id'),
                 ('addon_name', 'tr.localized_string'),
                 ('addon_status', 'addons.status'),
@@ -308,7 +307,7 @@ class PerformanceGraph(RawSQLModel):
                       if r != request_ver]
 
         return {
-            'select': SortedDict([
+            'select': OrderedDict([
                 ('yearmonth',
                  "DATE_FORMAT(`log_activity`.`created`, '%%Y-%%m')"),
                 ('approval_created', '`log_activity`.`created`'),
@@ -336,7 +335,7 @@ class EditorSubscription(ModelBase):
     def send_notification(self, version):
         user_log.info('Sending addon update notice to %s for %s' %
                       (self.user.email, self.addon.pk))
-        context = Context({
+        context = {
             'name': self.addon.name,
             'url': absolutify(reverse('addons.detail', args=[self.addon.pk],
                                       add_prefix=False)),
@@ -345,11 +344,11 @@ class EditorSubscription(ModelBase):
                                          args=[self.addon.pk],
                                          add_prefix=False)),
             'SITE_URL': settings.SITE_URL,
-        })
+        }
         # Not being localised because we don't know the editors locale.
         subject = 'Mozilla Add-ons: %s Updated' % self.addon.name
         template = loader.get_template('editors/emails/notify_update.ltxt')
-        send_mail(subject, template.render(Context(context)),
+        send_mail(subject, template.render(context),
                   recipient_list=[self.user.email],
                   from_email=settings.EDITORS_EMAIL,
                   use_deny_list=False)
@@ -365,7 +364,12 @@ def send_notifications(signal=None, sender=None, **kw):
         return
 
     for subscriber in subscribers:
-        subscriber.send_notification(sender)
+        user = subscriber.user
+        is_reviewer = (
+            user and not user.deleted and user.email and
+            acl.action_allowed_user(user, amo.permissions.ADDONS_REVIEW))
+        if is_reviewer:
+            subscriber.send_notification(sender)
         subscriber.delete()
 
 
@@ -375,7 +379,7 @@ version_uploaded.connect(send_notifications, dispatch_uid='send_notifications')
 class ReviewerScore(ModelBase):
     user = models.ForeignKey(UserProfile, related_name='_reviewer_scores')
     addon = models.ForeignKey(Addon, blank=True, null=True, related_name='+')
-    score = models.SmallIntegerField()
+    score = models.IntegerField()
     # For automated point rewards.
     note_key = models.SmallIntegerField(choices=amo.REVIEWED_CHOICES.items(),
                                         default=0)
@@ -563,6 +567,11 @@ class ReviewerScore(ModelBase):
         query = (cls.objects
                     .values_list('user__id', 'user__display_name')
                     .annotate(total=Sum('score'))
+                    .filter(user__groups__name__in=(
+                        'Add-on Reviewers',
+                        'Senior Add-on Reviewers',
+                        'Persona Reviewers',
+                        'Senior Personas Reviewers'))
                     .exclude(user__groups__name__in=('No Reviewer Incentives',
                                                      'Staff', 'Admins'))
                     .order_by('-total'))
@@ -704,13 +713,96 @@ class AutoApprovalSummary(ModelBase):
     verdict = models.PositiveSmallIntegerField(
         choices=amo.AUTO_APPROVAL_VERDICT_CHOICES,
         default=amo.NOT_AUTO_APPROVED)
+    weight = models.IntegerField(default=0)
 
     def __unicode__(self):
         return u'%s %s' % (self.version.addon.name, self.version)
 
+    def calculate_weight(self):
+        """Calculate the weight value for this version according to various
+        risk factors.
+
+        That value is then used in editor tools to prioritize add-ons in the
+        auto-approved queue."""
+        # Note: for the moment, some factors are in direct contradiction with
+        # the rules determining whether or not an add-on can be auto-approved
+        # in the first place, but we'll relax those rules as we move towards
+        # post-review.
+        addon = self.version.addon
+        one_year_ago = (self.created or datetime.now()) - timedelta(days=365)
+        factors = {
+            # Add-ons under admin review: 100 added to weight.
+            'admin_review': 100 if addon.admin_review else 0,
+            # Each "recent" abuse reports for the add-on or one of the listed
+            # developers adds 10 to the weight, up to a maximum of 100.
+            'abuse_reports': min(
+                AbuseReport.objects
+                .filter(Q(addon=addon) | Q(user__in=addon.listed_authors))
+                .filter(created__gte=one_year_ago).count() * 10, 100),
+            # 1% of the total of "recent" reviews with a score of 3 or less
+            # adds 2 to the weight, up to a maximum of 100.
+            'negative_reviews': min(int(
+                Review.objects
+                .filter(addon=addon)
+                .filter(rating__lte=3, created__gte=one_year_ago)
+                .count() / 100.0 * 2.0), 100),
+            # Reputation is set by admin - the value is inverted to add from
+            # -300 (decreasing priority for "trusted" add-ons) to 0.
+            'reputation': (
+                max(min(int(addon.reputation or 0) * -100, 0), -300)),
+            # Average daily users: value divided by 10000 is added to the
+            # weight, up to a maximum of 100.
+            'average_daily_users': min(addon.average_daily_users / 10000, 100),
+            # Pas rejection history: each "recent" rejected version (disabled
+            # with an original status of null, so not disabled by a developer)
+            # adds 10 to the weight, up to a maximum of 100.
+            'past_rejection_history': min(
+                Version.objects
+                .filter(addon=addon,
+                        files__reviewed__gte=one_year_ago,
+                        files__original_status=amo.STATUS_NULL,
+                        files__status=amo.STATUS_DISABLED)
+                .distinct().count() * 10, 100),
+        }
+        factors.update(self.calculate_static_analysis_weight_factors())
+        self.weight = sum(factors.values())
+        return factors
+
+    def calculate_static_analysis_weight_factors(self):
+        """Calculate the static analysis risk factors.
+        Used by calculate_weight()."""
+        try:
+            factors = {
+                # Static analysis flags from linter:
+                # eval() or document.write(): 20.
+                'uses_eval_or_document_write': (
+                    20 if self.check_uses_eval_or_document_write(self.version)
+                    else 0),
+                # Implied eval in setTimeout/setInterval/ on* attributes: 5.
+                'uses_implied_eval': (
+                    5 if self.check_uses_implied_eval(self.version) else 0),
+                # innerHTML / unsafe DOM: 20.
+                'uses_innerhtml': (
+                    20 if self.check_uses_innerhtml(self.version) else 0),
+                # custom CSP: 30.
+                'uses_custom_csp': (
+                    30 if self.check_uses_custom_csp(self.version) else 0),
+                # nativeMessaging permission: 20.
+                'uses_native_messaging': (
+                    20 if self.check_uses_native_messaging(self.version) else
+                    0),
+            }
+        except AutoApprovalNoValidationResultError:
+            # We should have a FileValidationResult... since we don't and
+            # something is wrong, increase the weight by 100.
+            factors = {
+                'no_validation_result': 100,
+            }
+        return factors
+
     def calculate_verdict(
             self, max_average_daily_users=0, min_approved_updates=0,
-            dry_run=False, pretty=False):
+            dry_run=False, pretty=False, post_review=False):
         """Calculate the verdict for this instance based on the values set
         on it and the current configuration.
 
@@ -723,21 +815,26 @@ class AutoApprovalSummary(ModelBase):
             success_verdict = amo.AUTO_APPROVED
             failure_verdict = amo.NOT_AUTO_APPROVED
 
-        # We need everything in that dict to be False for verdict to be
-        # successful.
-        verdict_info = {
-            'uses_custom_csp': self.uses_custom_csp,
-            'uses_native_messaging': self.uses_native_messaging,
-            'uses_content_script_for_all_urls':
-                self.uses_content_script_for_all_urls,
-            'too_many_average_daily_users':
-                self.average_daily_users >= max_average_daily_users,
-            'too_few_approved_updates':
-                self.approved_updates < min_approved_updates,
-            'has_info_request': self.has_info_request,
-            'is_under_admin_review': self.is_under_admin_review,
-            'is_locked': self.is_locked,
-        }
+        if post_review:
+            # If post_review is enabled, add-ons always get a successful
+            # verdict, so verdict_info must be an empty dict.
+            verdict_info = {}
+        else:
+            # We need everything in that dict to be False for verdict to be
+            # successful.
+            verdict_info = {
+                'uses_custom_csp': self.uses_custom_csp,
+                'uses_native_messaging': self.uses_native_messaging,
+                'uses_content_script_for_all_urls':
+                    self.uses_content_script_for_all_urls,
+                'too_many_average_daily_users':
+                    self.average_daily_users >= max_average_daily_users,
+                'too_few_approved_updates':
+                    self.approved_updates < min_approved_updates,
+                'has_info_request': self.has_info_request,
+                'is_under_admin_review': self.is_under_admin_review,
+                'is_locked': self.is_locked,
+            }
         if any(verdict_info.values()):
             self.verdict = failure_verdict
         else:
@@ -770,17 +867,35 @@ class AutoApprovalSummary(ModelBase):
                 if value)
 
     @classmethod
-    def check_uses_custom_csp(cls, version):
-        def _check_uses_custom_csp_in_file(file_):
+    def check_for_linter_flag(cls, version, flag):
+        def _check_for_linter_flag_in_file(file_):
             try:
                 validation = file_.validation
             except FileValidation.DoesNotExist:
                 raise AutoApprovalNoValidationResultError()
             validation_data = json.loads(validation.validation)
-            return any('MANIFEST_CSP' in message['id']
+            return any(flag in message['id']
                        for message in validation_data.get('messages', []))
-        return any(_check_uses_custom_csp_in_file(file_)
+        return any(_check_for_linter_flag_in_file(file_)
                    for file_ in version.all_files)
+
+    @classmethod
+    def check_uses_eval_or_document_write(cls, version):
+        return (
+            cls.check_for_linter_flag(version, 'NO_DOCUMENT_WRITE') or
+            cls.check_for_linter_flag(version, 'DANGEROUS_EVAL'))
+
+    @classmethod
+    def check_uses_implied_eval(cls, version):
+        return cls.check_for_linter_flag(version, 'NO_IMPLIED_EVAL')
+
+    @classmethod
+    def check_uses_innerhtml(cls, version):
+        return cls.check_for_linter_flag(version, 'UNSAFE_VAR_ASSIGNMENT')
+
+    @classmethod
+    def check_uses_custom_csp(cls, version):
+        return cls.check_for_linter_flag(version, 'MANIFEST_CSP')
 
     @classmethod
     def check_uses_native_messaging(cls, version):
@@ -808,7 +923,7 @@ class AutoApprovalSummary(ModelBase):
     @classmethod
     def create_summary_for_version(
             cls, version, max_average_daily_users=0,
-            min_approved_updates=0, dry_run=False):
+            min_approved_updates=0, dry_run=False, post_review=False):
         """Create a AutoApprovalSummary instance in db from the specified
         version.
 
@@ -847,11 +962,13 @@ class AutoApprovalSummary(ModelBase):
         instance = cls(**data)
         verdict_info = instance.calculate_verdict(
             dry_run=dry_run, max_average_daily_users=max_average_daily_users,
-            min_approved_updates=min_approved_updates)
+            min_approved_updates=min_approved_updates, post_review=post_review)
+        instance.calculate_weight()
         # We can't do instance.save(), because we want to handle the case where
-        # it already existed. So we put the verdict we just calculated in data
-        # and use update_or_create().
+        # it already existed. So we put the verdict and weight we just
+        # calculated in data and use update_or_create().
         data['verdict'] = instance.verdict
+        data['weight'] = instance.weight
         instance, _ = cls.objects.update_or_create(
             version=version, defaults=data)
         return instance, verdict_info

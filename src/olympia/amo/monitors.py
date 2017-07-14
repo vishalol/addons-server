@@ -2,6 +2,7 @@ import os
 import socket
 import StringIO
 import traceback
+import requests
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -12,7 +13,7 @@ import redis as redislib
 
 import olympia.core.logger
 from olympia.amo import search
-from olympia.amo.helpers import user_media_path
+from olympia.amo.templatetags.jinja_helpers import user_media_path
 from olympia.applications.management.commands import dump_apps
 
 monitor_log = olympia.core.logger.getLogger('z.monitor')
@@ -68,12 +69,6 @@ def libraries():
     except Exception, e:
         msg = "Failed to create a jpeg image: %s" % e
         libraries_results.append(('PIL+JPEG', False, msg))
-
-    try:
-        import M2Crypto  # NOQA
-        libraries_results.append(('M2Crypto', True, 'Got it!'))
-    except ImportError:
-        libraries_results.append(('M2Crypto', False, 'Failed to import'))
 
     missing_libs = [l for l, s, m in libraries_results if not s]
     if missing_libs:
@@ -185,3 +180,31 @@ def redis():
         status = ','.join(status)
 
     return status, redis_results
+
+
+def signer():
+    # Check Signing Server Endpoint
+    signer_results = None
+    status = ''
+
+    if getattr(settings, 'SIGNING_SERVER', False):
+        try:
+            response = requests.get('%s/status' % settings.SIGNING_SERVER,
+                                    timeout=settings.SIGNING_SERVER_TIMEOUT)
+            if response.status_code != 200:
+                status = (
+                    'Failed to chat with signing service. '
+                    'Invalid HTTP response code.')
+                monitor_log.critical(status)
+                signer_results = False
+            else:
+                signer_results = True
+        except Exception, e:
+            status = 'Failed to chat with signing service: %s' % e
+            monitor_log.critical(status)
+            signer_results = False
+    else:
+        status = 'SIGNING_SERVER is not set'
+        monitor_log.critical(status)
+        signer_results = False
+    return status, signer_results

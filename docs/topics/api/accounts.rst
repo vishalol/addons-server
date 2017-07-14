@@ -24,6 +24,7 @@ Most of the information is optional and provided by the user so may be missing o
     :>json float average_addon_rating: The average rating for addons the developer has listed on the website.
     :>json int num_addons_listed: The number of addons the developer has listed on the website.
     :>json string|null biography: More details about the user.
+    :>json string created: The date when this user first logged in and created this account.
     :>json string|null homepage: The user's website.
     :>json string|null location: The location of the user.
     :>json string|null occupation: The occupation of the user.
@@ -122,6 +123,15 @@ Other :ref:`editable values <account-edit-request>` can be set at the same time.
     :reqheader Content-Type: multipart/form-data
 
 
+--------------------
+Deleting the picture
+--------------------
+
+To delete the account profile picture call the special endpoint.
+
+.. http:delete:: /api/v3/accounts/account/(int:user_id|string:username)/picture
+
+
 ------
 Delete
 ------
@@ -141,71 +151,6 @@ created by the user will not be deleted; but all the user's details are
 cleared.
 
 .. http:delete:: /api/v3/accounts/account/(int:user_id|string:username)/
-
-
-----------------
-Collections List
-----------------
-
-.. _collection-list:
-
-.. note:: This API requires :doc:`authentication <auth>`.
-
-This endpoint allows you to list all collections authored by the specified user.
-You can only list your own collections. To list collections for other users,
-your account must have the `Users:Edit` permission.
-
-.. http:get:: /api/v3/accounts/account/(int:user_id|string:username)/collections/
-
-    :>json int count: The number of results for this query.
-    :>json string next: The URL of the next page of results.
-    :>json string previous: The URL of the previous page of results.
-    :>json array results: An array of :ref:`collections <collection-detail-object>`.
-
-
------------------
-Collection Detail
------------------
-
-.. _collection-detail:
-
-This endpoint allows you to fetch a single collection by its ``slug``.
-It returns any ``listed`` collection by the specified user. You can access
-a non-``listed`` collection only if it was authored by you, the authenticated user.
-If your account has the `Users:Edit` permission then you can access any collection.
-
-.. http:get:: /api/v3/accounts/account/(int:user_id|string:username)/collections/(string:collection_slug)/
-
-    .. _collection-detail-object:
-
-    :>json int id: The id for the collection.
-    :>json int addon_count: The number of add-ons in this collection.
-    :>json int author.id: The id of the author (creator) of the collection.
-    :>json string author.name: The name of the author.
-    :>json string author.url: The link to the profile page for of the author.
-    :>json string|object|null description: The description the author added to the collection. (See :ref:`translated fields <api-overview-translations>`).
-    :>json string modified: The date the collection was last updated.
-    :>json string|object|null name: The of the collection. (See :ref:`translated fields <api-overview-translations>`).
-    :>json string url: The (absolute) collection detail URL.
-
-
-------------------
-Collection Add-ons
-------------------
-
-.. _collection-addon:
-
-This endpoint lists the add-ons in a collection, together with collector's notes.
-
-.. http:get:: /api/v3/accounts/account/(int:user_id|string:username)/collections/(string:collection_slug)/addons/
-
-    :>json int count: The number of results for this query.
-    :>json string next: The URL of the next page of results.
-    :>json string previous: The URL of the previous page of results.
-    :>json array results: An array of items in this collection.
-    :>json object results[].addon: The :ref:`add-on <addon-detail-object>` for this item.
-    :>json string|object|null results[].notes: The collectors notes for this item. (See :ref:`translated fields <api-overview-translations>`).
-    :>json int results[].downloads: The downloads that occured via this collection.
 
 
 ------------------

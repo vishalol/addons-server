@@ -3,11 +3,11 @@ from olympia.amo.tests import (
     addon_factory, BaseTestCase, collection_factory, user_factory)
 from olympia.bandwagon.models import CollectionAddon
 from olympia.bandwagon.serializers import (
-    CollectionAddonSerializer, SimpleCollectionSerializer)
+    CollectionAddonSerializer, CollectionSerializer)
 
 
-class TestSimpleCollectionSerializer(BaseTestCase):
-    serializer = SimpleCollectionSerializer
+class TestCollectionSerializer(BaseTestCase):
+    serializer = CollectionSerializer
 
     def setUp(self):
         self.user = user_factory()
@@ -20,6 +20,7 @@ class TestSimpleCollectionSerializer(BaseTestCase):
     def test_basic(self):
         data = self.serialize()
         assert data['id'] == self.collection.id
+        assert data['uuid'] == self.collection.uuid
         assert data['name'] == {'en-US': self.collection.name}
         assert data['description'] == {'en-US': self.collection.description}
         assert data['url'] == self.collection.get_abs_url()
@@ -27,6 +28,9 @@ class TestSimpleCollectionSerializer(BaseTestCase):
         assert data['modified'] == (
             self.collection.modified.replace(microsecond=0).isoformat() + 'Z')
         assert data['author']['id'] == self.user.id
+        assert data['slug'] == self.collection.slug
+        assert data['public'] == self.collection.listed
+        assert data['default_locale'] == self.collection.default_locale
 
 
 class TestCollectionAddonSerializer(BaseTestCase):

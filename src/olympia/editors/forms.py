@@ -20,7 +20,7 @@ from olympia.applications.models import AppVersion
 from olympia.editors.models import CannedResponse, ReviewerScore, ThemeLock
 from olympia.editors.tasks import approve_rereview, reject_rereview, send_mail
 from olympia.lib import happyforms
-from olympia.reviews.helpers import user_can_delete_review
+from olympia.reviews.templatetags.jinja_helpers import user_can_delete_review
 from olympia.reviews.models import Review
 from olympia.versions.models import Version
 
@@ -115,7 +115,7 @@ class QueueSearchForm(happyforms.Form):
     addon_type_ids = forms.MultipleChoiceField(
         required=False,
         label=_(u'Add-on Types'),
-        choices=((id, tp) for id, tp in amo.ADDON_TYPES.items()))
+        choices=[(amo.ADDON_ANY, _(u'Any'))] + amo.ADDON_TYPES.items())
 
     def __init__(self, *args, **kw):
         super(QueueSearchForm, self).__init__(*args, **kw)
@@ -290,8 +290,11 @@ class ReviewForm(happyforms.Form):
     canned_response = NonValidatingChoiceField(required=False)
     action = forms.ChoiceField(required=True, widget=forms.RadioSelect())
     versions = ModelMultipleChoiceField(
-        widget=forms.SelectMultiple(attrs={
-            'class': 'data-toggle', 'data-value': 'reject_multiple_versions'}),
+        widget=forms.SelectMultiple(
+            attrs={
+                'class': 'data-toggle',
+                'data-value': 'reject_multiple_versions|'
+            }),
         required=False,
         queryset=Version.objects.none())  # queryset is set later in __init__.
 
@@ -306,8 +309,8 @@ class ReviewForm(happyforms.Form):
                                         u'email)'))
     adminflag = forms.BooleanField(required=False,
                                    label=_(u'Clear Admin Review Flag'))
-    clear_info_request = forms.BooleanField(
-        required=False, label=_(u'Clear more info requested flag'))
+    info_request = forms.BooleanField(
+        required=False, label=_(u'Is more info requested?'))
 
     def is_valid(self):
         # Some actions do not require comments.
@@ -333,7 +336,7 @@ class ReviewForm(happyforms.Form):
         # don't really care about this field.
         if 'reject_multiple_versions' in self.helper.actions:
             self.fields['versions'].queryset = (
-                self.helper.addon.versions.filter(
+                self.helper.addon.versions.distinct().filter(
                     channel=amo.RELEASE_CHANNEL_LISTED,
                     files__status=amo.STATUS_PUBLIC).order_by('created'))
 

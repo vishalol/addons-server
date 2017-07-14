@@ -2,7 +2,6 @@ import codecs
 import json
 import re
 from datetime import datetime, timedelta
-from optparse import make_option
 from os import path, unlink
 
 from django.conf import settings
@@ -25,6 +24,7 @@ LOCALE_REGEX = re.compile(r"""^[a-z]{2,3}      # General: fr, en, dsb,...
                           """, re.VERBOSE)
 VALID_STATUSES = ["userDisabled,incompatible", "userEnabled", "Unknown",
                   "userDisabled", "userEnabled,incompatible"]
+UPDATE_COUNT_TRIGGER = "userEnabled"
 VALID_APP_GUIDS = amo.APP_GUIDS.keys()
 APPVERSION_REGEX = re.compile(
     r"""^[0-9]{1,3}                # Major version: 2, 35
@@ -63,19 +63,22 @@ class Command(BaseCommand):
     """
     help = __doc__
 
-    option_list = BaseCommand.option_list + (
-        make_option('--date', action='store', type='string',
-                    dest='date', help='Date in the YYYY-MM-DD format.'),
-        make_option('--separator', action='store', type='string', default='\t',
-                    dest='separator', help='Field separator in file.'),
-    )
+    def add_arguments(self, parser):
+        """Handle command arguments."""
+        parser.add_argument('folder_name', default='hive_results', nargs='?')
+        parser.add_argument(
+            '--date', action='store', type=str,
+            dest='date', help='Date in the YYYY-MM-DD format.')
+        parser.add_argument(
+            '--separator', action='store', type=str, default='\t',
+            dest='separator', help='Field separator in file.')
 
     def handle(self, *args, **options):
         start = datetime.now()  # Measure the time it takes to run the script.
         day = options['date']
         if not day:
             day = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        folder = args[0] if args else 'hive_results'
+        folder = options['folder_name']
         folder = path.join(settings.TMP_PATH, folder, day)
         sep = options['separator']
         groups = ('version', 'status', 'app', 'os', 'locale')
@@ -168,11 +171,12 @@ class Command(BaseCommand):
                     # We can now fill the UpdateCount object.
                     if group == 'version':
                         self.update_version(uc, data, count)
-                        # Use this count to compute the global number of daily
-                        # users for this addon.
-                        uc.count += count
                     elif group == 'status':
                         self.update_status(uc, data, count)
+                        if data == UPDATE_COUNT_TRIGGER:
+                            # Use this count to compute the global number
+                            # of daily users for this addon.
+                            uc.count += count
                     elif group == 'app':
                         self.update_app(uc, app_id, app_ver, count)
                     elif group == 'os':

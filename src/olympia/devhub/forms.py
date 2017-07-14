@@ -15,7 +15,7 @@ import olympia.core.logger
 from olympia.access import acl
 from olympia import amo, paypal
 from olympia.activity.models import ActivityLog
-from olympia.amo.helpers import mark_safe_lazy
+from olympia.amo.templatetags.jinja_helpers import mark_safe_lazy
 from olympia.addons.forms import AddonFormBase
 from olympia.addons.models import (
     Addon, AddonDependency, AddonUser, Charity, Preview)
@@ -727,9 +727,14 @@ PreviewFormSet = modelformset_factory(Preview, formset=BasePreviewFormSet,
 
 
 class AdminForm(happyforms.ModelForm):
-    _choices = [(k, v) for k, v in amo.ADDON_TYPE.items()
-                if k != amo.ADDON_ANY]
-    type = forms.ChoiceField(choices=_choices)
+    reputation = forms.ChoiceField(
+        label=_(u'Reputation'),
+        choices=(
+            (None, ''),  # To handle null values - equivalent to 0.
+            (0, 'No Reputation'),
+            (1, 'Good (1)'),
+            (2, 'Very Good (2)'),
+            (3, 'Excellent (3)')))
 
     # Request is needed in other ajax forms so we're stuck here.
     def __init__(self, request=None, *args, **kw):
@@ -737,7 +742,9 @@ class AdminForm(happyforms.ModelForm):
 
     class Meta:
         model = Addon
-        fields = ('type', 'target_locale', 'locale_disambiguation')
+        fields = (
+            'type', 'reputation', 'target_locale', 'locale_disambiguation'
+        )
 
 
 class CheckCompatibilityForm(happyforms.Form):
@@ -826,3 +833,9 @@ class DistributionChoiceForm(happyforms.Form):
             ('listed', mark_safe_lazy(LISTED_LABEL)),
             ('unlisted', mark_safe_lazy(UNLISTED_LABEL))),
         widget=forms.RadioSelect(attrs={'class': 'channel'}))
+
+
+class AgreementForm(happyforms.Form):
+    distribution_agreement = forms.BooleanField()
+    review_policy = forms.BooleanField()
+    review_rules = forms.BooleanField()

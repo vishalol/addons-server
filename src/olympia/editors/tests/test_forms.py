@@ -3,11 +3,12 @@ import mock
 from django.utils.encoding import force_text
 
 from olympia import amo
-from olympia.amo.tests import addon_factory, TestCase, version_factory
+from olympia.amo.tests import (
+    addon_factory, file_factory, TestCase, version_factory)
 from olympia.addons.models import Addon
 from olympia.editors.forms import ReviewForm
-from olympia.editors.helpers import ReviewHelper
 from olympia.editors.models import CannedResponse
+from olympia.editors.utils import ReviewHelper
 from olympia.users.models import UserProfile
 
 
@@ -109,14 +110,15 @@ class TestReviewForm(TestCase):
         # Alter the action to make it not require comments to be sent
         # regardless of what the action actually is, what we want to test is
         # the form behaviour.
-        form = self.get_form(data={'action': 'info'})
-        form.helper.actions['info']['comments'] = False
+        form = self.get_form(data={'action': 'reply'})
+        form.helper.actions['reply']['comments'] = False
         assert form.is_bound
         assert form.is_valid()
         assert not form.errors
 
     def test_versions_queryset(self):
         addon_factory()
+        file_factory(version=self.addon.current_version)
         version_factory(addon=self.addon, channel=amo.RELEASE_CHANNEL_UNLISTED)
         form = self.get_form()
         assert not form.is_bound

@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-05-17 11:23+0000\n"
-"PO-Revision-Date: 2017-03-09 03:27+0000\n"
+"POT-Creation-Date: 2017-06-15 03:41+0000\n"
+"PO-Revision-Date: 2017-06-12 02:49+0000\n"
 "Last-Translator: Hyeonseok Shin <hyeonseok@gmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: ko\n"
@@ -97,13 +97,13 @@ msgid "We allow and encourage an upgrade but you cannot reverse this process. On
 msgstr "업그레이드를 허용하고 장려하지만 이 순서를 거꾸로 할 수는 없습니다. WebExtension을 설치한 사용자는 이전의 부가 기능을 설치할 수 없습니다."
 
 msgid "Porting a legacy Firefox add-on on MDN"
-msgstr ""
+msgstr "오래된 Firefox 추가 기능을 MDN에 포팅"
 
 msgid "Include detailed version notes (this can be done in the next step)."
 msgstr "자세한 버전 정보를 포함합니다(다음 단계에서 할 수 있습니다)."
 
 msgid "If your add-on requires an account to a website in order to be fully tested, include a test username and password in the Notes to Reviewer (this can be done in the next step)."
-msgstr ""
+msgstr "만약 부가 기능의 테스트를 위해 웹사이트 계정이 필요하다면 테스트 계정과 비밀번호를 노트에 남겨 리뷰어에게 전달해 주세요(다음 단계에서 할 수 있음)."
 
 msgid "Add-on submission checklist"
 msgstr "부가기능 제출 체크리스트"
@@ -819,13 +819,6 @@ msgstr "이 기능은 웹사이트 점검으로 인해 잠시 사용할 수 없�
 
 msgid "Remove this localization"
 msgstr "이 번역 삭제"
-
-msgid "Password strength:"
-msgstr "비밀번호 보안 등급:"
-
-msgid "At least {0} character left."
-msgid_plural "At least {0} characters left."
-msgstr[0] "최소 {0}글자를 더 입력해야 합니다."
 
 msgid "Requested Info"
 msgstr "요청된 정보"

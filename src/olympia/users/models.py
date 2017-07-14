@@ -13,9 +13,11 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.utils.translation import ugettext
 from django.utils.encoding import force_text
-from django.utils.functional import lazy
+from django.utils.functional import cached_property, lazy
 
 import caching.base as caching
+import waffle
+from waffle.models import Switch
 
 import olympia.core.logger
 from olympia import amo, core
@@ -176,6 +178,18 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     def has_module_perms(self, app_label):
         return self.is_superuser
 
+    def has_read_developer_agreement(self):
+        if self.read_dev_agreement is None:
+            return False
+        if waffle.switch_is_active('post-review'):
+            # We want to make sure developers read the latest version of the
+            # agreement. The cutover date is the date the switch was last
+            # modified to turn it on. (When removing the waffle, change this
+            # for a static date).
+            switch = Switch.objects.get(name='post-review')
+            return self.read_dev_agreement > switch.modified
+        return True
+
     backend = 'django.contrib.auth.backends.ModelBackend'
 
     def get_session_auth_hash(self):
@@ -213,21 +227,16 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     def get_url_path(self, src=None):
         return self.get_user_url('profile', src=src)
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def groups_list(self):
         """List of all groups the user is a member of, as a cached property."""
         return list(self.groups.all())
 
-    @amo.cached_property(writable=True)
-    def addons_listed(self):
-        """Public add-ons this user is listed as author of."""
-        return self.addons.public().filter(
-            addonuser__user=self, addonuser__listed=True)
-
     @property
     def num_addons_listed(self):
         """Number of public add-ons this user is listed as author of."""
-        return self.addons_listed.count()
+        return self.addons.public().filter(
+            addonuser__user=self, addonuser__listed=True).count()
 
     def my_addons(self, n=8):
         """Returns n addons"""
@@ -236,7 +245,7 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
 
     @property
     def picture_dir(self):
-        from olympia.amo.helpers import user_media_path
+        from olympia.amo.templatetags.jinja_helpers import user_media_path
         split_id = re.match(r'((\d*?)(\d{0,3}?))\d{1,3}$', str(self.id))
         return os.path.join(user_media_path('userpics'),
                             split_id.group(2) or '0',
@@ -248,7 +257,7 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
 
     @property
     def picture_url(self):
-        from olympia.amo.helpers import user_media_url
+        from olympia.amo.templatetags.jinja_helpers import user_media_url
         if not self.picture_type:
             return settings.STATIC_URL + '/img/zamboni/anon_user.png'
         else:
@@ -261,17 +270,17 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
             ])
             return user_media_url('userpics') + path
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def is_developer(self):
         return self.addonuser_set.exclude(
             addon__status=amo.STATUS_DELETED).exists()
 
-    @amo.cached_property
+    @cached_property
     def is_addon_developer(self):
         return self.addonuser_set.exclude(
             addon__type=amo.ADDON_PERSONA).exists()
 
-    @amo.cached_property
+    @cached_property
     def is_artist(self):
         """Is this user a Personas Artist?"""
         return self.addonuser_set.filter(
@@ -294,6 +303,9 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     def get_full_name(self):
         return self.name
 
+    def get_short_name(self):
+        return self.username
+
     def _anonymous_username_id(self):
         if self.has_anonymous_username():
             return self.username.split('-')[1][:6]
@@ -313,7 +325,7 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     def has_anonymous_display_name(self):
         return not self.display_name and self.has_anonymous_username()
 
-    @amo.cached_property
+    @cached_property
     def reviews(self):
         """All reviews that are not dev replies."""
         qs = self._reviews_all.filter(reply_to=None)
@@ -391,15 +403,15 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
             collection__author=self, collection__type=type_)
         return qs.values_list('addon', flat=True)
 
-    @amo.cached_property
+    @cached_property
     def mobile_addons(self):
         return self.addons_for_collection_type(amo.COLLECTION_MOBILE)
 
-    @amo.cached_property
+    @cached_property
     def favorite_addons(self):
         return self.addons_for_collection_type(amo.COLLECTION_FAVORITES)
 
-    @amo.cached_property
+    @cached_property
     def watching(self):
         return self.collectionwatcher_set.values_list('collection', flat=True)
 

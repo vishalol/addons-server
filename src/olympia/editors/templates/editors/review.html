@@ -20,7 +20,7 @@
     <img src="{{ addon.icon_url }}" class="icon" alt="" />
     {# L10n: "Review [add-on name]" #}
     <span>
-      {{ _('Review {0}')|fe(addon.name) }}
+      {{ _('Review {0}')|format_html(addon.name) }}
     </span>
     {% if version %}
       <span class="version">{{ version.version }} ({{ version.get_channel_display() }})</span>
@@ -30,7 +30,7 @@
 </hgroup>
 
 <form method="POST" action="#review-actions" class="review-form">
-  {{ csrf() }}
+  {% csrf_token %}
   <div id="addon" class="primary" role="main" data-id="{{ addon.id }}" data-url="{{ url('editors.review_viewing') }}">
 
   {% include 'editors/addon_details_box.html' %}
@@ -157,7 +157,7 @@
     <div id="review-actions-form">
 
       {% for (setting, action) in actions %}
-      <div class="data-toggle review-actions-desc" data-value="{{ setting }}">
+      <div class="data-toggle review-actions-desc" data-value="{{ setting }}|">
         {{ action['details'] }}
 
         {# We don't have a better place to display versions error messages, so let's do it here.
@@ -176,8 +176,8 @@
       {{ form.versions }}
       {{ form.versions.errors }}
 
-      <div class="review-actions-section data-toggle"
-           data-value="{{ actions_comments|join("|") }}">
+      <div class="review-actions-section data-toggle review-comments"
+           data-value="{{ actions_comments|join("|") }}|">
         <label for="id_comments">{{ form.comments.label }}</label>
         {{ form.comments }}
         {{ form.comments.errors }}
@@ -187,8 +187,8 @@
         </div>
       </div>
 
-      <div class="review-actions-section review-actions-files data-toggle"
-           data-value="{{ actions_minimal|join("|") }}">
+      <div class="review-actions-section review-actions-files data-toggle review-files"
+           data-value="{{ actions_minimal|join("|") }}|">
         <label><strong>{{ _('Files:') }}</strong></label>
         <ul>
           {% for file in form.unreviewed_files %}
@@ -201,8 +201,8 @@
         </ul>
       </div>
 
-      <div class="review-actions-section review-actions-tested data-toggle"
-           data-value="{{ actions_minimal|join("|") }}">
+      <div class="review-actions-section review-actions-tested data-toggle review-tested"
+           data-value="{{ actions_minimal|join("|") }}|">
         <strong>{{ _('Tested on:') }}</strong>
         <label>
           {{ form.operating_systems.label }}
@@ -231,15 +231,14 @@
         {{ form.adminflag.errors }}
       </div>
       {% endif %}
-      {% if version.has_info_request %}
-      <div class="review-actions-section">
-        {{ form.clear_info_request }}
-        <label for="{{ form.clear_info_request.auto_id }}">
-          {{ form.clear_info_request.label }}
+      <div class="review-actions-section data-toggle review-info-request"
+           data-value="{{ actions_info_request|join("|") }}|">
+        {{ form.info_request }}
+        <label for="{{ form.info_request.auto_id }}">
+          {{ form.info_request.label }}
         </label>
-        {{ form.clear_info_request.errors }}
+        {{ form.info_request.errors }}
       </div>
-      {% endif %}
       <div class="review-actions-section review-actions-save">
         <span class="currently_viewing_warning">
           {% trans %}
@@ -253,7 +252,7 @@
 </form>
 
 <form method="POST" action="{{ url('editors.whiteboard', addon.slug if addon.slug else addon.pk) }}">
-  {{ csrf() }}
+  {% csrf_token %}
   <div class="whiteboard">
     <div class="whiteboard-inner">
       <label for="id_whiteboard">{{ whiteboard_form.whiteboard.label }}</label>

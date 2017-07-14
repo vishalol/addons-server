@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: support.mozilla.com\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-05-17 11:23+0000\n"
-"PO-Revision-Date: 2017-05-18 17:05+0000\n"
+"POT-Creation-Date: 2017-06-15 03:41+0000\n"
+"PO-Revision-Date: 2017-06-27 11:34+0000\n"
 "Last-Translator: Lan Glad <upwinxp@gmail.com>\n"
 "Language-Team: Slovenian\n"
 "Language: sl\n"
@@ -25,7 +25,7 @@ msgid "Usernames cannot contain only digits."
 msgstr "Uporabniška imena ne morejo vsebovati samo številk."
 
 msgid "Enter a valid username consisting of letters, numbers, underscores or hyphens."
-msgstr "Vnesite veljavno uporabniško ime sestavljeno iz črk, števk, podčrtajev in vezajev."
+msgstr "Vnesite veljavno uporabniško ime, sestavljeno iz črk, števk, podčrtajev in vezajev."
 
 msgid "This username cannot be used."
 msgstr "Tega uporabniškega imena ni mogoče uporabiti."
@@ -54,6 +54,9 @@ msgstr "Ni vas bilo mogoče prijaviti. Poskusite znova."
 
 msgid "Need help?"
 msgstr "Potrebujete pomoč?"
+
+msgid "Developers of add-ons or themes cannot delete their account. You must delete all add-ons and themes linked to this account, or transfer them to other users."
+msgstr "Razvijalci dodatkov in tem ne morejo izbrisati svojega računa. Izbrisati morate vse z računom povezane dodatke in teme ali pa jih prenesti na druge uporabnike."
 
 msgid "Review"
 msgstr "Pregled"
@@ -672,7 +675,7 @@ msgstr "Vseeno prenesi"
 
 #, python-format
 msgid "<b>%(amt)s</b> suggested"
-msgstr "predlaga se <b>%(amt)s</b>"
+msgstr "Predlaga se <b>%(amt)s</b>"
 
 msgid "Enjoy this add-on?"
 msgstr "Vam je dodatek všeč?"
@@ -1178,6 +1181,10 @@ msgstr "Polje mora biti dolgo vsaj {num} znakov."
 msgid "The language code {lang_code} is invalid."
 msgstr "Koda jezika {lang_code} je neveljavna."
 
+#, python-format
+msgid "Invalid pk or slug \"%s\" - object does not exist."
+msgstr "Neveljaven pk ali rekleta \"%s\" - objekt ne obstaja."
+
 msgid "Application Versions"
 msgstr "Različice programa"
 
@@ -1275,6 +1282,15 @@ msgstr "Priljubljen"
 
 msgid "Remove from favorites"
 msgstr "Odstrani iz priljubljenih"
+
+msgid "This slug is already in use by another one of your collections."
+msgstr "To rekleto že uporablja druga vaša zbirka."
+
+msgid "Enter a valid slug consisting of letters, numbers, underscores or hyphens."
+msgstr "Vnesite veljavno rekleto, sestavljeno iz črk, števk, podčrtajev in vezajev."
+
+msgid "This slug cannot be used."
+msgstr "Te reklete ne morete uporabiti."
 
 msgid "Name"
 msgstr "Ime"
@@ -2857,6 +2873,9 @@ msgstr "Platforme Vse ni mogoče kombinirati s posebnimi platformami."
 msgid "A platform can only be chosen once."
 msgstr "Platformo se lahko izbere samo enkrat."
 
+msgid "Reputation"
+msgstr "Sloves"
+
 msgid "Application"
 msgstr "Program"
 
@@ -3073,65 +3092,9 @@ msgstr "Nalaganje rezultatov &hellip;"
 msgid "No results found."
 msgstr "Ni najti rezultatov."
 
-msgid "Submit an Add-on"
-msgstr "Pošlji dodatek"
-
-msgid "AMO Reviewers"
-msgstr "Pregledovalci AMO"
-
-msgid "Get ahead! Become an AMO Reviewer today and get your add-ons reviewed faster."
-msgstr "Prehitite vrsto! Postanite pregledovalec AMO še danes in poskrbite, da bodo vaši dodatki pregledani hitreje."
-
-msgid "Become an AMO Reviewer"
-msgstr "Postanite pregledovalec AMO"
-
-msgid "Learn All About Add-ons"
-msgstr "Naučite se vse o dodatkih"
-
-msgid ""
-"Add-ons let millions of Firefox users enhance and customize their browsing experience. If you're a Web developer and know <a href=\"https://developer.mozilla.org/docs/Web/HTML\">HTML</a>, <a "
-"href=\"https://developer.mozilla.org/docs/Web/JavaScript\">JavaScript</a>, and <a href=\"https://developer.mozilla.org/docs/Web/CSS\">CSS</a>, you already have all the necessary skills to make a "
-"great add-on."
-msgstr ""
-"Dodatki omogočajo milijonom Firefoxovih uporabnikov izboljšanje in prilagoditev svoje izkušnje brskanja. Če ste spletni razvijalec in znate <a "
-"href=\"https://developer.mozilla.org/docs/Web/HTML\">HTML</a>, <a href=\"https://developer.mozilla.org/docs/Web/JavaScript\">JavaScript</a> in <a "
-"href=\"https://developer.mozilla.org/docs/Web/CSS\">CSS</a>, že imate vse potrebne izkušnje za ustvarjanje imenitnih dodatkov."
-
-msgid "Head over to the <a href=\"https://developer.mozilla.org/Add-ons\">Mozilla Developer Network</a> to learn everything you need to know to get started."
-msgstr "Obiščite <a href=\"https://developer.mozilla.org/Add-ons\">Mozilla Developer Network</a>, da spoznate vse, kar je potrebno vedeti za začetek."
-
-msgid "Start Making Add-ons"
-msgstr "Začni delati dodatke"
-
-msgid "Status:"
-msgstr "Stanje:"
-
-msgid "Latest Version:"
-msgstr "Najnovejša različica:"
-
-msgid "Queue Position:"
-msgstr "Mesto v čakalni vrsti:"
-
-#, python-format
-msgid "%(position)s of %(total)s"
-msgstr "%(position)s od skupaj %(total)s"
-
-# 90%
-msgid "Upload New Version"
-msgstr "Naloži novo različico"
-
-msgid "View all add-ons ►"
-msgstr "Prikaz vseh dodatkov ►"
-
-msgid "Publish your add-ons!"
-msgstr "Objavite svoje dodatke!"
-
-msgid "There's no better way to distribute your add-on than by hosting it on Mozilla Add-ons."
-msgstr "Ni boljše možnosti za razširjanje vašega dodatka kot gostovanje na strani Dodatkov Mozille."
-
-#, python-format
-msgid "Upload an <a href=\"%(addon_url)s\">add-on</a> or <a href=\"%(theme_url)s\">theme</a> to get started!"
-msgstr "Prenesite <a href=\"%(addon_url)s\">dodatek</a> ali <a href=\"%(theme_url)s\">temo</a>, da začnete!"
+#. {0} is an application, like Firefox.
+msgid "{0} Add-ons"
+msgstr "Dodatki za {0}"
 
 msgid "Return to the DevHub homepage"
 msgstr "Nazaj na domačo stran DevHub"
@@ -3704,6 +3667,9 @@ msgstr "Ta dodatek nima različic."
 msgid "This add-on doesn't have any approved versions, so its public pages (including beta versions) are hidden."
 msgstr "Ta dodatek nima nobene odobrene različice, zato so njegove strani (vključno s stranmi beta različic) skrite."
 
+msgid "Status:"
+msgstr "Stanje:"
+
 msgid "Disabled"
 msgstr "Onemogočeno"
 
@@ -3970,8 +3936,18 @@ msgstr "To je najnovejša naložena različica, ki pa še ni na voljo na strani 
 msgid "Queues are not reviewed strictly in order"
 msgstr "Čakalne vrste niso pregledane natanko po vrsti"
 
+msgid "Queue Position:"
+msgstr "Mesto v čakalni vrsti:"
+
+#, python-format
+msgid "%(position)s of %(total)s"
+msgstr "%(position)s od skupaj %(total)s"
+
 msgid "Signed for self-distribution. Updates are handled by you."
 msgstr "Podpisano za samostojno distribucijo. Za posodobitve skrbite sami."
+
+msgid "Latest Version:"
+msgstr "Najnovejša različica:"
 
 msgid "This is the newest uploaded unlisted version."
 msgstr "To je najnovejša naložena nenavedena različica."
@@ -4004,6 +3980,10 @@ msgstr "Če ste na idejo prišli, ko ste stali v vrsti za blagajno v trgovini, a
 
 msgid "Telling your users what's coming soon will give them something to look forward to."
 msgstr "Uporabniku bo ugajalo, če zve, kaj vse imate v bodoče še v načrtu."
+
+# 90%
+msgid "Upload New Version"
+msgstr "Naloži novo različico"
 
 msgid "View All"
 msgstr "Ogled vseh"
@@ -4076,10 +4056,6 @@ msgstr "Za to različico v datoteki README ali opombah za pregledovalca vključi
 
 msgid "Read more about the source code review policy."
 msgstr "Preberite več o pravilniku pregleda izvorne kode."
-
-#. {0} is an application, like Firefox.
-msgid "{0} Add-ons"
-msgstr "Dodatki za {0}"
 
 msgid "Latest News"
 msgstr "Zadnje novice"
@@ -4734,11 +4710,11 @@ msgstr "Če svojo zahtevo za pregled prekličete, bo vaš dodatek označen kot n
 msgid "Are you sure you wish to cancel your review request?"
 msgstr "Res želite preklicati zahtevo za pregled?"
 
-msgid "Download media {start_sub_heading}with {addon_name}{end_sub_heading}"
-msgstr "Prenašajte večpredstavnost {start_sub_heading}z {addon_name}{end_sub_heading}"
+msgid "Improve videos {start_sub_heading}with {addon_name}{end_sub_heading}"
+msgstr "Izboljšajte videoposnetke {start_sub_heading}z {addon_name}{end_sub_heading}"
 
-msgid "Manage massive audio, video, and image downloads with this lightweight tool."
-msgstr "Opravljajte obsežne prenose zvoka, videa in slik s tem preprostim orodjem."
+msgid "Enjoy a suite of new YouTube features, like cinema mode, ad blocking, auto-play control, and more."
+msgstr "Razširite YouTube z naborom novih funkcij, kot so način kina, zavračanje oglasov, nadzor samodejnega predvajanja in več."
 
 msgid "Block ads {start_sub_heading}with {addon_name}{end_sub_heading}"
 msgstr "Znebite se oglasov {start_sub_heading}z {addon_name}{end_sub_heading}"
@@ -4746,17 +4722,17 @@ msgstr "Znebite se oglasov {start_sub_heading}z {addon_name}{end_sub_heading}"
 msgid "A lightweight and effective ad blocker. uBlock Origin enforces thousands of content filters without chewing up a bunch of memory."
 msgstr "Lahko in učinkovito blokiranje oglasov. uBlock Origin uporablja tisoče filtrov vsebin brez prekomerne porabe pomnilnika."
 
-msgid "Take screenshots {start_sub_heading}with {addon_name}{end_sub_heading}"
-msgstr "Zajemajte posnetke zaslona {start_sub_heading}z {addon_name}{end_sub_heading}"
-
-msgid "More than just screenshots, Awesome Screenshot Plus lets you annotate images with text and graphics. Storing and sharing files is a breeze."
-msgstr "Več kot le posnetki zaslona. Awesome Screenshot Plus vam omogoča dodajanje opomb z besedilom in grafiko, shranjevanje in deljenje posnetkov pa je igrača."
-
 msgid "Emoji expression {start_sub_heading}with {addon_name}{end_sub_heading}"
 msgstr "Izrazite čustva s simboli {start_sub_heading}z {addon_name}{end_sub_heading}"
 
 msgid "Dozens of amazing emojis for every occasion—always just one click away."
 msgstr "Ducati očarljivih smeškov za vsako priložnost — vedno le klik stran."
+
+msgid "Take screenshots {start_sub_heading}with {addon_name}{end_sub_heading}"
+msgstr "Zajemajte posnetke zaslona {start_sub_heading}z {addon_name}{end_sub_heading}"
+
+msgid "More than just screenshots, Awesome Screenshot Plus lets you annotate images with text and graphics. Storing and sharing files is a breeze."
+msgstr "Več kot le posnetki zaslona. Awesome Screenshot Plus vam omogoča dodajanje opomb z besedilom in grafiko, shranjevanje in deljenje posnetkov pa je igrača."
 
 msgid "Approved reviews"
 msgstr "Odobrene ocene"
@@ -4831,8 +4807,8 @@ msgstr "Obvesti me, ko bo ta dodatek naslednjič posodobljen. (Nadaljnje posodob
 msgid "Clear Admin Review Flag"
 msgstr "Zbriši zastavico za skrbnikov pregled"
 
-msgid "Clear more info requested flag"
-msgstr "Počisti zastavico zahtevanih več podatkov"
+msgid "Is more info requested?"
+msgstr "Je zahtevanih več podatkov?"
 
 msgid "Choose a canned response..."
 msgstr "Izberi pripravljen odgovor ..."
@@ -4940,6 +4916,9 @@ msgstr "Zadnja posodobitev"
 msgid "No Reviews"
 msgstr "Ni ocen"
 
+msgid "Weight"
+msgstr "Teža"
+
 msgid "This will approve, sign, and publish this version. The comments will be sent to the developer."
 msgstr "S tem boste različico odobrili, podpisali in objavili. Komentarji bodo poslani razvijalcu."
 
@@ -4951,6 +4930,12 @@ msgstr "Potrdi odobritev"
 
 msgid "The latest public version of this add-on was automatically approved. This records your confirmation of the approval, without notifying the developer."
 msgstr "Najnovejša javna različica tega dodatka je bila samodejno odobrena. To zabeleži vašo potrditev odobritve, brez obveščanja razvijalca."
+
+msgid "Reject Multiple Versions"
+msgstr "Zavrni več različic"
+
+msgid "This will reject the selected public versions. The comments will be sent to the developer."
+msgstr "S tem boste zavrnili izbrane javne različice. Komentarji bodo poslani razvijalcu."
 
 msgid "Reviewer reply"
 msgstr "Odgovor pregledovalca"
@@ -5417,6 +5402,9 @@ msgstr "skript za samodejno odobritev še ni bil zagnan v tej različici."
 
 msgid "This version has not been reviewed."
 msgstr "Te različice se ni pregledalo."
+
+msgid "Please select one or more versions in the list above."
+msgstr "Izberite eno ali več različic na zgornjem seznamu."
 
 msgid "You can still submit this form, however only do so if you know it won't conflict."
 msgstr "Ta obrazec lahko še vedno uporabite, vendar le v primeru, če veste, da ne bo sporov."
@@ -6715,40 +6703,6 @@ msgstr "Pogosta vprašanja za razvijalce dodatkov"
 msgid "<h3>How do I build an Add-on?</h3> <p> Mozilla provides documentation on how to build an add-on via the <a href=\"%(url)s\">Mozilla Developer Network</a>. </p>"
 msgstr "<h3>Kako izgradim dodatek?</h3> <p> Mozilla dobavlja dokumentacijo o izgradnji dodatkov preko omrežja <a href=\"%(url)s\">Mozilla Developer Network</a>. </p>"
 
-msgid "Other resources include:"
-msgstr "Drugi viri vključujejo:"
-
-msgid "\"How to develop a Firefox extension\" post in the Add-ons Blog"
-msgstr "Objava \"How to develop a Firefox extension\" v blogu dodatkov"
-
-msgid "Mozilla Add-ons Blog"
-msgstr "Blog Mozillinih dodatkov"
-
-msgid "What tools do I need to be able to build an Add-on?"
-msgstr "Katera orodja potrebujem za razvoj dodatkov?"
-
-msgid ""
-"You will need to have a version of the Mozilla software that you're building the add-on for and a code editor of your choice. Add-ons can be built for almost all Mozilla software but are primarily "
-"targeted for:"
-msgstr ""
-"Imeti boste morali različico Mozillinega programa, za katerega izdelujete dodatek, in urejevalnik kode po vaši izbiri. Dodatke lahko ustvarite za skoraj vse Mozilline programe, vendar so v prvi "
-"vrsti namenjeni za:"
-
-msgid "Popular code editors include:"
-msgstr "Priljubljeni urejevalniki kod so na primer:"
-
-#. This is a list of popular code editors.  Feel free to adjust as you like.
-msgid ""
-"<li><a href=\"http://komodoide.com/komodo-edit/\">Komodo Edit</a></li> <li><a href=\"http://macromates.com/\">TextMate</a></li> <li><a href=\"http://notepad-plus-plus.org/\">Notepad++</a></li> "
-"<li><a href=\"http://www.eclipse.org/\">Eclipse IDE</a></li>"
-msgstr ""
-"<li><a href=\"http://komodoide.com/komodo-edit/\">Komodo Edit</a></li> <li><a href=\"http://macromates.com/\">TextMate</a></li> <li><a href=\"http://notepad-plus-plus.org/\">Notepad++</a></li> "
-"<li><a href=\"http://www.eclipse.org/\">Eclipse IDE</a></li>"
-
-#, python-format
-msgid "You can also learn more about setting up your development environment via the MDN article <a href=\"%(url)s\">Setting up extension development environment</a>"
-msgstr "Več podatkov o nastavitvi razvojnega okolja lahko dobite v članku MDN <a href=\"%(url)s\">Setting up extension development environment</a>"
-
 msgid "What is a \".xpi\" file?"
 msgstr "Kaj je datoteka \".xpi\"?"
 
@@ -6765,87 +6719,27 @@ msgstr ""
 "XUL (XML User Interface Language) je Mozillin jezik na osnovi XML, ki vam omogoča ustvariti aplikacije z bogato funkcionalnostjo in neodvisno od platforme. Ponuja komponente, kot so gumbi, meniji, "
 "orodne vrstice, drevesa itd., s katerimi lahko obogatite dodatke tako, da spremenite dele uporabniškega vmesnika brskalnika."
 
-msgid "What is the \"install.rdf\" file used for?"
-msgstr "Kaj je namen datoteke \"install.rdf\"?"
-
 #, python-format
 msgid ""
-"This file, called an <a href=\"%(url)s\">Install Manifest</a>, is used by Add-on Manager-enabled XUL applications to determine information about an add-on as it is being installed. It contains "
-"metadata identifying the add-on, providing information about who created it, where more information can be found about it, which versions of what applications it is compatible with, how it should be"
-" updated, and so on. The format of the Install Manifest is RDF/XML."
+"<strong>Note:</strong> XUL is considered a legacy technology in Firefox, and add-ons using XUL will no longer load starting from Firefox 57. Please use <a href=\"%(webext_url)s\">WebExtensions</a> "
+"APIs to develop new add-ons. If you have a legacy add-on, consider migrating it to WebExtensions. For information on migrating a legacy add-on, please visit <a href=\"%(portlegacy_url)s\">Porting a "
+"legacy Firefox add-on</a>."
 msgstr ""
-"To datoteko, imenovana <a href=\"%(url)s\">namestitveni manifest</a>, uporabljajo XUL aplikacije z omogočenim Upraviteljem dodatkov, da ob namestitvi dodatka dobi informacije o njem. Vsebuje "
-"metapodatke, ki identificirajo dodatek, vsebujejo informacije, kdo je avtor dodatka, kje lahko o njem najdete več informacij, s katerimi različicami katerih aplikacij je združljiv, kako naj se "
-"posodablja itd. Format namestitvenega manifesta je RDF/XML."
-
-msgid "What does \"maxVersion\" mean?"
-msgstr "Kaj pomeni \"maxVersion\"?"
-
-msgid "This determines the maximum version of Firefox you're saying this extension will work with. Set this to be no newer than the newest currently available version!"
-msgstr "Ta številka predstavlja najnovejšo različico Firefoxa, za katero želite, da razširitev še deluje. Nastavite to številko tako, da ne bo večja od najnovejše različice, ki je trenutno na voljo!"
-
-msgid "Can my add-on contain binary components?"
-msgstr "Ali lahko moj dodatek vsebuje binarne komponente?"
-
-#, python-format
-msgid ""
-"Yes. You can use Mozilla's <a href=\"%(url)s\">XPCOM component object model</a> to enhance your add-ons. XPCOM components be used and implemented in JavaScript, Java, and Python in addition to C++."
-msgstr ""
-"Da. Za obogatitev svojih dodatkov lahko uporabljate <a href=\"%(url)s\">objektni model za komponente XPCOM</a>. Komponente XPCOM lahko uporabite in izvedete v JavaScriptu, Javi, Pythonu poleg C++."
-
-msgid "Can I use a JavaScript library like jQuery, MooTools or Prototype to build my add-on?"
-msgstr "Ali lahko pri razvoju svojega dodatka uporabljam knjižnice v JavaScriptu, kot so jQuery, MooTools ali Prototype?"
-
-msgid ""
-"Yes. It's possible, but some of the functionality provided by these libraries are available through XPCOM, XUL, and JavaScript. In addition, authors should take care if libraries modify primitive "
-"object prototypes (String.prototype, Date.prototype, etc.) and/or define global functions (eg. the $ function). These are prone to cause conflict with other add-ons, in particular if different add-"
-"ons use different versions of libraries and so on. Developers need to be very, very careful with using them. Mozilla does not offer documentation on using them to build add-ons."
-msgstr ""
-"Da, je mogoče, vendar je nekaj funkcionalnosti, ki jo nudijo te knjižnice, na voljo preko XPCOM-a, XUL-a in JavaScripta.  Poleg tega morajo biti avtorji previdni, če knjižnice spremenijo prototipe "
-"primitivnih objektov (String.prototype, Date.prototype itd.) in/ali določiti splošne funkcije (npr. funkcijo $).  Te so dovzetne za spore z drugimi dodatki, posebno, če različni dodatki uporabljajo "
-"različne različice knjižnic itd.  Razvijalci morajo biti pri njihovi uporabi zelo, zelo previdni.  Mozilla ne nudi dokumentacije o njihovi uporabi za izgradnjo dodatkov."
-
-msgid "How do I debug my add-on?"
-msgstr "Kako lahko razhroščim svoj dodatek?"
-
-#, python-format
-msgid "You can use the <a href=\"%(url)s\">Add-on Debugger</a>."
-msgstr "Lahko uporabite <a href=\"%(url)s\">Razhroščevalca dodatkov</a>."
+"<strong>Opomba:</strong> XUL velja v Firefoxu za zastarelo tehnologijo, dodatki na osnovi XUL pa se v Firefoxu 57 in novejših ne bodo več naložili. Za razvoj novih dodatkov uporabljajte API-je <a "
+"href=\"%(webext_url)s\">WebExtensions</a>. Če razvijate zastarel dodatek, računajte s selitvijo na WebExtensions. Za informacije o selitvi zastarelega dodatka obiščite stran <a "
+"href=\"%(portlegacy_url)s\">Porting a legacy Firefox add-on</a>."
 
 msgid "How do I test for compatibility with the latest version of Mozilla software?"
 msgstr "Kako preveriti združljivost z najnovejšo različico programske opreme Mozilla?"
 
 msgid ""
-"To ensure compatibility with the latest Mozilla software, it's important to download updates as they become available and test your add-on to ensure that it is still functioning as expected. In many"
-" cases, the latest version of Mozilla software may be a beta release. Since these releases at times introduce architectural changes that may impact the functionality of your add-on, it's important "
-"to be actively involved in the beta process to ensure that your add-on users are not negatively impacted upon final release of Mozilla software."
+"To ensure compatibility with the latest Mozilla software, it's important to download updates as they become available and test your add-on to ensure that it is still functioning as expected. Since "
+"these releases at times introduce architectural changes that may impact the functionality of your add-on, it's important to be actively involved in the beta process to ensure that your add-on users "
+"are not negatively impacted upon final release of Mozilla software."
 msgstr ""
-"Da zagotovite združljivost z najnovejšo Mozillino programsko opremo, je pomembno, da prenesete posodobitve takoj, ko do na voljo in se prepričate, da vaš dodatek še vedno pravilno deluje. V veliko "
-"primerih je najnovejša različica Mozilline programske opreme beta različica. Ker te različice občasno uvedejo spremembe zgradbe, ki lahko vplivajo na delovanje vašega dodatka, je pomembno, da "
-"aktivno sodelujete v postopku beta, da uporabniki ne bodo neprijetno presenečeni ob izidu končne izdaje Mozilline programske opreme."
-
-msgid "How to improve the performance of my add-on?"
-msgstr "Kako lahko izboljšam učinkovitost delovanja svojega dodatka?"
-
-#, python-format
-msgid ""
-"Poorly written extensions can have a severe impact on the browsing experience, including on the overall performance of Firefox itself. The following page contains many good <a "
-"href=\"%(url)s\">guides</a> that help you improve performance, whether you're developing core Mozilla code or an add-on."
-msgstr ""
-"Slabo napisane razširitve lahko zelo vplivajo na izkušnjo brskanja, vključno z učinkovitostjo delovanja Firefoxa samega. Sledeča stran vsebuje veliko dobrih <a href=\"%(url)s\">vodnikov</a>, ki vam "
-"pomagajo izboljšati učinkovitost delovanja, ko pišete kodo sredice Mozille ali dodatka."
-
-msgid "Can my add-on support multiple locales?"
-msgstr "Ali lahko moj dodatek podpira več jezikov?"
-
-# "the" two times - EN-US version needs to be corrected
-#, python-format
-msgid ""
-"Yes. Details on localizing your add-on can be found in the the <a href=\"%(l10n_url)s\">Mozilla Developer Network Localization page</a>. <a href=\"%(bz_url)s\">The BabelZilla project</a> is also a "
-"great resource for learning about localization and volunteering to help translate add-ons."
-msgstr ""
-"Da. Podrobnosti o lokaliziranju svojega dodatka lahko najdete na <a href=\"%(l10n_url)s\">strani Mozilla Developer Network Localization</a>.  <a href=\"%(bz_url)s\">Projekt BabelZilla</a> je tudi "
-"odličen vir za učenje o lokalizaciji in prostovoljni pomoči pri prevajanju dodatkov."
+"Da zagotovite združljivost z najnovejšo Mozillino programsko opremo, je pomembno, da prenesete posodobitve takoj, ko so na voljo in se prepričate, da vaš dodatek še vedno pravilno deluje. Ker te "
+"različice občasno uvedejo spremembe zgradbe, ki lahko vplivajo na delovanje vašega dodatka, je pomembno, da aktivno sodelujete v postopku beta, da uporabniki ne bodo neprijetno presenečeni ob izidu "
+"končne izdaje Mozilline programske opreme."
 
 msgid "I need some advice building my add-on. Where can I find help?"
 msgstr "Pri gradnji svojega dodatka potrebujem nekaj nasvetov. Kje lahko najdem pomoč?"
@@ -6858,27 +6752,12 @@ msgstr "# Extdev (za pogovore o razvoju razširitev)"
 msgid "#amo (for support relating to hosting your add-on on AMO)"
 msgstr "# Amo (za podporo v zvezi z gostovanjem vašega dodatka na AMO)"
 
-#. #jetpack is the name of the IRC channel.  do not change.
-msgid "#jetpack (for discussions about the Add-ons SDK and cfx/jpm - formerly known as Jetpack)"
-msgstr "#jetpack (za razprave o SDK-ju dodatkov in cfx/jpm - prej znanem kot Jetpack)"
-
-#. Label for a link to the extension developers mailing list
-msgid "Mailing List"
-msgstr "Poštni seznam"
-
-#. Label for a link to the extension developers newsgroup
-msgid "Newsgroup"
-msgstr "Novičarska skupina"
-
-#. Label for a link to the extension developers Google Group
-msgid "Google Group"
-msgstr "Google Skupina"
+#. #webextensions is the name of the IRC channel.  do not change.
+msgid "#webextensions (for discussions about developing and porting to WebExtensions)"
+msgstr "#webextensions (za razprave o razvijanju in selitvi na WebExtensions)"
 
 msgid "Add-ons forum"
 msgstr "Forum dodatkov"
-
-msgid "Stack Overflow"
-msgstr "Prekoračitev sklada"
 
 msgid "Does Mozilla offer development services?"
 msgstr "Ali Mozilla nudi razvojne storitve?"
@@ -6903,12 +6782,10 @@ msgstr "Ali lahko svoj dodatek gostujem sam?"
 #, python-format
 msgid ""
 "Yes. Many developers choose to host their own add-ons. Choosing to host your add-on on <a href=\"%(amo_url)s\">Mozilla's add-on site</a>, though, allows for much greater exposure to your add-on due "
-"to the large volume of visitors to the site. <a href=\"%(md_url)s\">mozdev.org</a> offers free project hosting for Mozilla applications and extensions providing developers with tools to help manage "
-"source code, version control, bug tracking and documentation."
+"to the large volume of visitors to the site."
 msgstr ""
-"Da.  Mnogi razvijalci sami gostujejo svoje dodatke.  Po drugi strani gostovanje dodatka na <a href=\"%(amo_url)s\">Mozillini stani za dodatke</a> omogoča večjo izpostavljenost dodatka zaradi večjega"
-" obiska strani.  <a href=\"%(md_url)s\">mozdev.org</a> nudi brezplačno gostovanje projektov za Mozilline aplikacije in razširitve in razvijalcem ponuja orodja za pomoč pri upravljanju z izvorno "
-"kodo, nadzorom različic, sledenjem hroščev in dokumentacijo."
+"Da. Mnogi razvijalci sami gostujejo svoje dodatke. Po drugi strani gostovanje dodatka na <a href=\"%(amo_url)s\">Mozillini stani za dodatke</a> omogoča večjo izpostavljenost dodatka zaradi velikega "
+"obiska strani."
 
 msgid "Can Mozilla host my add-on?"
 msgstr "Ali Mozilla lahko gosti moj dodatek?"
@@ -6949,22 +6826,22 @@ msgstr "Ali ima Mozilla pravila glede tega, kaj je sprejemljivo za objavo?"
 
 #, python-format
 msgid ""
-"Yes. Mozilla's <a href=\"%(p_url)s\">Add-on Policy</a> describes what is an acceptable submission. This policy is subject to change without notice. In addition, the Add-on Reviewer Team uses the <a "
-"href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on meets specific guidelines for functionality and security."
+"Yes. Mozilla's <a href=\"%(p_url)s\">Add-on Review Policies</a> describe what is an acceptable submission. This policy is subject to change without notice. In addition, the Add-on Reviewer Team uses"
+" the <a href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on meets specific guidelines for functionality and security."
 msgstr ""
-"Da. Mozillin <a href=\"%(p_url)s\">Pravilnik za dodatke</a> opisuje, kaj je sprejemljivo pošiljanje. Ta pravilnik je predmet sprememb brez obvestila. Poleg tega ekipa urednikov AMO uporablja <a "
-"href=\"%(g_url)s\">Vodnik urednikov za pregledovanje</a> zaradi zagotovitve, da dodatek ustreza določenim smernicam delovanja in varnosti."
+"Da. Mozillin <a href=\"%(p_url)s\">Pravilnik za dodatke</a> opisuje, kaj je sprejemljivo pošiljanje. Ta pravilnik se lahko spremeni brez predhodnega obvestila. Poleg tega ekipa urednikov AMO "
+"uporablja <a href=\"%(g_url)s\">Vodnik za pregledovanje dodatkov</a> zaradi zagotavljanja ustreznosti dodatka s smernicami za delovanje in varnost."
 
-msgid "How do I submit my add-on for review?"
-msgstr "Kako pošljem svoj dodatek v pregled?"
+msgid "How do I submit my add-on?"
+msgstr "Kako pošljem svoj dodatek?"
 
 #, python-format
 msgid ""
-"The Developer Tools dashboard will allow you to upload and submit add-ons to AMO. You must be a registered AMO users before you can submit an add-on. Before submitting your add-on be sure to you "
-"have read the <a href=\"%(url)s\">Add-on Review Guide</a> to ensure that your add-on has met the guidelines used by reviewers."
+"The Developer Tools dashboard will allow you to upload and submit add-ons to AMO. You must be a registered AMO user before you can submit an add-on. Before submitting your add-on be sure to you have"
+" read the <a href=\"%(url)s\">Add-on Review Policies</a> to ensure that your add-on has met our guidelines."
 msgstr ""
-"Nadzorna plošča orodij za razvijalce vam bo omogočala naložiti in poslati dodatke na AMO. Preden lahko pošljete svoj dodatek, morate biti na AMO registriran uporabnik. Preden pošljete dodatek, "
-"preberite <a href=\"%(url)s\">Vodnik za pregled dodatkov</a> in se prepričate, da vaš dodatek ustreza smernicam, po katerih pregledovalci pregledujejo dodatke."
+"Nadzorna plošča orodij za razvijalce vam bo omogočala naložiti in poslati dodatke na AMO. Za pošiljanje dodatka morate biti na AMO registriran uporabnik. Preden pošljete dodatek, preberite <a "
+"href=\"%(url)s\">Vodnik za pregled dodatkov</a> in se prepričate, da vaš dodatek ustreza našim smernicam."
 
 msgid "What operating system do I choose for my add-on?"
 msgstr "Kateri operacijski sistem naj izberem za svoj dodatek?"
@@ -6994,16 +6871,16 @@ msgstr "Ali za uporabo svojega dodatka navedem politiko zasebnosti?"
 msgid "Yes. You can specify a privacy policy when submitting your add-on. You can also add or update a privacy policy via the Developer Tools dashboard after your add-on has been submitted."
 msgstr "Da. Ob pošiljanju dodatka lahko določite politiko zasebnosti. Politiko zasebnosti lahko tudi dodate ali posodobite s nadzorno ploščo orodij za razvijalce potem, ko je vaš dodatek že poslan."
 
-msgid "Why must my add-on be reviewed?"
-msgstr "Zakaj je treba moj dodatek pregledati?"
+msgid "Must my add-on be reviewed?"
+msgstr "Ali je treba moj dodatek pregledati?"
 
 #, python-format
 msgid ""
-"All add-ons submitted, whether new or updated, are reviewed to ensure that Mozilla users have a stable and safe experience. All add-ons submissions are reviewed using the guidelines outlined in the "
-"<a href=\"%(url)s\">Add-on Review Guide</a>."
+"New and updated add-ons may be suject to reviewed to ensure that Mozilla users have a stable and safe experience. The guidelines outlined in the <a href=\"%(url)s\">Add-on Review Guide</a> are used "
+"to review add-on submissions."
 msgstr ""
-"Vsi poslani dodatki, novi in posodobljeni, so pregledani, da Mozillinim uporabnikom zagotovimo stabilno in varno uporabo. Vsa pošiljanja dodatkov so pregledana s smernicami, opisanimi v <a "
-"href=\"%(url)s\">Vodniku za preglede za urednike</a>."
+"Vsi poslani dodatki, novi in posodobljeni, so pregledani, da Mozillinim uporabnikom zagotovimo stabilno in varno uporabo. Vsi poslani dodatki so pregledani s smernicami, opisanimi v <a "
+"href=\"%(url)s\">Vodniku za pregledovanje</a>."
 
 msgid "Who reviews my add-on?"
 msgstr "Kdo bo pregledal moj dodatek?"
@@ -7011,23 +6888,23 @@ msgstr "Kdo bo pregledal moj dodatek?"
 #, python-format
 msgid ""
 "Add-ons are reviewed by the Add-on Reviewers, a group of talented developers that volunteer to help the Mozilla project by reviewing add-ons to ensure a stable and safe experience for Mozilla users."
-" When communicating with reviewer, please be courteous, patient and respectful as they are working hard to ensure that your add-on is set up correctly and follows the guidelines outlined in the <a "
-"href=\"%(url)s\">Add-on Review Guide</a>."
+" When communicating with a reviewer, please be courteous, patient and respectful as they are working hard to ensure that your add-on is set up correctly and follows the guidelines outlined in the <a"
+" href=\"%(url)s\">Add-on Review Guide</a>."
 msgstr ""
-"Dodatke pregledujejo pregledovalci, skupina talentiranih razvijalcev, ki prostovoljno pomagajo v projektu Mozilla s pregledovanjem dodatkov, da uporabnikom zagotovijo stabilno in varno izkušnjo. Ko "
-"komunicirate s pregledovalcem, bodite vljudni, strpni in spoštljivi, saj trdo delajo, da zagotovijo, da je vaš dodatek pravilno narejen in spoštuje smernice, opisane v <a href=\"%(url)s\">vodniku za"
-" pregledovalce</a>."
+"Dodatke pregledujejo pregledovalci, to je skupina talentiranih razvijalcev, ki prostovoljno pomagajo pri projektu Mozilla s pregledovanjem dodatkov, da uporabnikom zagotovijo stabilno in varno "
+"izkušnjo. Ko komunicirate s pregledovalcem, bodite vljudni, strpni in spoštljivi, saj se vsi zelo trudijo za zagotavljanje, da je vaš dodatek pravilno narejen in upošteva smernice, opisane v <a "
+"href=\"%(url)s\">vodniku za pregledovalce</a>."
 
 msgid "What are the guidelines used to review my add-on?"
 msgstr "Kakšne smernice se uporablja pri pregledu mojega dodatka?"
 
 #, python-format
 msgid ""
-"The Add-on Reviewer Team follows the <a href=\"%(url)s\">Add-on Review Guide</a> when testing an add-on for acceptance onto AMO. It is important that add-on developers review this guide to ensure "
-"that common problem areas are addressed prior to submitting their add-on for review. This will greatly assist in expediting the review process."
+"The Add-on Reviewer Team follows the <a href=\"%(url)s\">Add-on Review Guide</a> when testing an add-on. It is important that add-on developers review this guide to ensure that common problem areas "
+"are addressed prior to submitting their add-on. This will greatly assist in avoiding review issues."
 msgstr ""
-"Kadar se preskušajo dodatki za sprejem na AMO, ekipa pregledovalcev sledi smernicam vodnika  <a href=\"%(url)s\">Vodnik urednikov za pregledovanje</a>. Pomembno je, da razvijalci dodatkov pred "
-"pošiljanjem svojih dodatkov za pregled pregledajo ta vodnik, da se izognejo splošnim pogostim pomanjkljivostim. To bo zelo pomagalo pri hitrosti procesa pregledovanja."
+"Ekipa pregledovalcev pri pregledovanju dodatkov sledi smernicam <a href=\"%(url)s\">Vodnika za pregledovanje</a>. Pomembno je, da razvijalci dodatkov pred pošiljanjem svojih dodatkov za pregled "
+"pregledajo ta vodnik, da se izognejo splošnim pogostim pomanjkljivostim. To bo zelo pomagalo pri hitrosti procesa pregledovanja."
 
 msgid "How long will it take for my add-on to be reviewed?"
 msgstr "Kako dolgo bo trajalo, preden bo moj dodatek pregledan?"
@@ -7048,12 +6925,8 @@ msgid "number of problem areas discovered"
 msgstr "število odkritih problematičnih območij"
 
 #, python-format
-msgid ""
-"This is why it's very important to read the <a href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on is setup as expected. It's also a good idea to read the blog post, <a "
-"href=\"%(blog_url)s\">Successfully Getting your Add-on Reviewed</a> which provides excellent insight into ensuring a smooth review of your add-on."
-msgstr ""
-"Zato je zelo pomembno, da preberete <a href=\"%(g_url)s\">Vodnik urednikov za pregledovanje</a>, saj tako lahko zagotovite, da je vaš dodatek ustrezno nastavljen. Koristno je tudi prebrati objavo na"
-" blogu <a href=\"%(blog_url)s\">Successfully Getting your Add-on Reviewed</a>, saj nudi izvrsten vpogled v zagotovitev nemotenega pregleda vašega dodatka."
+msgid "This is why it's very important to read the <a href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on is setup as expected."
+msgstr "Zato je zelo pomembno, da preberete <a href=\"%(g_url)s\">vodnik za pregledovanje dodatkov</a>, da zagotovite, da je vaš dodatek sestavljen, kot je treba."
 
 msgid "How can I see how many times my add-on has been downloaded?"
 msgstr "Kako lahko vidim. kolikokrat se je preneslo moj dodatek?"
@@ -7077,12 +6950,8 @@ msgstr "Posodobitev za svoj dodatek lahko pošljete preko nadzorne plošče orod
 msgid "Does my update need to be reviewed by reviewers?"
 msgstr "Ali morajo mojo posodobitev pregledati?"
 
-msgid ""
-"That depends. If you are simply changing a description of your add-on or updating a \"maxVersion\" to ensure compatibility with a new Mozilla software update, then your add-on does not need to be "
-"reviewed again. If, however, you submit a new updated file, then your add-on update will need to be reviewed by an Add-on Reviewer."
-msgstr ""
-"To je odvisno. Če ste samo spremenili opis dodatka ali posodobili \"maxVersion\" za združljivost z novo različico programa, dodatka ni potrebno ponovno pregledati. Če pa ste naložili novo "
-"posodobljeno datoteko, bo posodobitev vašega dodatka pregledal pregledovalec."
+msgid "Add-on updates may be subject to review just the same as new submissions."
+msgstr "Posodobitve dodatkov so lahko pregledane tako kot nove oddaje."
 
 msgid "How do I reply to a user who has posted a negative review of my add-on?"
 msgstr "Kako odgovoriti uporabniku, ki je objavil negativno mnenje o mojem dodatku?"
@@ -7106,8 +6975,8 @@ msgstr "Založeno poročilo o napaki ali zahteva za podporo"
 msgid "Other (provides a pop-up prompt for information)"
 msgstr "Drugo (nudi spustno okno za informacije)"
 
-msgid "Currently, AMO does not provide a mechanism to directly communicate with a reviewer but this feature is being investigated and considered for a future update."
-msgstr "Trenutno AMO ne nudi mehanizma za neposredno komunikacijo z recenzentom, vendar se o tej temi razmišlja kot o možnosti za eno od bodočih različic."
+msgid "Currently, AMO does not provide a mechanism to directly communicate with a the author of a user review."
+msgstr "Trenutno AMO ne nudi mehanizma za neposredno komunikacijo z avtorjem uporabniške ocene."
 
 msgid "Can I request that a review be removed if the review is negative?"
 msgstr "Ali lahko zahtevam, da se oceno odstrani, če je negativna?"
@@ -7182,14 +7051,14 @@ msgstr "Bodo dodatki delali z mojim spletnim brskalnikom ali aplikacijo?"
 
 #, python-format
 msgid ""
-"Add-ons listed in this gallery only work with Mozilla-based applications, such as <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">Firefox Mobile</a>, <a "
+"Add-ons listed in this gallery only work with Mozilla-based applications, such as <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">Firefox for Android</a>, <a "
 "href=\"%(getseamonkey_url)s\">SeaMonkey</a>, and <a href=\"%(getthunderbird_url)s\">Thunderbird</a>. However, not all add-ons work with each of those applications or every version of those "
-"applications. Each add-on specifies which applications and versions it works with, such as Firefox 2.0 - 3.6.*. For Firefox add-ons, the install buttons will indicate whether the add-on is "
+"applications. Each add-on specifies which applications and versions it works with, such as Firefox 50.0 - 52.*. For Firefox add-ons, the install buttons will indicate whether the add-on is "
 "compatible or not."
 msgstr ""
-"Dodatki, navedeni v tej galeriji, delajo samo s programi Mozille, kot so <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">mobilni Firefox</a>, <a "
-"href=\"%(getseamonkey_url)s\">SeaMonkey</a> in <a href=\"%(getthunderbird_url)s\">Thunderbird</a>. Vendar pa ne delajo vsi dodatki z vsakemu od programov oziroma z vsako različico. Vsak dodatek "
-"predpisuje, za katere programe in različice deluje, na primer za Firefox 2.0-3.6.*. Za dodatke za Firefox bo gumb za namestitev navedel, ali je dodatek združljiv ali ne."
+"Dodatki, navedeni v tej galeriji, delajo samo s programi Mozille, kot so <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">Firefox za Android</a>, <a "
+"href=\"%(getseamonkey_url)s\">SeaMonkey</a> in <a href=\"%(getthunderbird_url)s\">Thunderbird</a>. Vendar pa ne delajo vsi dodatki z vsakem od programov oziroma z vsako različico. Vsak dodatek "
+"predpisuje, za katere programe in različice deluje, na primer za Firefox 50.0-52.*. Pri dodatkih za Firefox bo na gumbu za namestitev navedeno, ali je dodatek združljiv ali ne."
 
 msgid "What are the different types of add-ons?"
 msgstr "Katere različne vrste dodatkov obstajajo?"
@@ -7222,10 +7091,6 @@ msgstr "<strong><a href=\"%(browse_url)s\">Iskalniki</a></strong> predstavljajo 
 msgid "<strong><a href=\"%(browse_url)s\">Dictionaries & Language Packs</a></strong> add support for additional languages to %(app_name)s."
 msgstr "<strong><a href=\"%(browse_url)s\">Slovarji in jezikovni paketi</a></strong> omogočajo podporo za dodatne jezike za %(app_name)s."
 
-#, python-format
-msgid "<strong><a href=\"%(browse_url)s\">Plugins</a></strong> help %(app_name)s display or understand different types of media, such as Adobe Flash or Apple Quicktime."
-msgstr "<strong><a href=\"%(browse_url)s\">Vtičniki</a></strong> pomagajo, da %(app_name)s lahko prikaže ali razume različne vrste medijev, kot sta na primer Adobe Flash ali Apple Quicktime."
-
 msgid "How do I install, manage, or remove an add-on?"
 msgstr "Kako se namešča, upravlja ali odstranjuje dodatke?"
 
@@ -7239,42 +7104,22 @@ msgstr ""
 "dodatkov. Za podrobnejša navodila preberite <a href=\"%(extension_url)s\">ta članek za razširitve</a> ali pa <a href=\"%(theme_url)s\">tegale o temah in celotnih temah</a>. Če imate težave pri "
 "nameščanju dodatkov, glejte <a href=\"%(troubleshooting_url)s\">Odpravljanje težav pri razširitvah in temah</a>."
 
-msgid "How do I install add-ons without restarting Firefox?"
-msgstr "Kako namestiti dodatke brez vnovičnega zagona Firefoxa?"
-
-#, python-format
-msgid ""
-"In Firefox, add-ons marked with \"No restart required\" can be installed without restarting. These add-ons have been created using the <a href=\"%(sdk_url)s\">Add-on SDK</a> or <a "
-"href=\"%(bootstrap_url)s\">bootstrapping</a>. Other add-ons will still require a restart before you can use them."
-msgstr ""
-"V Firefoxu je mogoče dodatke z oznako \"ponoven zagon ni potreben\" namestiti brez ponovnega zagona. Ti dodatki so bili razviti s pomočjo <a href=\"%(sdk_url)s\">SDK-ja  za dodatke</a> ali <a "
-"href=\"%(bootstrap_url)s\">začetnega nalaganja</a>. Drugi dodatki bodo še vedno zahtevali ponoven zagon, preden jih lahko uporabljate."
-
 msgid "How do I keep add-ons up-to-date?"
 msgstr "Kako lahko poskrbim, da so dodatki na tekočem?"
 
-#, python-format
-msgid ""
-"Add-ons, unlike plugins, are automatically checked for updates once every day. In Firefox, updates are automatically installed by default. Versions of Firefox prior to 4 (and other applications) "
-"will alert you that updates to your add-ons are available. <a href=\"%(plugin_url)s\">Plugins</a> are not currently automatically checked for updates, so be sure to regularly visit the <a "
-"href=\"%(plugincheck_url)s\">Plugin Check</a> page to stay up-to-date."
-msgstr ""
-"Posodobitve za dodatke se za razliko od vtičnikov samodejno preverja enkrat na dan. Firefox ima privzeto nastavitev, da se posodobitve samodejno namešča. Različice Firefoxa pred 4 (in drugih "
-"aplikacij) vas bodo opozorile, da so za vaše dodatke na voljo posodobitve. Posodobitev <a href=\"%(plugin_url)s\">vtičnikov</a> se zaenkrat ne preverja samodejno, zato priporočamo, da redno "
-"obiskujete stran <a href=\"%(plugincheck_url)s\">Preverjanje vtičnikov</a> in tako ostanete na tekočem."
+msgid "Add-ons are automatically checked for updates once every day. In Firefox, updates are automatically installed by default. "
+msgstr "Posodobitve dodatkov se preverijo enkrat na dan. V Firefoxu se posodobitve privzeto samodejno namestijo. "
 
 msgid "Are add-ons safe to install?"
 msgstr "Ali je dodatke varno namestiti?"
 
 #, python-format
 msgid ""
-"Unless clearly marked otherwise, add-ons available from this gallery have been checked and approved by Mozilla's team of editors and are safe to install. We recommend that you only install approved "
-"add-ons. If you wish to install unapproved add-ons or add-ons from third-party websites, use caution as these add-ons may harm your computer or violate your privacy. <a "
-"href=\"%(learnmore_url)s\">Learn more about our approval process</a>"
+"Use caution when installing add-ons, as they may harm your computer or violate your privacy. Add-ons available from this site may be subject to review by Mozilla's team of reviewers, and user "
+"feedback is closely monitored, so they should generally be safe to install. <a href=\"%(learnmore_url)s\">Learn more about our review process</a>"
 msgstr ""
-"Razen če ni jasno označeno drugače, je dodatke, ki so na voljo v tej galeriji, pregledala in odobrila skupina urednikov Mozille, tako da so dodatki varni za namestitev. Priporočamo vam, da nameščate"
-" samo odobrene dodatke. Če želite namestiti neodobrene dodatke ali dodatke s spletnih strani tretjih oseb, bodite previdni, saj ti dodatki lahko škodijo vašemu računalniku ali zlorabijo vašo "
-"zasebnost. <a href=\"%(learnmore_url)s\">Več o našem postopku odobritve</a>"
+"Pri nameščanju dodatkov bodite previdni, saj lahko poškodujejo vaš računalnik ali kršijo vašo zasebnost. Dodatke, ki so na voljo na tej strani, lahko pregleda Mozillina ekipa pregledovalcev, skrbno "
+"pa tudi spremljamo povratne informacije uporabnikov, zato bi načeloma morali biti varni za namestitev. <a href=\"%(learnmore_url)s\">Več o procesu pregledovanja</a>"
 
 #, python-format
 msgid "Can add-ons make %(app_name)s slower?"
@@ -7336,33 +7181,32 @@ msgstr "Kaj, če ne najdem tega, kar iščem?"
 #, python-format
 msgid ""
 "With thousands of add-ons available, there's something for everyone. But if you're looking for a particular add-on and can't find it, you might try searching on other sites or posting about it in "
-"our <a href=\"%(forum_url)s\">Add-ons </a>forum."
+"our <a href=\"%(forum_url)s\">Add-ons forum</a>."
 msgstr ""
-"S tisoči objavljenih dodatkov je tu na voljo nekaj za vsakogar. Vendar če iščete določen dodatek in ga ne morete najti, ga lahko poiščete na drugih straneh ali o njem pišete v našem <a "
-"href=\"%(forum_url)s\">Forumu za dodatke</a>."
+"Med tisoči objavljenih dodatkov se najde kaj za vsakogar. Če pa iščete določen dodatek in ga ne morete najti, ga lahko poiščete na drugih straneh ali o njem pišete v našem <a "
+"href=\"%(forum_url)s\">forumu za dodatke</a>."
 
 msgid "What does it mean if an add-on is \"experimental\"?"
 msgstr "Kaj pomeni, da je dodatek \"poskusen\"?"
 
 #, python-format
 msgid ""
-"Experimental add-ons have been marked by their developers as not suitable for a wide audience.  They have been checked by our editors to make sure they don't have security problems, but they may "
-"still have bugs or not work properly. Use caution when installing experimental add-ons and uninstall the add-on immediately if you notice problems. <a href=\"%(url)s\">Learn more about our review "
-"process</a></dd>"
+"Experimental add-ons have been marked by their developers as not suitable for a wide audience.  They may have bugs or not work properly. Use caution when installing experimental add-ons and "
+"uninstall the add-on immediately if you notice problems. <a href=\"%(url)s\">Learn more about our review process</a></dd>"
 msgstr ""
-"Poskusne dodatke so njihovi razvijalci označili kot nepripravljene za širšo javnost.  Naši uredniki so jih pregledali in se prepričali, da ne predstavljajo varnostnih tveganj, vendar imajo lahko še "
-"vedno napake ali ne delujejo pravilno. Bodite previdni pri nameščanju poskusnih dodatkov in jih takoj odstranite, če naletite na težave. <a href=\"%(url)s\">Več o našem postopku pregledov</a></dd>"
+"Poskusne dodatke so njihovi razvijalci označili kot nepripravljene za širšo javnost. Še vedno imajo lahko napake ali ne delujejo pravilno. Bodite previdni pri nameščanju poskusnih dodatkov in jih "
+"takoj odstranite, če naletite na težave. <a href=\"%(url)s\">Več o našem postopku pregledov</a></dd>"
 
 msgid "What does it mean if an add-on is \"not reviewed\"?"
 msgstr "Kaj pomeni, če dodatek \"ni pregledan\"?"
 
 #, python-format
 msgid ""
-"While all add-ons publicly available in our gallery are reviewed by an editor, you may receive a direct link to an add-on that hasn't yet been reviewed. Use caution when installing these add-ons, as"
-" they could harm your computer or violate your privacy. We recommend that you only install reviewed add-ons. <a href=\"%(url)s\">Learn more about our review process</a></dd>"
+"If you receive a direct link to an add-on that says it hasn't yet been reviewed, it means it's currently awaiting review by Mozilla. Use caution when installing these add-ons, as they could harm "
+"your computer or violate your privacy. <a href=\"%(url)s\">Learn more about our review process</a></dd>"
 msgstr ""
-"Vse dodatke, ki so na voljo javnosti v naši galeriji, je pregledal urednik, lahko pa da ste prejeli neposredno povezavo na dodatek, ki še ni pregledan. Bodite previdni pri namestitvi teh dodatkov, "
-"saj lahko škodujejo vašemu računalniku ali zlorabijo vašo zasebnost. Priporočamo vam, da nameščate samo dodatke, ki so pregledani. <a href=\"%(url)s\">Več o našem postopku pregledov</a></dd>"
+"Če ste prejeli neposredno povezavo na dodatek, ki še ni pregledan, to pomeni, da trenutno čaka na Mozillin pregled. Bodite previdni pri namestitvi teh dodatkov, saj lahko škodujejo vašemu "
+"računalniku ali zlorabijo vašo zasebnost. <a href=\"%(url)s\">Več o našem postopku pregledov</a></dd>"
 
 msgid "How much do add-ons cost to purchase?"
 msgstr "Koliko stanejo dodatki, če jih hočem kupiti?"
@@ -7394,16 +7238,10 @@ msgstr ""
 
 msgid ""
 "Please note that when you install an add-on from the \"Beta Version\" section of an add-on's listing, you will continue to receive updates for that add-on as they become available. Like the initial "
-"version you installed, all beta releases are unreviewed by Mozilla and may harm your computer."
+"version you installed, all beta releases are not reviewed by Mozilla and may harm your computer."
 msgstr ""
-"Vedite prosim, da boste v primeru, da dodatek nameščate iz oddelka \"Beta Različica\" v objavah, še dalje dobivali posodobitve za ta dodatek, ko bodo na voljo. Niti prvotne različice, ki ste jo "
-"namestili, in tudi ne beta različic Mozilla ni pregledala, tako da lahko škodijo vašemu računalniku."
-
-msgid "What does it mean when an add-on is flagged as slow?"
-msgstr "Kaj pomeni, če je dodatek označen kot počasen?"
-
-msgid "Most add-ons load code and resources at the same time Firefox is starting up. In most cases the impact in start-up time is minimal, but some add-ons can cause a noticeable slowdown."
-msgstr "Večina dodatkov naloži svojo kodo in vire med zagonom Firefoxa. Vpliv na čas zagona je večinoma zanemarljiv, vendar lahko nekateri dodatki zagon opazno upočasnijo."
+"Zavedajte se, da boste v primeru, da dodatek namestite iz oddelka \"Beta različica\", še dalje dobivali posodobitve za ta dodatek, ko bodo na voljo. Tako kot prvotne različice, ki ste jo namestili, "
+"tudi beta različic Mozilla ni pregledala in lahko škodijo vašemu računalniku."
 
 msgid "How do I report an inappropriate or spam user review?"
 msgstr "Kako lahko prijavim neprimeren ali zasmeten uporabniški pregled?"
@@ -7464,10 +7302,10 @@ msgstr "Kaj so dodatki za mobilne naprave?"
 
 #, python-format
 msgid ""
-"Mobile add-ons work with <a href=\"%(mobile_url)s\">Firefox for Mobile</a> and add or modify functionality just like desktop add-ons. You can find add-ons that work with Firefox for Mobile in our <a"
-" href=\"%(gallery_url)s\">gallery</a>."
+"Mobile add-ons work with <a href=\"%(mobile_url)s\">Firefox for Android</a> and add or modify functionality just like desktop add-ons. You can find add-ons that work with Firefox for Android in our "
+"<a href=\"%(gallery_url)s\">gallery</a>."
 msgstr ""
-"Mobilni dodatki so namenjeni <a href=\"%(mobile_url)s\">mobilnemu Firefoxu</a> in, tako kot namizni dodatki, dodajajo ali spreminjajo funkcionalnost. Dodatke, ki delujejo z mobilnim Firefoxom, "
+"Mobilni dodatki so namenjeni <a href=\"%(mobile_url)s\">Firefoxu za Android</a> in, tako kot namizni dodatki, dodajajo ali spreminjajo funkcionalnost. Dodatke, ki delujejo v Firefoxu za Android, "
 "najdete v naši <a href=\"%(gallery_url)s\">galeriji</a>."
 
 msgid "Developer Topics"
@@ -8375,7 +8213,7 @@ msgid "Welcome to {0} Add-ons."
 msgstr "Dobrodošli pri dodatkih za {0}."
 
 msgid "Choose from thousands of extra features and styles to make Firefox your own."
-msgstr "Izberite med več tisoč dodatnih funkcij in slogov za Firefox, kar vam najbolj odgovarja."
+msgstr "Izbirajte med tisoči dodatnih funkcij in slogov ter si prikrojite Firefox po svoji meri."
 
 #, python-format
 msgid "Add extra features and styles to make %(app)s your own."
@@ -8485,8 +8323,8 @@ msgstr "moj na osnovi sdk zgrajen dodatek je uspešno nadgrajen"
 msgid "someone writes a review of my add-on"
 msgstr "nekdo oceni moj dodatek"
 
-msgid "add-on contests or events are announced"
-msgstr "objavlja se tekmovanja ali prireditve za dodatke"
+msgid "stay up-to-date with news and events relevant to add-on developers"
+msgstr "ostanite na tekočem z novicami in dogodki, zanimivimi za razvijalce dodatkov"
 
 msgid "my add-on's compatibility cannot be upgraded"
 msgstr "združljivosti za moj dodatek ni mogoče nadgraditi"
@@ -8796,9 +8634,6 @@ msgstr "Objavljeno {0}"
 #, python-format
 msgid "Source code released under <a href=\"%(url)s\">%(name)s</a>"
 msgstr "Izvorna koda je objavljena pod <a href=\"%(url)s\">%(name)s</a>"
-
-msgid "View the source"
-msgstr "Ogled vira"
 
 #. {0} is an add-on name.
 # {0} is the add-on name

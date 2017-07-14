@@ -9,10 +9,10 @@
   <p>
     {{ _('View statistics for user') }}
     <select id="select_user" data-url="{{ url('editors.performance') }}">
-      <option value="" selected="selected">{{ current_user.display_name }}</option>
+      <option value="" selected="selected">{{ current_user.name }}</option>
       <option value="">-----------------------</option>
       {% for editor in editors %}
-        <option value="{{ editor.id }}">{{ editor.display_name }}</option>
+        <option value="{{ editor.id }}">{{ editor.name }}</option>
       {% endfor %}
     </select>
   </p>
@@ -27,7 +27,7 @@
             {% if is_user: %}
               {{ _('Your Reviews') }}
             {% else: %}
-              {{ _('By {user_name}')|f(user_name=current_user.display_name) }}
+              {{ _('By {user_name}')|format_html(user_name=current_user.display_name) }}
             {% endif %}
           </th>
           <th>{{ _('Total Reviews') }}</th>

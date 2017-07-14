@@ -1,10 +1,10 @@
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-05-17 11:23+0000\n"
-"PO-Revision-Date: 2017-05-21 00:03+0000\n"
+"POT-Creation-Date: 2017-06-15 03:41+0000\n"
+"PO-Revision-Date: 2017-05-24 01:31+0000\n"
 "Last-Translator: Marco Aurélio <fxhelp@yahoo.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: pt_BR\n"
@@ -21,7 +21,7 @@ msgstr[0] "{0} estrela"
 msgstr[1] "{0} estrelas"
 
 msgid "There was a problem contacting the server."
-msgstr "Houve um problema ao contatar o servidor."
+msgstr "Houve um problema ao entrar em contato com o servidor."
 
 msgid "Select a file..."
 msgstr "Selecione um arquivo..."
@@ -96,7 +96,7 @@ msgid "Your submission will be automatically signed."
 msgstr "Sua submissão será automaticamente assinada."
 
 msgid "WebExtension upgrade"
-msgstr "Atualizar WebExtension"
+msgstr "Atualização WebExtension"
 
 msgid "We allow and encourage an upgrade but you cannot reverse this process. Once your users have the WebExtension installed, they will not be able to install a legacy add-on."
 msgstr ""
@@ -268,7 +268,7 @@ msgid "Add-ons Updated"
 msgstr "Extensões atualizadas"
 
 msgid "Reviews Written"
-msgstr "Avaliações escritas"
+msgstr "Análises escritas"
 
 msgid "User Signups"
 msgstr "Usuários inscritos"
@@ -553,7 +553,7 @@ msgstr "Extensões atualizadas de {0} a {1}"
 
 #. L10n: {0} is an integer.
 msgid "Reviews Written, last {0} days"
-msgstr "Avaliações escritas nos últimos {0} dias"
+msgstr "Analises escritas, últimos {0} dias"
 
 #. L10n: both {0} and {1} are dates in YYYY-MM-DD format.
 msgid "Reviews Written from {0} to {1}"
@@ -762,8 +762,8 @@ msgstr[1] "{files} arquivos"
 
 msgid "{reviews} user review"
 msgid_plural "{reviews} user reviews"
-msgstr[0] "{reviews} avaliação de usuário"
-msgstr[1] "{reviews} avaliações de usuários"
+msgstr[0] "{reviews} análise de usuário"
+msgstr[1] "{reviews} análises de usuários"
 
 msgid "Learn more"
 msgstr "Saiba mais"
@@ -827,14 +827,6 @@ msgstr "Este recurso foi temporariamente desabilitado para realizamos a manuten�
 
 msgid "Remove this localization"
 msgstr "Remover essa localização"
-
-msgid "Password strength:"
-msgstr "Qualidade da senha:"
-
-msgid "At least {0} character left."
-msgid_plural "At least {0} characters left."
-msgstr[0] "Pelo menos {0} caractere restante."
-msgstr[1] "Pelo menos {0} caracteres restantes."
 
 msgid "Requested Info"
 msgstr "Informações solicitadas"

@@ -4,6 +4,7 @@ from mock import Mock, patch
 
 from olympia.amo.tests import TestCase
 from olympia.amo import monitors
+import responses
 
 
 class TestMonitor(TestCase):
@@ -38,8 +39,7 @@ class TestMonitor(TestCase):
     def test_libraries(self):
         status, libraries_result = monitors.libraries()
         assert status == ''
-        assert libraries_result == [('PIL+JPEG', True, 'Got it!'),
-                                    ('M2Crypto', True, 'Got it!')]
+        assert libraries_result == [('PIL+JPEG', True, 'Got it!')]
 
     def test_elastic(self):
         status, elastic_result = monitors.elastic()
@@ -85,3 +85,14 @@ class TestMonitor(TestCase):
             status, redis_results = monitors.redis()
         assert status == ''
         assert redis_results == {'master': mocked_redis_info}
+
+    @override_settings(SIGNING_SERVER='http://localhost')
+    @responses.activate
+    def test_signer(self):
+        responses.add(
+            responses.GET,
+            'http://localhost/status',
+            status=200
+        )
+        status, signer_result = monitors.signer()
+        assert status == ''

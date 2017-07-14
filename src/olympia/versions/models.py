@@ -6,6 +6,7 @@ import django.dispatch
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import default_storage as storage
 from django.db import models
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext
 
 import caching.base
@@ -18,7 +19,7 @@ from olympia.amo.models import ManagerBase, ModelBase, OnChangeMixin
 from olympia.amo.utils import sorted_groupby, utc_millesecs_from_epoch
 from olympia.amo.decorators import use_master
 from olympia.amo.urlresolvers import reverse
-from olympia.amo.helpers import user_media_path, id_to_path
+from olympia.amo.templatetags.jinja_helpers import user_media_path, id_to_path
 from olympia.applications.models import AppVersion
 from olympia.files import utils
 from olympia.files.models import File, cleanup_file
@@ -307,20 +308,20 @@ class Version(OnChangeMixin, ModelBase):
 
         return None
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def all_activity(self):
         from olympia.activity.models import VersionLog  # yucky
         al = (VersionLog.objects.filter(version=self.id).order_by('created')
               .select_related('activity_log', 'version').no_cache())
         return al
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def compatible_apps(self):
         """Get a mapping of {APP: ApplicationVersion}."""
         avs = self.apps.select_related('version')
         return self._compat_map(avs)
 
-    @amo.cached_property
+    @cached_property
     def compatible_apps_ordered(self):
         apps = self.compatible_apps.items()
         return sorted(apps, key=lambda v: v[0].short)
@@ -340,7 +341,7 @@ class Version(OnChangeMixin, ModelBase):
             all_plats.update(amo.MOBILE_PLATFORMS)
         return all_plats
 
-    @amo.cached_property
+    @cached_property
     def is_compatible(self):
         """Returns tuple of compatibility and reasons why if not.
 
@@ -395,12 +396,12 @@ class Version(OnChangeMixin, ModelBase):
                     app_versions.extend([(a.min, a.max) for a in range.apps])
         return app_versions
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def all_files(self):
         """Shortcut for list(self.files.all()).  Heavily cached."""
         return list(self.files.all())
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def supported_platforms(self):
         """Get a list of supported platform names."""
         return list(set(amo.PLATFORMS[f.platform] for f in self.all_files))
@@ -447,8 +448,8 @@ class Version(OnChangeMixin, ModelBase):
             return False
 
     @property
-    def requires_restart(self):
-        return any(file_.requires_restart for file_ in self.all_files)
+    def is_restart_required(self):
+        return any(file_.is_restart_required for file_ in self.all_files)
 
     @property
     def is_webextension(self):
@@ -602,8 +603,8 @@ class Version(OnChangeMixin, ModelBase):
         """Return whether or not this version was auto-approved."""
         from olympia.editors.models import AutoApprovalSummary
         try:
-            return (self.is_public() and
-                    self.autoapprovalsummary.verdict == amo.AUTO_APPROVED)
+            return self.is_public() and AutoApprovalSummary.objects.filter(
+                version=self).get().verdict == amo.AUTO_APPROVED
         except AutoApprovalSummary.DoesNotExist:
             pass
         return False

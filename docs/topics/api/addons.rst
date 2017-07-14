@@ -42,6 +42,7 @@ This endpoint allows you to search through public add-ons.
     :query string q: The search query.
     :query string app: Filter by :ref:`add-on application <addon-detail-application>` availability.
     :query string appversion: Filter by application version compatibility. Pass the full version as a string, e.g. ``46.0``. Only valid when the ``app`` parameter is also present.
+    :query string author: Filter by exact author username.
     :query string category: Filter by :ref:`category slug <category-list>`. ``app`` and ``type`` parameters need to be set, otherwise this parameter is ignored.
     :query string lang: Activate translations in the specific language for that query. (See :ref:`translated fields <api-overview-translations>`)
     :query int page: 1-based page number. Defaults to 1.
@@ -107,6 +108,7 @@ This endpoint allows you to fetch a specific add-on by id, slug or guid.
     :>json int authors[].id: The id for an author.
     :>json string authors[].name: The name for an author.
     :>json string authors[].url: The link to the profile page for an author.
+    :>json string authors[].picture_url: URL to a photo of the user, or `/static/img/anon_user.png` if not set.  For performance reasons this field is omitted from search results.
     :>json int average_daily_users: The average number of users for the add-on per day.
     :>json object categories: Object holding the categories the add-on belongs to.
     :>json array categories[app_name]: Array holding the :ref:`category slugs <category-list>` the add-on belongs to for a given :ref:`add-on application <addon-detail-application>`. (Combine with the add-on ``type`` to determine the name of the category).
@@ -222,6 +224,13 @@ This endpoint allows you to fetch a specific add-on by id, slug or guid.
         dictionary  Dictionary
     ==============  ==========================================================
 
+
+-----------------------------
+Add-on and Version Submission
+-----------------------------
+
+See :ref:`Uploading a version <upload-version>`.
+
 -------------
 Versions List
 -------------
@@ -290,6 +299,7 @@ This endpoint allows you to fetch a single version belonging to a specific add-o
     :>json string files[].hash: The hash for a file.
     :>json string files[].platform: The :ref:`platform <addon-detail-platform>` for a file.
     :>json int files[].id: The size for a file, in bytes.
+    :>json boolean files[].is_restart_required: Whether the file requires a browser restart to work once installed or not.
     :>json boolean files[].is_webextension: Whether the file is a WebExtension or not.
     :>json int files[].status: The :ref:`status <addon-detail-status>` for a file.
     :>json string files[].url: The (absolute) URL to download a file. An optional ``src`` query parameter can be added to indicate the source page (See :ref:`download sources <download-sources>`).

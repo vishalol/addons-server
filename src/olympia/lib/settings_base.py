@@ -55,10 +55,6 @@ SILENCED_SYSTEM_CHECKS = (
     # Recommendation to use OneToOneField instead of ForeignKey(unique=True)
     # but our translations are the way they are...
     'fields.W342',
-
-    # TEMPLATE_DIRS is required by jingo, remove this line here once we
-    # get rid of jingo
-    '1_8.W001',
 )
 
 # LESS CSS OPTIONS (Debug only).
@@ -292,42 +288,41 @@ SUPPORTED_NONLOCALES = (
 SECRET_KEY = 'this-is-a-dummy-key-and-its-overridden-for-prod-servers'
 
 # Templates
-
-# We don't want jingo's template loaded to pick up templates for third party
-# apps that don't use Jinja2. The Following is a list of prefixes for jingo to
-# ignore.
-JINGO_EXCLUDE_APPS = (
-    'django_extensions',
-    'admin',
-    'rest_framework',
-    'waffle',
-)
-
-JINGO_EXCLUDE_PATHS = (
-    'users/email',
-    'reviews/emails',
-    'editors/emails',
-    'amo/emails',
-    'devhub/email/revoked-key-email.ltxt',
-    'devhub/email/new-key-email.ltxt',
+JINJA_EXCLUDE_TEMPLATE_PATHS = (
+    r'^admin\/',
+    r'^users\/email',
+    r'^reviews\/emails',
+    r'^editors\/emails',
+    r'^amo\/emails',
+    r'^devhub\/email\/revoked-key-email.ltxt',
+    r'^devhub\/email\/new-key-email.ltxt',
 
     # Django specific templates
-    'registration/password_reset_subject.txt'
+    r'^registration\/password_reset_subject.txt'
 )
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'BACKEND': 'django_jinja.backend.Jinja2',
+        'NAME': 'jinja2',
+        'APP_DIRS': True,
         'DIRS': (
             path('media', 'docs'),
             path('src/olympia/templates'),
         ),
         'OPTIONS': {
+            # http://jinja.pocoo.org/docs/dev/extensions/#newstyle-gettext
+            'newstyle_gettext': True,
+            # Match our regular .html and .txt file endings except
+            # for the admin and a handful of other paths
+            'match_extension': None,
+            'match_regex': r'^(?!({paths})).*'.format(
+                paths='|'.join(JINJA_EXCLUDE_TEMPLATE_PATHS)),
             'context_processors': (
                 'django.contrib.auth.context_processors.auth',
-                'django.core.context_processors.debug',
-                'django.core.context_processors.media',
-                'django.core.context_processors.request',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.media',
+                'django.template.context_processors.request',
                 'session_csrf.context_processor',
 
                 'django.contrib.messages.context_processors.messages',
@@ -336,48 +331,45 @@ TEMPLATES = [
                 'olympia.amo.context_processors.i18n',
                 'olympia.amo.context_processors.global_settings',
                 'olympia.amo.context_processors.static_url',
-                'jingo_minify.helpers.build_ids',
+                'olympia.lib.jingo_minify_helpers.build_ids',
             ),
-            'loaders': (
-                'olympia.lib.template_loader.Loader',
-                'django.template.loaders.filesystem.Loader',
-                'django.template.loaders.app_directories.Loader',
-            )
+            'extensions': (
+                'jinja2.ext.autoescape',
+                'jinja2.ext.do',
+                'jinja2.ext.loopcontrols',
+                'jinja2.ext.with_',
+                'django_jinja.builtins.extensions.CsrfExtension',
+                'django_jinja.builtins.extensions.DjangoFiltersExtension',
+                'django_jinja.builtins.extensions.StaticFilesExtension',
+                'django_jinja.builtins.extensions.TimezoneExtension',
+                'django_jinja.builtins.extensions.UrlsExtension',
+                'olympia.amo.ext.cache',
+                'puente.ext.i18n',
+                'waffle.jinja.WaffleExtension',
+            ),
+            'finalize': lambda x: x if x is not None else '',
+            'translation_engine': 'django.utils.translation',
+            'autoescape': True,
+            'trim_blocks': True,
         }
-    }
+    },
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': (
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.media',
+                'django.template.context_processors.request',
+                'session_csrf.context_processor',
+
+                'django.contrib.messages.context_processors.messages',
+            ),
+        }
+    },
 ]
-
-# jingo still looks at TEMPLATE_DIRS
-TEMPLATE_DIRS = TEMPLATES[0]['DIRS']
-
-
-def JINJA_CONFIG():
-    import jinja2
-    from django.conf import settings
-    from django.core.cache import cache
-    config = {
-        'extensions': [
-            'olympia.amo.ext.cache',
-            'puente.ext.i18n',
-            'waffle.jinja.WaffleExtension',
-            'jinja2.ext.do',
-            'jinja2.ext.with_',
-            'jinja2.ext.loopcontrols'
-        ],
-        'finalize': lambda x: x if x is not None else '',
-        'autoescape': True,
-    }
-
-    if False and not settings.DEBUG:
-        # We're passing the _cache object directly to jinja because
-        # Django can't store binary directly; it enforces unicode on it.
-        # Details: http://jinja.pocoo.org/2/documentation/api#bytecode-cache
-        # and in the errors you get when you try it the other way.
-        bc = jinja2.MemcachedBytecodeCache(cache._cache,
-                                           "%sj2:" % settings.CACHE_PREFIX)
-        config['cache_size'] = -1  # Never clear the cache
-        config['bytecode_cache'] = bc
-    return config
 
 
 X_FRAME_OPTIONS = 'DENY'
@@ -471,6 +463,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'waffle',
     'jingo_minify',
+    'django_jinja',
     'puente',
 
     # Django contrib apps
@@ -597,7 +590,7 @@ MINIFY_BUNDLES = {
             'css/impala/tooltips.less',
             'css/impala/search.less',
             'css/impala/suggestions.less',
-            'css/impala/jquery.minicolors.css',
+            'css/node_lib/jquery.minicolors.css',
             'css/impala/personas.less',
             'css/impala/login.less',
             'css/impala/dictionaries.less',
@@ -661,42 +654,54 @@ MINIFY_BUNDLES = {
             'css/zamboni/admin-django.css',
             'css/zamboni/admin-mozilla.css',
             'css/zamboni/admin_features.css',
-            # Datepicker styles and jQuery UI core.
-            'css/zamboni/jquery-ui/custom-1.7.2.css',
         ),
     },
     'js': {
         # JS files common to the entire site (pre-impala).
         'common': (
-            'js/lib/raven.min.js',
+            'js/node_lib/raven.js',
             'js/common/raven-config.js',
-            'js/lib/underscore.js',
+            'js/node_lib/underscore.js',
             'js/zamboni/browser.js',
             'js/amo2009/addons.js',
             'js/zamboni/init.js',
             'js/impala/capabilities.js',
             'js/lib/format.js',
-            'js/lib/jquery.cookie.js',
+            'js/node_lib/jquery.cookie.js',
             'js/zamboni/storage.js',
             'js/zamboni/buttons.js',
             'js/zamboni/tabs.js',
             'js/common/keys.js',
 
             # jQuery UI
-            'js/lib/jquery-ui/core.js',
-            'js/lib/jquery-ui/position.js',
-            'js/lib/jquery-ui/widget.js',
-            'js/lib/jquery-ui/menu.js',
-            'js/lib/jquery-ui/mouse.js',
-            'js/lib/jquery-ui/autocomplete.js',
-            'js/lib/jquery-ui/datepicker.js',
-            'js/lib/jquery-ui/sortable.js',
+            'js/node_lib/ui/version.js',
+            'js/node_lib/ui/data.js',
+            'js/node_lib/ui/disable-selection.js',
+            'js/node_lib/ui/ie.js',
+            'js/node_lib/ui/keycode.js',
+            'js/node_lib/ui/escape-selector.js',
+            'js/node_lib/ui/labels.js',
+            'js/node_lib/ui/jquery-1-7.js',
+            'js/node_lib/ui/plugin.js',
+            'js/node_lib/ui/safe-active-element.js',
+            'js/node_lib/ui/safe-blur.js',
+            'js/node_lib/ui/scroll-parent.js',
+            'js/node_lib/ui/focusable.js',
+            'js/node_lib/ui/tabbable.js',
+            'js/node_lib/ui/unique-id.js',
+            'js/node_lib/ui/position.js',
+            'js/node_lib/ui/widget.js',
+            'js/node_lib/ui/menu.js',
+            'js/node_lib/ui/mouse.js',
+            'js/node_lib/ui/autocomplete.js',
+            'js/node_lib/ui/datepicker.js',
+            'js/node_lib/ui/sortable.js',
 
             'js/zamboni/helpers.js',
             'js/zamboni/global.js',
             'js/amo2009/global.js',
             'js/common/ratingwidget.js',
-            'js/lib/jquery-ui/jqModal.js',
+            'js/node_lib/jqModal.js',
             'js/zamboni/l10n.js',
             'js/zamboni/debouncer.js',
 
@@ -705,7 +710,7 @@ MINIFY_BUNDLES = {
             'js/zamboni/homepage.js',
 
             # Add-ons details page
-            'js/lib/jquery-ui/ui.lightbox.js',
+            'js/lib/ui.lightbox.js',
             'js/zamboni/contributions.js',
             'js/zamboni/addon_details.js',
             'js/impala/abuse.js',
@@ -726,9 +731,6 @@ MINIFY_BUNDLES = {
             # Users
             'js/zamboni/users.js',
 
-            # Password length and strength
-            'js/zamboni/password-strength.js',
-
             # Search suggestions
             'js/impala/forms.js',
             'js/impala/ajaxcache.js',
@@ -738,39 +740,56 @@ MINIFY_BUNDLES = {
 
         # Impala and Legacy: Things to be loaded at the top of the page
         'preload': (
-            'js/lib/jquery-1.12.0.js',
-            'js/lib/jquery.browser.js',
+            'js/node_lib/jquery.js',
+            'js/node_lib/jquery.browser.js',
             'js/impala/preloaded.js',
             'js/zamboni/analytics.js',
         ),
         # Impala: Things to be loaded at the bottom
         'impala': (
             'js/lib/ngettext-overload.js',
-            'js/lib/raven.min.js',
+            'js/node_lib/raven.js',
             'js/common/raven-config.js',
-            'js/lib/underscore.js',
+            'js/node_lib/underscore.js',
             'js/impala/carousel.js',
             'js/zamboni/browser.js',
             'js/amo2009/addons.js',
             'js/zamboni/init.js',
             'js/impala/capabilities.js',
             'js/lib/format.js',
-            'js/lib/jquery.cookie.js',
+            'js/node_lib/jquery.cookie.js',
             'js/zamboni/storage.js',
             'js/zamboni/buttons.js',
-            'js/lib/jquery.pjax.js',
+            'js/node_lib/jquery.pjax.js',
+            # jquery.pjax.js is missing a semicolon at the end which breaks
+            # our wonderful minification process... so add one.
+            'js/lib/semicolon.js',  # It's just a semicolon!
             'js/impala/footer.js',
             'js/common/keys.js',
 
             # jQuery UI
-            'js/lib/jquery-ui/core.js',
-            'js/lib/jquery-ui/position.js',
-            'js/lib/jquery-ui/widget.js',
-            'js/lib/jquery-ui/mouse.js',
-            'js/lib/jquery-ui/menu.js',
-            'js/lib/jquery-ui/autocomplete.js',
-            'js/lib/jquery-ui/datepicker.js',
-            'js/lib/jquery-ui/sortable.js',
+            'js/node_lib/ui/version.js',
+            'js/node_lib/ui/data.js',
+            'js/node_lib/ui/disable-selection.js',
+            'js/node_lib/ui/ie.js',
+            'js/node_lib/ui/keycode.js',
+            'js/node_lib/ui/escape-selector.js',
+            'js/node_lib/ui/labels.js',
+            'js/node_lib/ui/jquery-1-7.js',
+            'js/node_lib/ui/plugin.js',
+            'js/node_lib/ui/safe-active-element.js',
+            'js/node_lib/ui/safe-blur.js',
+            'js/node_lib/ui/scroll-parent.js',
+            'js/node_lib/ui/focusable.js',
+            'js/node_lib/ui/tabbable.js',
+            'js/node_lib/ui/unique-id.js',
+            'js/node_lib/ui/position.js',
+            'js/node_lib/ui/widget.js',
+            'js/node_lib/ui/mouse.js',
+            'js/node_lib/ui/menu.js',
+            'js/node_lib/ui/autocomplete.js',
+            'js/node_lib/ui/datepicker.js',
+            'js/node_lib/ui/sortable.js',
 
             'js/lib/truncate.js',
             'js/zamboni/truncation.js',
@@ -779,7 +798,7 @@ MINIFY_BUNDLES = {
             'js/zamboni/global.js',
             'js/impala/global.js',
             'js/common/ratingwidget.js',
-            'js/lib/jquery-ui/jqModal.js',
+            'js/node_lib/jqModal.js',
             'js/zamboni/l10n.js',
             'js/impala/forms.js',
 
@@ -788,7 +807,7 @@ MINIFY_BUNDLES = {
             'js/impala/homepage.js',
 
             # Add-ons details page
-            'js/lib/jquery-ui/ui.lightbox.js',
+            'js/lib/ui.lightbox.js',
             'js/zamboni/contributions.js',
             'js/impala/addon_details.js',
             'js/impala/abuse.js',
@@ -804,7 +823,7 @@ MINIFY_BUNDLES = {
 
             # Persona creation
             'js/common/upload-image.js',
-            'js/lib/jquery.minicolors.js',
+            'js/node_lib/jquery.minicolors.js',
             'js/impala/persona_creation.js',
 
             # Unicode: needs to be loaded after collections.js which listens to
@@ -829,9 +848,9 @@ MINIFY_BUNDLES = {
             'js/impala/login.js',
         ),
         'zamboni/discovery': (
-            'js/lib/jquery-1.12.0.js',
-            'js/lib/jquery.browser.js',
-            'js/lib/underscore.js',
+            'js/node_lib/jquery.js',
+            'js/node_lib/jquery.browser.js',
+            'js/node_lib/underscore.js',
             'js/zamboni/browser.js',
             'js/zamboni/init.js',
             'js/impala/capabilities.js',
@@ -840,10 +859,10 @@ MINIFY_BUNDLES = {
             'js/zamboni/analytics.js',
 
             # Add-ons details
-            'js/lib/jquery.cookie.js',
+            'js/node_lib/jquery.cookie.js',
             'js/zamboni/storage.js',
             'js/zamboni/buttons.js',
-            'js/lib/jquery-ui/ui.lightbox.js',
+            'js/lib/ui.lightbox.js',
 
             # Personas
             'js/lib/jquery.hoverIntent.js',
@@ -871,7 +890,7 @@ MINIFY_BUNDLES = {
             'js/impala/formset.js',
             'js/zamboni/devhub.js',
             'js/zamboni/validator.js',
-            'js/lib/jquery.timeago.js',
+            'js/node_lib/jquery.timeago.js',
         ),
         'zamboni/editors': (
             'js/lib/highcharts.src.js',
@@ -915,7 +934,7 @@ MINIFY_BUNDLES = {
         # This is included when DEBUG is True.  Bundle in <head>.
         'debug': (
             'js/debug/less_setup.js',
-            'js/lib/less.js',
+            'js/node_lib/less.js',
             'js/debug/less_live.js',
         ),
     }
@@ -1638,6 +1657,9 @@ REST_FRAMEWORK = {
     # Use http://ecma-international.org/ecma-262/5.1/#sec-15.9.1.15
     # We can't use the default because we don't use django timezone support.
     'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%SZ',
+
+    # Set our default ordering parameter
+    'ORDERING_PARAM': 'sort',
 }
 
 # This is the DSN to the local Sentry service. It might be overridden in

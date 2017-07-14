@@ -8,12 +8,15 @@ from django.conf import settings
 from django.core import mail
 
 from olympia import amo
+from olympia.abuse.models import AbuseReport
+from olympia.access.models import Group, GroupUser
 from olympia.activity.models import ActivityLog
 from olympia.amo.tests import TestCase
 from olympia.amo.tests import (
     addon_factory, file_factory, user_factory, version_factory)
 from olympia.addons.models import Addon, AddonApprovalsCounter, AddonUser
 from olympia.files.models import FileValidation
+from olympia.reviews.models import Review
 from olympia.versions.models import (
     Version, version_uploaded)
 from olympia.files.models import File, WebextPermission
@@ -101,7 +104,8 @@ class TestPendingQueue(TestQueue):
                         'created': self.days_ago(1)})
         version_factory(
             addon=addon, version=version, channel=self.channel,
-            file_kw={'status': amo.STATUS_AWAITING_REVIEW, 'no_restart': True})
+            file_kw={'status': amo.STATUS_AWAITING_REVIEW,
+                     'is_restart_required': False})
         return addon
 
     def new_search_ext(self, name, version, **kw):
@@ -143,12 +147,12 @@ class TestPendingQueue(TestQueue):
         q = self.Queue.objects.get()
         assert q.flags == [('jetpack', 'Jetpack Add-on')]
 
-    def test_flags_requires_restart(self):
+    def test_flags_is_restart_required(self):
         self.new_addon().find_latest_version(self.channel).all_files[0].update(
-            no_restart=False)
+            is_restart_required=True)
 
         q = self.Queue.objects.get()
-        assert q.flags == [('requires_restart', 'Requires Restart')]
+        assert q.flags == [('is_restart_required', 'Requires Restart')]
 
     def test_flags_sources_provided(self):
         self.new_addon().find_latest_version(self.channel).update(
@@ -358,8 +362,11 @@ class TestEditorSubscription(TestCase):
         self.version = self.addon.current_version
         self.user_one = UserProfile.objects.get(pk=55021)
         self.user_two = UserProfile.objects.get(pk=999)
+        self.editor_group = Group.objects.create(
+            name='editors', rules='Addons:Review')
         for user in [self.user_one, self.user_two]:
             EditorSubscription.objects.create(addon=self.addon, user=user)
+            GroupUser.objects.create(group=self.editor_group, user=user)
 
     def test_email(self):
         es = EditorSubscription.objects.get(user=self.user_one)
@@ -405,6 +412,19 @@ class TestEditorSubscription(TestCase):
         v = Version.objects.create(addon=self.addon)
         version_uploaded.send(sender=v)
         assert len(mail.outbox) == 0
+
+    def test_no_email_for_ex_editors(self):
+        self.user_one.delete()
+        # Remove user_two from editors.
+        GroupUser.objects.get(
+            group=self.editor_group, user=self.user_two).delete()
+        send_notifications(sender=self.version)
+        assert len(mail.outbox) == 0
+
+    def test_no_email_address_for_editor(self):
+        self.user_one.update(email=None)
+        send_notifications(sender=self.version)
+        assert len(mail.outbox) == 1
 
 
 class TestReviewerScore(TestCase):
@@ -515,7 +535,7 @@ class TestReviewerScore(TestCase):
             amo.REVIEWED_SCORES[amo.REVIEWED_ADDON_FULL])
 
     def test_get_leaderboards(self):
-        user2 = UserProfile.objects.get(email='regular@mozilla.com')
+        user2 = UserProfile.objects.get(email='persona-reviewer@mozilla.com')
         self._give_points()
         self._give_points(status=amo.STATUS_PUBLIC)
         self._give_points(user=user2, status=amo.STATUS_NOMINATED)
@@ -539,6 +559,19 @@ class TestReviewerScore(TestCase):
         assert len(leaders['leader_top']) == 1
         assert leaders['leader_top'][0]['user_id'] == user2.id
 
+    def test_only_active_reviewers_in_leaderboards(self):
+        user2 = UserProfile.objects.create(username='former-reviewer')
+        self._give_points()
+        self._give_points(status=amo.STATUS_PUBLIC)
+        self._give_points(user=user2, status=amo.STATUS_NOMINATED)
+        leaders = ReviewerScore.get_leaderboards(self.user)
+        assert leaders['user_rank'] == 1
+        assert leaders['leader_near'] == []
+        assert leaders['leader_top'][0]['user_id'] == self.user.id
+        assert len(leaders['leader_top']) == 1  # Only the editor is here.
+        assert user2.id not in [l['user_id'] for l in leaders['leader_top']], (
+            'Unexpected non-reviewer user found in leaderboards.')
+
     def test_no_admins_or_staff_in_leaderboards(self):
         user2 = UserProfile.objects.get(email='admin@mozilla.com')
         self._give_points()
@@ -555,7 +588,9 @@ class TestReviewerScore(TestCase):
     def test_get_leaderboards_last(self):
         users = []
         for i in range(6):
-            users.append(UserProfile.objects.create(username='user-%s' % i))
+            user = UserProfile.objects.create(username='user-%s' % i)
+            GroupUser.objects.create(group_id=50002, user=user)
+            users.append(user)
         last_user = users.pop(len(users) - 1)
         for u in users:
             self._give_points(user=u)
@@ -569,7 +604,7 @@ class TestReviewerScore(TestCase):
         assert len(leaders['leader_near']) == 2
 
     def test_all_users_by_score(self):
-        user2 = UserProfile.objects.get(email='regular@mozilla.com')
+        user2 = UserProfile.objects.get(email='senioreditor@mozilla.com')
         amo.REVIEWED_LEVELS[0]['points'] = 180
         self._give_points()
         self._give_points(status=amo.STATUS_PUBLIC)
@@ -674,6 +709,335 @@ class TestAutoApprovalSummary(TestCase):
             file=self.version.all_files[0], validation=u'{}')
         AddonApprovalsCounter.objects.create(addon=self.addon, counter=1)
 
+    def test_negative_weight(self):
+        summary = AutoApprovalSummary.objects.create(
+            version=self.version, weight=-300)
+        summary = AutoApprovalSummary.objects.get(pk=summary.pk)
+        assert summary.weight == -300
+
+    def test_calculate_weight(self):
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        expected_result = {
+            'abuse_reports': 0,
+            'admin_review': 0,
+            'average_daily_users': 0,
+            'negative_reviews': 0,
+            'reputation': 0,
+            'past_rejection_history': 0,
+            'uses_custom_csp': 0,
+            'uses_eval_or_document_write': 0,
+            'uses_implied_eval': 0,
+            'uses_innerhtml': 0,
+            'uses_native_messaging': 0
+        }
+        assert weight_info == expected_result
+
+    def test_calculate_weight_admin_review(self):
+        self.addon.update(admin_review=True)
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 100
+        assert weight_info['admin_review'] == 100
+
+    def test_calculate_weight_abuse_reports(self):
+        # Extra abuse report for a different add-on, does not count.
+        AbuseReport.objects.create(addon=addon_factory())
+
+        # Extra abuse report for a different user, does not count.
+        AbuseReport.objects.create(user=user_factory())
+
+        # Extra old abuse report, does not count either.
+        old_report = AbuseReport.objects.create(addon=self.addon)
+        old_report.update(created=self.days_ago(370))
+
+        # Recent abuse reports.
+        AbuseReport.objects.create(addon=self.addon)
+        AbuseReport.objects.create(addon=self.addon)
+
+        # Recent abuse report for one of the developers of the add-on.
+        author = user_factory()
+        AddonUser.objects.create(addon=self.addon, user=author)
+        AbuseReport.objects.create(user=author)
+
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 30
+        assert weight_info['abuse_reports'] == 30
+
+        # Should be capped at 100.
+        for i in range(0, 10):
+            AbuseReport.objects.create(addon=self.addon)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 100
+        assert weight_info['abuse_reports'] == 100
+
+    def test_calculate_weight_abuse_reports_use_created_from_instance(self):
+        # Create an abuse report 400 days in the past. It should be ignored it
+        # we were calculating from today, but use an AutoApprovalSummary
+        # instance that is 40 days old, making the abuse report count.
+        report = AbuseReport.objects.create(addon=self.addon)
+        report.update(created=self.days_ago(400))
+
+        summary = AutoApprovalSummary.objects.create(version=self.version)
+        summary.update(created=self.days_ago(40))
+
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 10
+        assert weight_info['abuse_reports'] == 10
+
+    def test_calculate_weight_negative_reviews(self):
+        # Positive review, does not count.
+        Review.objects.create(
+            user=user_factory(), addon=self.addon, version=self.version,
+            rating=5)
+
+        # Negative review, but too old, does not count.
+        old_review = Review.objects.create(
+            user=user_factory(), addon=self.addon, version=self.version,
+            rating=1)
+        old_review.update(created=self.days_ago(370))
+
+        # Negative review on a different add-on, does not count either.
+        extra_addon = addon_factory()
+        Review.objects.create(
+            user=user_factory(), addon=extra_addon,
+            version=extra_addon.current_version, rating=1)
+
+        # Recent negative reviews.
+        reviews = [Review(
+            user=user_factory(), addon=self.addon,
+            version=self.version, rating=3) for i in range(0, 49)]
+        Review.objects.bulk_create(reviews)
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 0  # Not enough negative reviews yet...
+        assert weight_info['negative_reviews'] == 0
+
+        # Create one more to get to weight == 1.
+        Review.objects.create(
+            user=user_factory(), addon=self.addon, version=self.version,
+            rating=2)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 1
+        assert weight_info['negative_reviews'] == 1
+
+        # Create 5000 more (sorry!) to make sure it's capped at 100.
+        reviews = [Review(
+            user=user_factory(), addon=self.addon,
+            version=self.version, rating=3) for i in range(0, 5000)]
+        Review.objects.bulk_create(reviews)
+
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 100
+        assert weight_info['negative_reviews'] == 100
+
+    def test_calculate_weight_reputation(self):
+        summary = AutoApprovalSummary(version=self.version)
+        self.addon.update(reputation=0)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 0
+        assert weight_info['reputation'] == 0
+
+        self.addon.update(reputation=3)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == -300
+        assert weight_info['reputation'] == -300
+
+        self.addon.update(reputation=1000)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == -300
+        assert weight_info['reputation'] == -300
+
+        self.addon.update(reputation=-1000)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 0
+        assert weight_info['reputation'] == 0
+
+    def test_calculate_weight_average_daily_users(self):
+        self.addon.update(average_daily_users=142444)
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 14
+        assert weight_info['average_daily_users'] == 14
+
+        self.addon.update(average_daily_users=1756567658)
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 100
+        assert weight_info['average_daily_users'] == 100
+
+    def test_calculate_weight_past_rejection_history(self):
+        # Old rejected version, does not count.
+        version_factory(
+            addon=self.addon,
+            file_kw={'reviewed': self.days_ago(370),
+                     'status': amo.STATUS_DISABLED})
+
+        # Version disabled by the developer, not Mozilla (original_status
+        # is set to something different than STATUS_NULL), does not count.
+        version_factory(
+            addon=self.addon,
+            file_kw={'reviewed': self.days_ago(15),
+                     'status': amo.STATUS_DISABLED,
+                     'original_status': amo.STATUS_PUBLIC})
+
+        # Rejected version.
+        version_factory(
+            addon=self.addon,
+            file_kw={'reviewed': self.days_ago(14),
+                     'status': amo.STATUS_DISABLED})
+
+        # Another rejected version, with multiple files. Only counts once.
+        version_with_multiple_files = version_factory(
+            addon=self.addon,
+            file_kw={'reviewed': self.days_ago(13),
+                     'status': amo.STATUS_DISABLED,
+                     'platform': amo.PLATFORM_WIN.id})
+        file_factory(
+            reviewed=self.days_ago(13),
+            version=version_with_multiple_files,
+            status=amo.STATUS_DISABLED,
+            platform=amo.PLATFORM_MAC.id)
+
+        # Rejected version on a different add-on, does not count.
+        version_factory(
+            addon=addon_factory(),
+            file_kw={'reviewed': self.days_ago(12),
+                     'status': amo.STATUS_DISABLED})
+
+        # Approved version, does not count.
+        version_factory(
+            addon=self.addon,
+            file_kw={'reviewed': self.days_ago(11)})
+
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 20
+        assert weight_info['past_rejection_history'] == 20
+
+        # Should be capped at 100.
+        for i in range(0, 10):
+            version_factory(
+                addon=self.addon,
+                file_kw={'reviewed': self.days_ago(10),
+                         'status': amo.STATUS_DISABLED})
+
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 100
+        assert weight_info['past_rejection_history'] == 100
+
+    def test_calculate_weight_uses_eval_or_document_write(self):
+        validation_data = {
+            'messages': [{
+                'id': ['DANGEROUS_EVAL'],
+            }]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 20
+        assert weight_info['uses_eval_or_document_write'] == 20
+
+        validation_data = {
+            'messages': [{
+                'id': ['NO_DOCUMENT_WRITE'],
+            }]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 20
+        assert weight_info['uses_eval_or_document_write'] == 20
+
+        # Still only 20 if both appear.
+        validation_data = {
+            'messages': [{
+                'id': ['DANGEROUS_EVAL'],
+            }, {
+                'id': ['NO_DOCUMENT_WRITE'],
+            }]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 20
+        assert weight_info['uses_eval_or_document_write'] == 20
+
+    def test_calculate_weight_uses_implied_eval(self):
+        validation_data = {
+            'messages': [{
+                'id': ['NO_IMPLIED_EVAL'],
+            }]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 5
+        assert weight_info['uses_implied_eval'] == 5
+
+    def test_calculate_weight_uses_innerhtml(self):
+        validation_data = {
+            'messages': [{
+                'id': ['UNSAFE_VAR_ASSIGNMENT'],
+            }]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 20
+        assert weight_info['uses_innerhtml'] == 20
+
+    def test_calculate_weight_uses_custom_csp(self):
+        validation_data = {
+            'messages': [{
+                'id': ['MANIFEST_CSP'],
+            }]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 30
+        assert weight_info['uses_custom_csp'] == 30
+
+    def test_calculate_weight_uses_native_messaging(self):
+        WebextPermission.objects.create(
+            file=self.file, permissions=['nativeMessaging'])
+
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 20
+        assert weight_info['uses_native_messaging'] == 20
+
+    def test_calculate_weight_sum(self):
+        validation_data = {
+            'messages': [
+                {'id': ['MANIFEST_CSP']},
+                {'id': ['UNSAFE_VAR_ASSIGNMENT']},
+                {'id': ['NO_IMPLIED_EVAL']},
+                {'id': ['DANGEROUS_EVAL']},
+            ]
+        }
+        self.file_validation.update(validation=json.dumps(validation_data))
+        summary = AutoApprovalSummary(version=self.version)
+        weight_info = summary.calculate_weight()
+        assert summary.weight == 75
+        expected_result = {
+            'abuse_reports': 0,
+            'admin_review': 0,
+            'average_daily_users': 0,
+            'negative_reviews': 0,
+            'reputation': 0,
+            'past_rejection_history': 0,
+            'uses_custom_csp': 30,
+            'uses_eval_or_document_write': 20,
+            'uses_implied_eval': 5,
+            'uses_innerhtml': 20,
+            'uses_native_messaging': 0
+        }
+        assert weight_info == expected_result
+
     def test_check_uses_custom_csp(self):
         assert AutoApprovalSummary.check_uses_custom_csp(self.version) is False
 
@@ -756,17 +1120,21 @@ class TestAutoApprovalSummary(TestCase):
         self.version.update(has_info_request=True)
         assert AutoApprovalSummary.check_has_info_request(self.version) is True
 
+    @mock.patch.object(AutoApprovalSummary, 'calculate_weight', spec=True)
     @mock.patch.object(AutoApprovalSummary, 'calculate_verdict', spec=True)
-    def test_create_summary_for_version(self, calculate_verdict_mock):
+    def test_create_summary_for_version(
+            self, calculate_verdict_mock, calculate_weight_mock):
         calculate_verdict_mock.return_value = {'dummy_verdict': True}
         summary, info = AutoApprovalSummary.create_summary_for_version(
             self.version,
             max_average_daily_users=111, min_approved_updates=222)
+        assert calculate_weight_mock.call_count == 1
         assert calculate_verdict_mock.call_count == 1
         assert calculate_verdict_mock.call_args == ({
             'max_average_daily_users': 111,
             'min_approved_updates': 222,
-            'dry_run': False
+            'dry_run': False,
+            'post_review': False,
         },)
         assert summary.pk
         assert summary.version == self.version
@@ -925,6 +1293,26 @@ class TestAutoApprovalSummary(TestCase):
             'is_locked': False,
             'is_under_admin_review': False,
         }
+        assert summary.verdict == amo.WOULD_HAVE_BEEN_AUTO_APPROVED
+
+    def test_calculate_verdict_post_review(self):
+        summary = AutoApprovalSummary.objects.create(
+            version=self.version, average_daily_users=1, approved_updates=2)
+        info = summary.calculate_verdict(
+            max_average_daily_users=summary.average_daily_users + 1,
+            min_approved_updates=summary.approved_updates + 1,
+            post_review=True)
+        assert info == {}
+        assert summary.verdict == amo.AUTO_APPROVED
+
+    def test_calculate_verdict_post_review_dry_run(self):
+        summary = AutoApprovalSummary.objects.create(
+            version=self.version, average_daily_users=1, approved_updates=2)
+        info = summary.calculate_verdict(
+            max_average_daily_users=summary.average_daily_users + 1,
+            min_approved_updates=summary.approved_updates + 1,
+            post_review=True, dry_run=True)
+        assert info == {}
         assert summary.verdict == amo.WOULD_HAVE_BEEN_AUTO_APPROVED
 
     def test_verdict_info_prettifier(self):

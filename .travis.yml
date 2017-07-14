@@ -25,7 +25,6 @@ cache:
   pip: true
   directories:
     - node_modules
-    - .tox
 
 services:
   - memcached
@@ -34,7 +33,7 @@ addons:
   apt:
     packages:
       - swig
-  firefox: latest-nightly
+  firefox: latest
 
 before_install:
   - scripts/travis_es.sh

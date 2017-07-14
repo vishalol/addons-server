@@ -10,9 +10,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-05-17 11:23+0000\n"
-"PO-Revision-Date: 2017-05-18 13:56+0000\n"
-"Last-Translator: Tymur Faradzhev <faradzhev.timur@gmail.com>\n"
+"POT-Creation-Date: 2017-06-15 03:41+0000\n"
+"PO-Revision-Date: 2017-06-19 09:21+0000\n"
+"Last-Translator: Artem Polivanchuk <a.polivanchuk@outlook.com>\n"
 "Language-Team: \n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
@@ -61,6 +61,9 @@ msgstr "Не вдається виконати вхід. Будь ласка, с
 
 msgid "Need help?"
 msgstr "Потрібна допомога?"
+
+msgid "Developers of add-ons or themes cannot delete their account. You must delete all add-ons and themes linked to this account, or transfer them to other users."
+msgstr "Розробники додатків чи тем не можуть видалити свій обліковий запис. Ви повинні спочатку видалити всі додатки й теми, пов'язані з цим обліковим записом, або передати їх іншим користувачам."
 
 msgid "Review"
 msgstr "Відгук"
@@ -1160,6 +1163,10 @@ msgstr "Поле повинно містити не менше {num} симво�
 msgid "The language code {lang_code} is invalid."
 msgstr "Код мови {lang_code} неправильний."
 
+#, python-format
+msgid "Invalid pk or slug \"%s\" - object does not exist."
+msgstr "Недійсний pk або slug \"%s\" - об'єкт не існує."
+
 msgid "Application Versions"
 msgstr "Версії програми"
 
@@ -1257,6 +1264,15 @@ msgstr "Вподобання"
 
 msgid "Remove from favorites"
 msgstr "Вилучити з вподобань"
+
+msgid "This slug is already in use by another one of your collections."
+msgstr "Ця адреса URL вже використовується в одній з ваших збірок."
+
+msgid "Enter a valid slug consisting of letters, numbers, underscores or hyphens."
+msgstr "Введіть дійсну адресу URL, що складається з літер, цифр, підкреслень або дефісів."
+
+msgid "This slug cannot be used."
+msgstr "ЦеяURL не може бути використана."
 
 msgid "Name"
 msgstr "Ім'я"
@@ -2816,6 +2832,9 @@ msgstr "Платформа Все не може бути об'єднана з к
 msgid "A platform can only be chosen once."
 msgstr "Платформа може бути вибрана тільки один раз."
 
+msgid "Reputation"
+msgstr "Репутація"
+
 msgid "Application"
 msgstr "Програма"
 
@@ -3032,64 +3051,9 @@ msgstr "Завантаження результатів&hellip;"
 msgid "No results found."
 msgstr "Результатів не знайдено."
 
-msgid "Submit an Add-on"
-msgstr "Представити додаток"
-
-msgid "AMO Reviewers"
-msgstr "Редактори AMO"
-
-msgid "Get ahead! Become an AMO Reviewer today and get your add-ons reviewed faster."
-msgstr "Будьте попереду! Станьте редактором AMO сьогодні та прискорюйте перевірку ваших додатків."
-
-msgid "Become an AMO Reviewer"
-msgstr "Станьте редактором AMO"
-
-msgid "Learn All About Add-ons"
-msgstr "Дізнайтесь все про додатки"
-
-msgid ""
-"Add-ons let millions of Firefox users enhance and customize their browsing experience. If you're a Web developer and know <a href=\"https://developer.mozilla.org/docs/Web/HTML\">HTML</a>, <a "
-"href=\"https://developer.mozilla.org/docs/Web/JavaScript\">JavaScript</a>, and <a href=\"https://developer.mozilla.org/docs/Web/CSS\">CSS</a>, you already have all the necessary skills to make a "
-"great add-on."
-msgstr ""
-"Додатки дозволяють мільйонам користувачів Firefox розширювати та налаштовувати своє середовище для роботи в мережі Інтернет. Якщо Ви веб-розробник і знаєте <a "
-"href=\"https://developer.mozilla.org/docs/Web/HTML\">HTML</a>, <a href=\"https://developer.mozilla.org/docs/Web/JavaScript\">JavaScript</a> і <a "
-"href=\"https://developer.mozilla.org/docs/Web/CSS\">CSS</a>, у Вас вже є всі необхідні навички, щоб створити чудовий додаток."
-
-msgid "Head over to the <a href=\"https://developer.mozilla.org/Add-ons\">Mozilla Developer Network</a> to learn everything you need to know to get started."
-msgstr "Зайдіть в <a href=\"https://developer.mozilla.org/Add-ons\">Мережа розробників Mozilla</a>, щоб дізнатись все необхідне для початку роботи."
-
-msgid "Start Making Add-ons"
-msgstr "Почати створювати додатки"
-
-msgid "Status:"
-msgstr "Статус:"
-
-msgid "Latest Version:"
-msgstr "Остання версія:"
-
-msgid "Queue Position:"
-msgstr "Позиція в черзі:"
-
-#, python-format
-msgid "%(position)s of %(total)s"
-msgstr "%(position)s з %(total)s"
-
-msgid "Upload New Version"
-msgstr "Вивантажити нову версію"
-
-msgid "View all add-ons ►"
-msgstr "Переглянути всі додатки ►"
-
-msgid "Publish your add-ons!"
-msgstr "Публікуйте Ваші додатки!"
-
-msgid "There's no better way to distribute your add-on than by hosting it on Mozilla Add-ons."
-msgstr "Немає кращого способу розповсюдження вашого додатку, ніж розміщення його на сайті додатків Mozilla."
-
-#, python-format
-msgid "Upload an <a href=\"%(addon_url)s\">add-on</a> or <a href=\"%(theme_url)s\">theme</a> to get started!"
-msgstr "Щоб почати, завантажте <a href=\"%(addon_url)s\">додаток</a> або <a href=\"%(theme_url)s\">тему</a>!"
+#. {0} is an application, like Firefox.
+msgid "{0} Add-ons"
+msgstr "Додатки {0}"
 
 msgid "Return to the DevHub homepage"
 msgstr "Повернутися на домашню сторінку DevHub"
@@ -3675,6 +3639,9 @@ msgstr "Цей додаток не має жодних версій."
 msgid "This add-on doesn't have any approved versions, so its public pages (including beta versions) are hidden."
 msgstr "Цей додаток не має жодної схваленої версії, тому його публічні сторінки (включно з бета версіями) приховано."
 
+msgid "Status:"
+msgstr "Статус:"
+
 msgid "Disabled"
 msgstr "Вимкнено"
 
@@ -3939,8 +3906,18 @@ msgstr "Це найновіша завантажена версія, проте 
 msgid "Queues are not reviewed strictly in order"
 msgstr "Черги не перевіряються чітко за порядком"
 
+msgid "Queue Position:"
+msgstr "Позиція в черзі:"
+
+#, python-format
+msgid "%(position)s of %(total)s"
+msgstr "%(position)s з %(total)s"
+
 msgid "Signed for self-distribution. Updates are handled by you."
 msgstr "Підписано для власного розповсюдження. Оновлення забезпечуються вами."
+
+msgid "Latest Version:"
+msgstr "Остання версія:"
 
 msgid "This is the newest uploaded unlisted version."
 msgstr "Це найновіша завантажена неопублікована версія."
@@ -3973,6 +3950,9 @@ msgstr "Чи було це спонтанним приходом ідеї в ч�
 
 msgid "Telling your users what's coming soon will give them something to look forward to."
 msgstr "Розповівши своїм користувачам, що станеться найближчим часом, ви дасте їм уявлення, на що можна очікувати."
+
+msgid "Upload New Version"
+msgstr "Вивантажити нову версію"
 
 msgid "View All"
 msgstr "Продивитися все"
@@ -4044,10 +4024,6 @@ msgstr "Будь ласка, додайте інструкції про те, я
 
 msgid "Read more about the source code review policy."
 msgstr "Дізнайтеся більше про політику перевірки програмного коду."
-
-#. {0} is an application, like Firefox.
-msgid "{0} Add-ons"
-msgstr "Додатки {0}"
 
 msgid "Latest News"
 msgstr "Останні новини"
@@ -4682,11 +4658,11 @@ msgstr "Скасування вашого запиту перевірки поз
 msgid "Are you sure you wish to cancel your review request?"
 msgstr "Ви впевнені, що хочете скасувати свій запит на відгук?"
 
-msgid "Download media {start_sub_heading}with {addon_name}{end_sub_heading}"
-msgstr "Завантажуйте медіа {start_sub_heading}за допомогою {addon_name}{end_sub_heading}"
+msgid "Improve videos {start_sub_heading}with {addon_name}{end_sub_heading}"
+msgstr "Покращуйте відео {start_sub_heading}за допомогою {addon_name}{end_sub_heading}"
 
-msgid "Manage massive audio, video, and image downloads with this lightweight tool."
-msgstr "Керуйте завантаженнями аудіо, відео та зображень за допомогою цього легкого інструменту."
+msgid "Enjoy a suite of new YouTube features, like cinema mode, ad blocking, auto-play control, and more."
+msgstr "Насолоджуйтесь новим набором можливостей YouTube, такими як режим кіно, блокування реклами, контроль авто-відтворення та інших."
 
 msgid "Block ads {start_sub_heading}with {addon_name}{end_sub_heading}"
 msgstr "Блокуйте рекламу {start_sub_heading}за допомогою {addon_name}{end_sub_heading}"
@@ -4694,17 +4670,17 @@ msgstr "Блокуйте рекламу {start_sub_heading}за допомого
 msgid "A lightweight and effective ad blocker. uBlock Origin enforces thousands of content filters without chewing up a bunch of memory."
 msgstr "Легкий та ефективний додаток для блокування реклами. uBlock Origin забезпечує тисячами фільтрів вмісту без впливу на споживання пам'яті."
 
-msgid "Take screenshots {start_sub_heading}with {addon_name}{end_sub_heading}"
-msgstr "Робіть знімки екрану {start_sub_heading}за допомогою {addon_name}{end_sub_heading}"
-
-msgid "More than just screenshots, Awesome Screenshot Plus lets you annotate images with text and graphics. Storing and sharing files is a breeze."
-msgstr "Більше, ніж просто знімки екрану, Awesome Screenshot Plus дозволяє анотувати зображення текстом та графікою. Збереження файлів і обмін ними - бальзам на душу."
-
 msgid "Emoji expression {start_sub_heading}with {addon_name}{end_sub_heading}"
 msgstr "Виражайте емоції {start_sub_heading}за допомогою {addon_name}{end_sub_heading}"
 
 msgid "Dozens of amazing emojis for every occasion—always just one click away."
 msgstr "Десятки чудових emoji на будь-який випадок — лише за один клік."
+
+msgid "Take screenshots {start_sub_heading}with {addon_name}{end_sub_heading}"
+msgstr "Робіть знімки екрану {start_sub_heading}за допомогою {addon_name}{end_sub_heading}"
+
+msgid "More than just screenshots, Awesome Screenshot Plus lets you annotate images with text and graphics. Storing and sharing files is a breeze."
+msgstr "Більше, ніж просто знімки екрану, Awesome Screenshot Plus дозволяє анотувати зображення текстом та графікою. Збереження файлів і обмін ними - бальзам на душу."
 
 msgid "Approved reviews"
 msgstr "Схвалені розгляди"
@@ -4779,8 +4755,8 @@ msgstr "Повідомити мене при наступному оновлен
 msgid "Clear Admin Review Flag"
 msgstr "Зняти прапор перевірки адміністратором"
 
-msgid "Clear more info requested flag"
-msgstr "Зняти прапорець \"запитано більше інформації\""
+msgid "Is more info requested?"
+msgstr "Запитано більше інформації?"
 
 msgid "Choose a canned response..."
 msgstr "Оберіть стандартну відповідь..."
@@ -4881,6 +4857,9 @@ msgstr "Останнє оновлення"
 msgid "No Reviews"
 msgstr "Немає відгуків"
 
+msgid "Weight"
+msgstr "Вага"
+
 msgid "This will approve, sign, and publish this version. The comments will be sent to the developer."
 msgstr "Ця дія затвердить, підпише і опублікує дану версію. Коментарі будуть надіслані розробнику."
 
@@ -4892,6 +4871,12 @@ msgstr "Підтвердити схвалення"
 
 msgid "The latest public version of this add-on was automatically approved. This records your confirmation of the approval, without notifying the developer."
 msgstr "Остання публічна версія цього додатку була схвалена автоматично. Це записує ваше підтвердження про схвалення, без сповіщення розробника."
+
+msgid "Reject Multiple Versions"
+msgstr "Відхилити кілька версій"
+
+msgid "This will reject the selected public versions. The comments will be sent to the developer."
+msgstr "Ця дія відхилить обрані публічні версії. Коментарі будуть надіслані розробнику."
 
 msgid "Reviewer reply"
 msgstr "Відповідь редактора"
@@ -5339,6 +5324,9 @@ msgstr "Скрипт Автосхвалення ще не перевіряв ц�
 
 msgid "This version has not been reviewed."
 msgstr "Ця версія не була розглянута."
+
+msgid "Please select one or more versions in the list above."
+msgstr "Будь ласка, оберіть одну або кілька версій з вище наведеного переліку."
 
 msgid "You can still submit this form, however only do so if you know it won't conflict."
 msgstr "Ви все ще можете відправити цю форму, але все ж робіть це лише якщо ви впевнені, що не буде конфлікту."
@@ -6631,40 +6619,6 @@ msgstr "ЧаП розробника додатків"
 msgid "<h3>How do I build an Add-on?</h3> <p> Mozilla provides documentation on how to build an add-on via the <a href=\"%(url)s\">Mozilla Developer Network</a>. </p>"
 msgstr "<h3>Як мені створити додаток?</h3> <p> Mozilla надає документацію на <a href=\"%(url)s\">Mozilla Developer Network</a> про те, як створити додаток. </p>"
 
-msgid "Other resources include:"
-msgstr "Інші ресурси включають:"
-
-msgid "\"How to develop a Firefox extension\" post in the Add-ons Blog"
-msgstr "Допис \"Як розробити розширення Firefox\" у блозі Додатків"
-
-msgid "Mozilla Add-ons Blog"
-msgstr "Блог додатків Mozilla"
-
-msgid "What tools do I need to be able to build an Add-on?"
-msgstr "Які інструменти мені знадобляться для створення додатку?"
-
-msgid ""
-"You will need to have a version of the Mozilla software that you're building the add-on for and a code editor of your choice. Add-ons can be built for almost all Mozilla software but are primarily "
-"targeted for:"
-msgstr ""
-"Вам буде за необхідне мати версію програми Mozilla, для якої ви створюєте додаток, і редактор коду на ваш вибір. Додатки можуть бути створені майже для всіх програм Mozilla, але в першу чергу "
-"призначені для:"
-
-msgid "Popular code editors include:"
-msgstr "Популярні редактори коду:"
-
-#. This is a list of popular code editors.  Feel free to adjust as you like.
-msgid ""
-"<li><a href=\"http://komodoide.com/komodo-edit/\">Komodo Edit</a></li> <li><a href=\"http://macromates.com/\">TextMate</a></li> <li><a href=\"http://notepad-plus-plus.org/\">Notepad++</a></li> "
-"<li><a href=\"http://www.eclipse.org/\">Eclipse IDE</a></li>"
-msgstr ""
-"<li><a href=\"http://komodoide.com/komodo-edit/\">Komodo Edit</a></li> <li><a href=\"http://macromates.com/\">TextMate</a></li> <li><a href=\"http://notepad-plus-plus.org/\">Notepad++</a></li> "
-"<li><a href=\"http://www.eclipse.org/\">Eclipse IDE</a></li>"
-
-#, python-format
-msgid "You can also learn more about setting up your development environment via the MDN article <a href=\"%(url)s\">Setting up extension development environment</a>"
-msgstr "Ви можете також дізнатися більше про налаштування середовища розробки, прочитавши статтю в MDN <a href=\"%(url)s\">Setting up extension development environment</a>"
-
 msgid "What is a \".xpi\" file?"
 msgstr "Що таке файл \".xpi\"?"
 
@@ -6681,89 +6635,27 @@ msgstr ""
 "XUL (XML-мова інтерфейсу користувача) це мова на основі Mozilla XML, яка дозволяє вам створювати кросплатформні додатки з розширеною функціональністю. Вона забезпечує віджети інтерфейсу користувача,"
 " такі як кнопки, меню, панелі інструментів, дерева, і т.д., які можуть використовуватися для збільшення можливостей додатків шляхом змінювання частин інтерфейсу браузера користувача."
 
-msgid "What is the \"install.rdf\" file used for?"
-msgstr "Для чого використовується файл \"install.rdf\"?"
-
 #, python-format
 msgid ""
-"This file, called an <a href=\"%(url)s\">Install Manifest</a>, is used by Add-on Manager-enabled XUL applications to determine information about an add-on as it is being installed. It contains "
-"metadata identifying the add-on, providing information about who created it, where more information can be found about it, which versions of what applications it is compatible with, how it should be"
-" updated, and so on. The format of the Install Manifest is RDF/XML."
+"<strong>Note:</strong> XUL is considered a legacy technology in Firefox, and add-ons using XUL will no longer load starting from Firefox 57. Please use <a href=\"%(webext_url)s\">WebExtensions</a> "
+"APIs to develop new add-ons. If you have a legacy add-on, consider migrating it to WebExtensions. For information on migrating a legacy add-on, please visit <a href=\"%(portlegacy_url)s\">Porting a "
+"legacy Firefox add-on</a>."
 msgstr ""
-"Цей файл, що називається <a href=\"%(url)s\">Маніфестом встановлення</a>, використовується програмами XUL з Менеджером додатків, задля отримання інформації про додаток в процесі його встановлення. "
-"Він містить метадані, які ідентифікують додаток, надають інформацію про його автора, про те, де можна знайти більше інформації про нього, з якими версіями програм воно сумісно, як його треба "
-"оновлювати, і так далі. Форматом файлу маніфесту встановлення є RDF/XML."
-
-msgid "What does \"maxVersion\" mean?"
-msgstr "Що значить \"maxVersion\"?"
-
-msgid "This determines the maximum version of Firefox you're saying this extension will work with. Set this to be no newer than the newest currently available version!"
-msgstr "Це визначає максимальну версію Firefox, з якої, як ви кажете, буде працювати це розширення. Встановіть її значення не вище, ніж номер найновішої версії!"
-
-msgid "Can my add-on contain binary components?"
-msgstr "Чи може мій додаток містити бінарні компоненти?"
-
-#, python-format
-msgid ""
-"Yes. You can use Mozilla's <a href=\"%(url)s\">XPCOM component object model</a> to enhance your add-ons. XPCOM components be used and implemented in JavaScript, Java, and Python in addition to C++."
-msgstr ""
-"Так. Ви можете використовувати <a href=\"%(url)s\">об'єктну модель компоненту XPCOM</a> Mozilla для покращення ваших додатків. Окрім C++, XPCOM компоненти використовуються й розробляются на "
-"JavaScript, Java та Python."
-
-msgid "Can I use a JavaScript library like jQuery, MooTools or Prototype to build my add-on?"
-msgstr "Чи можу я для створення свого додатку використовувати бібліотеку JavaScript на зразок jQuery, MooTools чи Prototype?"
-
-msgid ""
-"Yes. It's possible, but some of the functionality provided by these libraries are available through XPCOM, XUL, and JavaScript. In addition, authors should take care if libraries modify primitive "
-"object prototypes (String.prototype, Date.prototype, etc.) and/or define global functions (eg. the $ function). These are prone to cause conflict with other add-ons, in particular if different add-"
-"ons use different versions of libraries and so on. Developers need to be very, very careful with using them. Mozilla does not offer documentation on using them to build add-ons."
-msgstr ""
-"Так. Це можливо, але деякі з функцій, забезпечувані цими бібліотеками, доступні через XPCOM, XUL і JavaScript. Крім того, автори повинні бути обережні у випадку, якщо бібліотеки змінюють прототипи "
-"примітивних об'єктів (String.prototype, Date.prototype і т.д.) і / або визначають глобальні функції (напр. $ функцію). Подібна поведінка схильна викликати конфлікт з іншими додатками, особливо якщо "
-"різні додатки використовують різні версії бібліотек і так далі. Розробники повинні бути дуже, дуже обережні при їх використанні. Mozilla не надає документацію щодо їх використання для створення "
-"додатків."
-
-msgid "How do I debug my add-on?"
-msgstr "Як я можу зневаджувати свій додаток?"
-
-#, python-format
-msgid "You can use the <a href=\"%(url)s\">Add-on Debugger</a>."
-msgstr "Ви можете скористатись <a href=\"%(url)s\">зневаджувачем додатків</a>."
+"<strong>Примітка:</strong> XUL являється застарілою технологією в Firefox, а додатки, що використовують XUL, більше не будуть завантажуватись починаючи з версії Firefox 57. Будь ласка, "
+"використовуйте <a href=\"%(webext_url)s\">WebExtensions</a> API для розробки нових додатків. Якщо у вас є застарілий додаток, розгляньте можливість переведення його на WebExtensions. Для отримання "
+"інформації про міграцію застарілих додатків, відвідайте <a href=\"%(portlegacy_url)s\">Портування застарілих додатків Firefox</a>."
 
 msgid "How do I test for compatibility with the latest version of Mozilla software?"
 msgstr "Як мені перевірити сумісність з останньою версією програмного забезпечення Mozilla?"
 
 msgid ""
-"To ensure compatibility with the latest Mozilla software, it's important to download updates as they become available and test your add-on to ensure that it is still functioning as expected. In many"
-" cases, the latest version of Mozilla software may be a beta release. Since these releases at times introduce architectural changes that may impact the functionality of your add-on, it's important "
-"to be actively involved in the beta process to ensure that your add-on users are not negatively impacted upon final release of Mozilla software."
+"To ensure compatibility with the latest Mozilla software, it's important to download updates as they become available and test your add-on to ensure that it is still functioning as expected. Since "
+"these releases at times introduce architectural changes that may impact the functionality of your add-on, it's important to be actively involved in the beta process to ensure that your add-on users "
+"are not negatively impacted upon final release of Mozilla software."
 msgstr ""
 "Щоб переконатися в сумісності з останньою версією програмного забезпечення Mozilla, важливо завантажувати оновлення, як тільки вони стають доступними, і тестувати додаток для впевненості в тому, що "
-"він працює належним чином. В багатьох випадках остання версія програмного забезпечення Mozilla може бути випуском бета. Так як ці випуски представляють технічні зміни, які можуть впливати на "
-"функціональність вашого додатку, важливо брати активну участь в процесі їх тестування для переконання в тому, що користувачі вашого додатку не зіткнуться з проблемами після випуску фінальної версії "
-"програмного забезпечення Mozilla."
-
-msgid "How to improve the performance of my add-on?"
-msgstr "Як покращити швидкодію свого додатку?"
-
-#, python-format
-msgid ""
-"Poorly written extensions can have a severe impact on the browsing experience, including on the overall performance of Firefox itself. The following page contains many good <a "
-"href=\"%(url)s\">guides</a> that help you improve performance, whether you're developing core Mozilla code or an add-on."
-msgstr ""
-"Погано написане розширення може мати серйозний вплив на роботу браузера, включаючи загальну швидкодію Firefox. Наступна сторінка містить багато хороших <a href=\"%(url)s\">інструкцій</a>, які "
-"допоможуть вам покращити швидкодію, чи-то ви займаєтесь розробкою ключового коду Mozilla, чи-то додатку."
-
-msgid "Can my add-on support multiple locales?"
-msgstr "Чи може мій додаток підтримувати декілька мов?"
-
-#, python-format
-msgid ""
-"Yes. Details on localizing your add-on can be found in the the <a href=\"%(l10n_url)s\">Mozilla Developer Network Localization page</a>. <a href=\"%(bz_url)s\">The BabelZilla project</a> is also a "
-"great resource for learning about localization and volunteering to help translate add-ons."
-msgstr ""
-"Так. Докладні відомості з локалізації вашого додатку можна знайти на <a href=\"%(l10n_url)s\">сторінці з локалізації Мережі Розробників Mozilla</a>. <a href=\"%(bz_url)s\">проект BabelZilla</a> "
-"також є чудовим ресурсом для вивчення локалізації та допомоги з перекладом додатків."
+"він працює належним чином. Так як ці випуски представляють технічні зміни, які можуть впливати на функціональність вашого додатку, важливо брати активну участь в процесі їх тестування, щоб "
+"переконатися в тому, що користувачі вашого додатку не зіткнуться з проблемами після випуску фінальної версії програмного забезпечення Mozilla."
 
 msgid "I need some advice building my add-on. Where can I find help?"
 msgstr "Мені потрібна порада щодо створення додатку. Де я можу знайти допомогу?"
@@ -6776,27 +6668,12 @@ msgstr "#extdev (для обговорення розробки додатків
 msgid "#amo (for support relating to hosting your add-on on AMO)"
 msgstr "#amo (для підтримки з питань розміщення вашого додатку на AMO)"
 
-#. #jetpack is the name of the IRC channel.  do not change.
-msgid "#jetpack (for discussions about the Add-ons SDK and cfx/jpm - formerly known as Jetpack)"
-msgstr "#jetpack (для обговорення з питань SDK додатку та cfx/jpm - раніше відомого як Jetpack)"
-
-#. Label for a link to the extension developers mailing list
-msgid "Mailing List"
-msgstr "Список розсилки"
-
-#. Label for a link to the extension developers newsgroup
-msgid "Newsgroup"
-msgstr "Група новин"
-
-#. Label for a link to the extension developers Google Group
-msgid "Google Group"
-msgstr "Група Google"
+#. #webextensions is the name of the IRC channel.  do not change.
+msgid "#webextensions (for discussions about developing and porting to WebExtensions)"
+msgstr "#webextensions (для дискусії про розробку і портування на WebExtensions)"
 
 msgid "Add-ons forum"
 msgstr "Форум додатків"
-
-msgid "Stack Overflow"
-msgstr "Stack Overflow"
 
 msgid "Does Mozilla offer development services?"
 msgstr "Чи пропонує Mozilla послуги з розробки?"
@@ -6821,12 +6698,10 @@ msgstr "Чи можу я розмістити власний додаток?"
 #, python-format
 msgid ""
 "Yes. Many developers choose to host their own add-ons. Choosing to host your add-on on <a href=\"%(amo_url)s\">Mozilla's add-on site</a>, though, allows for much greater exposure to your add-on due "
-"to the large volume of visitors to the site. <a href=\"%(md_url)s\">mozdev.org</a> offers free project hosting for Mozilla applications and extensions providing developers with tools to help manage "
-"source code, version control, bug tracking and documentation."
+"to the large volume of visitors to the site."
 msgstr ""
-"Так. Багато розробників надають перевагу розміщенню своїх додатків. Обираючи для розміщення <a href=\"%(amo_url)s\">сайт додатків Mozilla</a>, ви отримуєте можливість запропонувати свій додаток "
-"значно ширшому колу користувачів, у зв'язку з великою кількістю відвідувачів цього сайту. <a href=\"%(md_url)s\">mozdev.org</a> надає безкоштовне розміщення для додатків і розширень Mozilla, "
-"допомагає розробникам, забезпечуючи їх інструментами для управління програмним кодом, контролю версій, відстеження помилок, а також документацією."
+"Так. Багато розробників надають перевагу розміщенню своїх додатків. Однак, обираючи для розміщення <a href=\"%(amo_url)s\">сайт додатків Mozilla</a>, ви отримуєте можливість запропонувати свій "
+"додаток значно ширшому колу користувачів, у зв'язку з великою кількістю відвідувачів цього сайту."
 
 msgid "Can Mozilla host my add-on?"
 msgstr "Чи може Mozilla розмістити мій додаток?"
@@ -6867,22 +6742,22 @@ msgstr "Чи має Mozilla політику, яка визначає, що є �
 
 #, python-format
 msgid ""
-"Yes. Mozilla's <a href=\"%(p_url)s\">Add-on Policy</a> describes what is an acceptable submission. This policy is subject to change without notice. In addition, the Add-on Reviewer Team uses the <a "
-"href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on meets specific guidelines for functionality and security."
+"Yes. Mozilla's <a href=\"%(p_url)s\">Add-on Review Policies</a> describe what is an acceptable submission. This policy is subject to change without notice. In addition, the Add-on Reviewer Team uses"
+" the <a href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on meets specific guidelines for functionality and security."
 msgstr ""
-"Так. <a href=\"%(p_url)s\">Правила додатків</a> Mozilla описують, які подання є прийнятними. Ці правила є приводом для змін без попередження. Крім того, команда редакторів користується <a "
+"Так. <a href=\"%(p_url)s\">Правила перевірки додатків</a> Mozilla описують, які подання є прийнятними. Ці правила є приводом для змін без попередження. Крім того, команда редакторів користується <a "
 "href=\"%(g_url)s\">Настановами з перевірки додатків</a>, щоб переконатися, що ваш додаток відповідає вимогам щодо функціональності й безпеки."
 
-msgid "How do I submit my add-on for review?"
-msgstr "Як мені подати мій додаток на перевірку?"
+msgid "How do I submit my add-on?"
+msgstr "Як мені подати мій додаток?"
 
 #, python-format
 msgid ""
-"The Developer Tools dashboard will allow you to upload and submit add-ons to AMO. You must be a registered AMO users before you can submit an add-on. Before submitting your add-on be sure to you "
-"have read the <a href=\"%(url)s\">Add-on Review Guide</a> to ensure that your add-on has met the guidelines used by reviewers."
+"The Developer Tools dashboard will allow you to upload and submit add-ons to AMO. You must be a registered AMO user before you can submit an add-on. Before submitting your add-on be sure to you have"
+" read the <a href=\"%(url)s\">Add-on Review Policies</a> to ensure that your add-on has met our guidelines."
 msgstr ""
 "Панель Інструментів розробника дозволяє вам завантажувати і подавати додатки на АМО. Перед тим, як ви зможете подати додаток на АМО, ви повинні на ньому зареєструватися. Перед поданням вашого "
-"додатку обов'язково прочитайте <a href=\"%(url)s\">Настанови з перевірки додатків</a>, щоб переконатися, що ваш додаток відповідає вимогам, які використовують редактори."
+"додатку обов'язково прочитайте <a href=\"%(url)s\">Настанови з перевірки додатків</a>, щоб переконатися, що ваш додаток відповідає нашим вимогам."
 
 msgid "What operating system do I choose for my add-on?"
 msgstr "Яку операційну систему мені вибрати для мого додатку?"
@@ -6915,13 +6790,13 @@ msgstr ""
 "Так. Ви можете вказати політику приватності під час подання вашого додатка. Ви також можете додати або оновити політику приватності через панель Інструментів Розробника після представлення вашого "
 "додатка."
 
-msgid "Why must my add-on be reviewed?"
-msgstr "Чому мій додаток повинен бути перевірений?"
+msgid "Must my add-on be reviewed?"
+msgstr "Чи мій додаток повинен бути перевірений?"
 
 #, python-format
 msgid ""
-"All add-ons submitted, whether new or updated, are reviewed to ensure that Mozilla users have a stable and safe experience. All add-ons submissions are reviewed using the guidelines outlined in the "
-"<a href=\"%(url)s\">Add-on Review Guide</a>."
+"New and updated add-ons may be suject to reviewed to ensure that Mozilla users have a stable and safe experience. The guidelines outlined in the <a href=\"%(url)s\">Add-on Review Guide</a> are used "
+"to review add-on submissions."
 msgstr ""
 "Всі подані нові та оновлені додатки перевіряються на стабільність та безпеку під час роботи. Всі подання додатків проходять перевірку у відповідності з <a href=\"%(url)s\">Настановами з перевірки "
 "додатків</a>."
@@ -6932,8 +6807,8 @@ msgstr "Хто перевіряє мій додаток?"
 #, python-format
 msgid ""
 "Add-ons are reviewed by the Add-on Reviewers, a group of talented developers that volunteer to help the Mozilla project by reviewing add-ons to ensure a stable and safe experience for Mozilla users."
-" When communicating with reviewer, please be courteous, patient and respectful as they are working hard to ensure that your add-on is set up correctly and follows the guidelines outlined in the <a "
-"href=\"%(url)s\">Add-on Review Guide</a>."
+" When communicating with a reviewer, please be courteous, patient and respectful as they are working hard to ensure that your add-on is set up correctly and follows the guidelines outlined in the <a"
+" href=\"%(url)s\">Add-on Review Guide</a>."
 msgstr ""
 "Додатки перевіряються редакторами - групою талановитих розробників, які добровільно допомагають проекту Mozilla перевіряти додатки на стабільність і безпеку їх роботи. Під час спілкування з "
 "редактором будьте ввічливі, терплячі й поважні, тому що вони наполегливо працюють, щоб упевнитися, що ваш додаток працює правильно й відповідає принципам, викладеним в <a href=\"%(url)s\">Настановах"
@@ -6944,11 +6819,11 @@ msgstr "Які критерії використовуються для пере
 
 #, python-format
 msgid ""
-"The Add-on Reviewer Team follows the <a href=\"%(url)s\">Add-on Review Guide</a> when testing an add-on for acceptance onto AMO. It is important that add-on developers review this guide to ensure "
-"that common problem areas are addressed prior to submitting their add-on for review. This will greatly assist in expediting the review process."
+"The Add-on Reviewer Team follows the <a href=\"%(url)s\">Add-on Review Guide</a> when testing an add-on. It is important that add-on developers review this guide to ensure that common problem areas "
+"are addressed prior to submitting their add-on. This will greatly assist in avoiding review issues."
 msgstr ""
 "Команда редакторів додатків керується <a href=\"%(url)s\">Настановами з перевірки додатків</a> під час тестування додатка для розміщення на АМО. Важливо, щоб розробники додатка ознайомилися з цими "
-"настановами, щоб переконатися у відсутності в додатку типових проблем перед його подачею на перевірку. Це посприяє прискоренню процесу перевірки."
+"настановами, щоб переконатися у відсутності в додатку типових проблем перед його подачею на перевірку. Це сприяє прискоренню процесу перевірки."
 
 msgid "How long will it take for my add-on to be reviewed?"
 msgstr "Скільки часу займе перевірка мого додатку?"
@@ -6969,12 +6844,8 @@ msgid "number of problem areas discovered"
 msgstr "кількість виявлених проблемних зон"
 
 #, python-format
-msgid ""
-"This is why it's very important to read the <a href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on is setup as expected. It's also a good idea to read the blog post, <a "
-"href=\"%(blog_url)s\">Successfully Getting your Add-on Reviewed</a> which provides excellent insight into ensuring a smooth review of your add-on."
-msgstr ""
-"Саме тому дуже важливо ознайомитися з <a href=\"%(g_url)s\">Настановами з перевірки додатків</a>, щоб переконатися, що ваш додаток налаштований належним чином. Також не зайвим буде прочитання допису"
-" в блозі, <a href=\"%(blog_url)s\">Успішне проходження перевірки вашого додатку</a>, в якому відмінно описано, як забезпечити безпроблемну перевірку вашого додатку."
+msgid "This is why it's very important to read the <a href=\"%(g_url)s\">Add-on Review Guide</a> to ensure that your add-on is setup as expected."
+msgstr "Ось чому дуже важливо ознайомитись з <a href=\"%(g_url)s\">Настановами з перевірки додатків</a>, щоб пересвідчитися, що ваш додаток налаштований належним чином."
 
 msgid "How can I see how many times my add-on has been downloaded?"
 msgstr "Як я можу побачити скільки разів був завантажений мій додаток?"
@@ -7000,12 +6871,8 @@ msgstr "Ви можете подати оновлення для вашого д
 msgid "Does my update need to be reviewed by reviewers?"
 msgstr "Чи потребує моє оновлення перевірки?"
 
-msgid ""
-"That depends. If you are simply changing a description of your add-on or updating a \"maxVersion\" to ensure compatibility with a new Mozilla software update, then your add-on does not need to be "
-"reviewed again. If, however, you submit a new updated file, then your add-on update will need to be reviewed by an Add-on Reviewer."
-msgstr ""
-"Коли як. Якщо ви просто змінюєте опис вашого додатка або оновлюєте \"maxVersion\", щоб забезпечити сумісність з новою версією програмного забезпечення Mozilla, то повторна перевірка вашого додатку "
-"не потрібна. Однак, якщо ви подаєте новий файл, то оновлення вашого додатку повинно пройти перевірку."
+msgid "Add-on updates may be subject to review just the same as new submissions."
+msgstr "Оновлення додатків можуть бути предметом перевірки, так само як і нові подання."
 
 msgid "How do I reply to a user who has posted a negative review of my add-on?"
 msgstr "Як мені відповісти користувачу, який розмістив негативний відгук на мій додаток?"
@@ -7029,8 +6896,8 @@ msgstr "Неправильно розміщений звіт про ваду ч�
 msgid "Other (provides a pop-up prompt for information)"
 msgstr "Інше (виводить виринаючий запит для вводу інформації)"
 
-msgid "Currently, AMO does not provide a mechanism to directly communicate with a reviewer but this feature is being investigated and considered for a future update."
-msgstr "В даний час AMO не надає механізму для прямого зв'язку з редактором, але ця можливість зараз розглядається для включення у майбутнє оновлення."
+msgid "Currently, AMO does not provide a mechanism to directly communicate with a the author of a user review."
+msgstr "В даний час AMO не надає механізму для прямого зв'язку з автором відгуку."
 
 msgid "Can I request that a review be removed if the review is negative?"
 msgstr "Чи можу я дати запит на вилучення негативного відгуку?"
@@ -7108,14 +6975,14 @@ msgstr "Чи будуть додатки працювати з моїм брау
 
 #, python-format
 msgid ""
-"Add-ons listed in this gallery only work with Mozilla-based applications, such as <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">Firefox Mobile</a>, <a "
+"Add-ons listed in this gallery only work with Mozilla-based applications, such as <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">Firefox for Android</a>, <a "
 "href=\"%(getseamonkey_url)s\">SeaMonkey</a>, and <a href=\"%(getthunderbird_url)s\">Thunderbird</a>. However, not all add-ons work with each of those applications or every version of those "
-"applications. Each add-on specifies which applications and versions it works with, such as Firefox 2.0 - 3.6.*. For Firefox add-ons, the install buttons will indicate whether the add-on is "
+"applications. Each add-on specifies which applications and versions it works with, such as Firefox 50.0 - 52.*. For Firefox add-ons, the install buttons will indicate whether the add-on is "
 "compatible or not."
 msgstr ""
-"Додатки в цій галереї працюють тільки з програмами на основі Mozilla, такими як <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">мобільний Firefox</a>, <a "
+"Додатки в цій галереї працюють тільки з програмами від Mozilla, такими як <a href=\"%(getfirefox_url)s\">Firefox</a>, <a href=\"%(getmobile_url)s\">Firefox для Android</a>, <a "
 "href=\"%(getseamonkey_url)s\">SeaMonkey</a> і <a href=\"%(getthunderbird_url)s\">Thunderbird</a>. Однак, не всі додатки працюють з кожною із цих програм, чи будь-якою версією цих додатків. У кожному"
-" додатку вказано, з якими програмами і версіями він працює, наприклад, Firefox 2.0 - 3.6.*. Для додатків Firefox кнопки встановлення будуть вказувати, сумісний додаток чи ні."
+" додатку вказано, з якими програмами і версіями він працює, наприклад, Firefox 50.0 - 52.*. Для додатків Firefox кнопки встановлення будуть вказувати, сумісний додаток чи ні."
 
 msgid "What are the different types of add-ons?"
 msgstr "Чому існують різні типи додатків?"
@@ -7150,10 +7017,6 @@ msgstr ""
 msgid "<strong><a href=\"%(browse_url)s\">Dictionaries & Language Packs</a></strong> add support for additional languages to %(app_name)s."
 msgstr "<strong><a href=\"%(browse_url)s\">Словники та локалі</a></strong> додають підтримку додаткових мов в %(app_name)s."
 
-#, python-format
-msgid "<strong><a href=\"%(browse_url)s\">Plugins</a></strong> help %(app_name)s display or understand different types of media, such as Adobe Flash or Apple Quicktime."
-msgstr "<strong><a href=\"%(browse_url)s\">Плагіни</a></strong> допомагають %(app_name)s відображати або розуміти різні типи медіа, такі як Adobe Flash або Apple Quicktime."
-
 msgid "How do I install, manage, or remove an add-on?"
 msgstr "Як мені встановити, керувати, або вилучити додаток?"
 
@@ -7167,42 +7030,23 @@ msgstr ""
 " детальніших інструкцій, ознайомтеся з <a href=\"%(extension_url)s\">цією статтею</a> або <a href=\"%(theme_url)s\">цією для тем та повних тем</a>. Якщо у вас виникли труднощі з встановленням "
 "додатків, перегляньте <a href=\"%(troubleshooting_url)s\">Виправлення несправностей з розширеннями й темами</a>."
 
-msgid "How do I install add-ons without restarting Firefox?"
-msgstr "Як мені встановити додатки без перезапуску Firefox?"
-
-#, python-format
-msgid ""
-"In Firefox, add-ons marked with \"No restart required\" can be installed without restarting. These add-ons have been created using the <a href=\"%(sdk_url)s\">Add-on SDK</a> or <a "
-"href=\"%(bootstrap_url)s\">bootstrapping</a>. Other add-ons will still require a restart before you can use them."
-msgstr ""
-"У Firefox, додатки, які мають позначку \"Без перезапуску\" можуть бути встановлені без перезапуску. Ці додатки були створені з використанням <a href=\"%(sdk_url)s\">Add-on SDK</a> або <a "
-"href=\"%(bootstrap_url)s\">bootstrapping</a>. Інші додатки все ще потребують перезапуску, перед тим як ви їх зможете використовувати."
-
 msgid "How do I keep add-ons up-to-date?"
 msgstr "Як мені тримати додатки оновленими?"
 
-#, python-format
-msgid ""
-"Add-ons, unlike plugins, are automatically checked for updates once every day. In Firefox, updates are automatically installed by default. Versions of Firefox prior to 4 (and other applications) "
-"will alert you that updates to your add-ons are available. <a href=\"%(plugin_url)s\">Plugins</a> are not currently automatically checked for updates, so be sure to regularly visit the <a "
-"href=\"%(plugincheck_url)s\">Plugin Check</a> page to stay up-to-date."
-msgstr ""
-"Додатки, на відміну від плагінів, автоматично перевіряють оновлення один раз на день. В Firefox, оновлення встановлюються автоматично. Версії Firefox до 4 (та інші програми) будуть попереджати вас "
-"про наявність оновлень для ваших додатків. <a href=\"%(plugin_url)s\">Плагіни</a> в даний момент не перевіряють оновлення автоматично, тому рекомендуємо регулярно відвідувати сторінку <a "
-"href=\"%(plugincheck_url)s\">Перевірки плагінів</a>."
+msgid "Add-ons are automatically checked for updates once every day. In Firefox, updates are automatically installed by default. "
+msgstr "Додатки автоматично перевіряються на наявність оновлень один раз на день. В Firefox оновлення встановлюються автоматично. "
 
 msgid "Are add-ons safe to install?"
 msgstr "Чи безпечно встановлювати додатки?"
 
 #, python-format
 msgid ""
-"Unless clearly marked otherwise, add-ons available from this gallery have been checked and approved by Mozilla's team of editors and are safe to install. We recommend that you only install approved "
-"add-ons. If you wish to install unapproved add-ons or add-ons from third-party websites, use caution as these add-ons may harm your computer or violate your privacy. <a "
-"href=\"%(learnmore_url)s\">Learn more about our approval process</a>"
+"Use caution when installing add-ons, as they may harm your computer or violate your privacy. Add-ons available from this site may be subject to review by Mozilla's team of reviewers, and user "
+"feedback is closely monitored, so they should generally be safe to install. <a href=\"%(learnmore_url)s\">Learn more about our review process</a>"
 msgstr ""
-"Якщо явно не зазначено протилежне, додатки, доступні в цій галереї були перевірені і схвалені командою редакторів Mozilla і безпечні для установки. Ми рекомендуємо вам встановлювати тільки схвалені "
-"додатки. Якщо ви хочете встановити несхвалені додатки або додатки зі сторонніх веб-сайтів, будьте обережні, оскільки ці додатки можуть завдати шкоди вашому комп'ютеру або порушити вашу приватність. "
-"<a href=\"%(learnmore_url)s\">Дізнайтеся більше про наш процес перевірки</a>"
+"Дотримуйтесь обережності при встановленні додатків, тому що вони можуть нашкодити вашому комп'ютеру, або порушити вашу приватність. Додатки, що доступні на цьому сайті, можуть бути предметом "
+"перевірки командою рецензентів Mozilla. Крім того, відгуки користувачів постійно перевіряються, тому зазвичай можна не боятися їх встановлювати. <a href=\"%(learnmore_url)s\">Дізнайтеся більше про "
+"наш процес перевірки</a>"
 
 #, python-format
 msgid "Can add-ons make %(app_name)s slower?"
@@ -7264,35 +7108,32 @@ msgstr "Що, як мені не вдається знайти додаток, �
 #, python-format
 msgid ""
 "With thousands of add-ons available, there's something for everyone. But if you're looking for a particular add-on and can't find it, you might try searching on other sites or posting about it in "
-"our <a href=\"%(forum_url)s\">Add-ons </a>forum."
+"our <a href=\"%(forum_url)s\">Add-ons forum</a>."
 msgstr ""
-"З поміж тисяч доступних додатків, знайдеться щось для кожного. Але якщо ви шукаєте конкретний додаток і не можете його знайти, можете спробувати пошукати на інших сайтах, або написати про нього на "
-"нашому <a href=\"%(forum_url)s\">форумі додатків</a>."
+"Серед тисяч доступних додатків, знайдеться щось для кожного. Але якщо ви шукаєте конкретний додаток і не можете його знайти, спробуйте пошукати на інших сайтах, або написати про нього на нашому <a "
+"href=\"%(forum_url)s\">форумі додатків</a>."
 
 msgid "What does it mean if an add-on is \"experimental\"?"
 msgstr "Що означає, коли додаток \"експериментальний\"?"
 
 #, python-format
 msgid ""
-"Experimental add-ons have been marked by their developers as not suitable for a wide audience.  They have been checked by our editors to make sure they don't have security problems, but they may "
-"still have bugs or not work properly. Use caution when installing experimental add-ons and uninstall the add-on immediately if you notice problems. <a href=\"%(url)s\">Learn more about our review "
-"process</a></dd>"
+"Experimental add-ons have been marked by their developers as not suitable for a wide audience.  They may have bugs or not work properly. Use caution when installing experimental add-ons and "
+"uninstall the add-on immediately if you notice problems. <a href=\"%(url)s\">Learn more about our review process</a></dd>"
 msgstr ""
-"Експериментальні додатки були помічені їх розробниками як такі, що призначені для невеликої аудиторії.  Вони були перевірені нашими редакторами, щоб переконатися, що вони не мають проблем з "
-"безпекою, але все ж вони можуть містити помилки чи не працювати належним чином. Будьте обережні під час установки експериментальних додатків і негайно видаляйте додатки, якщо ви помітите проблеми. "
-"<a href=\"%(url)s\">Дізнайтеся більше про наш процес перевірки</a></dd>"
+"Експериментальні додатки позначаються розробниками як такі, що не призначені для широкої аудиторії.  Вони можуть бути з помилками, або працювати не належним чином. Будьте обережні під час "
+"встановлення експериментальних додатків і негайно видаляйте їх при виявленні проблем. <a href=\"%(url)s\">Дізнайтеся більше про наш процес перевірки</a></dd>"
 
 msgid "What does it mean if an add-on is \"not reviewed\"?"
 msgstr "Що це означає, коли додаток \"не перевірений\"?"
 
 #, python-format
 msgid ""
-"While all add-ons publicly available in our gallery are reviewed by an editor, you may receive a direct link to an add-on that hasn't yet been reviewed. Use caution when installing these add-ons, as"
-" they could harm your computer or violate your privacy. We recommend that you only install reviewed add-ons. <a href=\"%(url)s\">Learn more about our review process</a></dd>"
+"If you receive a direct link to an add-on that says it hasn't yet been reviewed, it means it's currently awaiting review by Mozilla. Use caution when installing these add-ons, as they could harm "
+"your computer or violate your privacy. <a href=\"%(url)s\">Learn more about our review process</a></dd>"
 msgstr ""
-"Хоча всі додатки, яуі публічно доступні в нашій галереї, були перевірені редакторами, ви все ж можете отримати пряме посилання на додаток, який поки не було перевірено. Будьте обережні під час "
-"установки цих додатків, так як вони можуть завдати шкоди вашому комп'ютеру або порушити вашу приватність. Ми рекомендуємо вам встановлювати тільки перевірені додатки. <a href=\"%(url)s\">Дізнайтеся "
-"більше про наш процес перевірки</a></dd>"
+"Якщо ви отримаєте пряме посилання на додаток про те, що він ще не був перевірений, це означає, що він в даний момент очікує перевірку Mozilla. Будьте обережні при встановленні цих додатків, тому що "
+"вони можуть нашкодити вашому комп'ютеру або порушити вашу приватність. <a href=\"%(url)s\">Дізнайтеся більше про наш процес перевірки</a></dd>"
 
 msgid "How much do add-ons cost to purchase?"
 msgstr "Скільки коштують додатки?"
@@ -7322,20 +7163,10 @@ msgstr ""
 
 msgid ""
 "Please note that when you install an add-on from the \"Beta Version\" section of an add-on's listing, you will continue to receive updates for that add-on as they become available. Like the initial "
-"version you installed, all beta releases are unreviewed by Mozilla and may harm your computer."
+"version you installed, all beta releases are not reviewed by Mozilla and may harm your computer."
 msgstr ""
-"Будь ласка, зверніть увагу, що коли ви встановлюєте додаток з розділу \"Бета-версія\" сторінки додатка, ви будете продовжувати отримувати оновлення для цього додатка, як тільки вони стануть "
-"доступні. Як і у випадку первісної встановленої вами версії, бета-всі версії не перевірені Mozilla і можуть завдати шкоди вашому комп'ютеру."
-
-msgid "What does it mean when an add-on is flagged as slow?"
-msgstr ""
-"Що означає, коли додаток відмічений як \n"
-" повільний?"
-
-msgid "Most add-ons load code and resources at the same time Firefox is starting up. In most cases the impact in start-up time is minimal, but some add-ons can cause a noticeable slowdown."
-msgstr ""
-"Більшість додатків завантажують код і ресурси під час запуску Firefox. У більшості випадків це викликає мінімальний вплив на час запуску, але деякі додатки можуть викликати його помітне "
-"уповільнення."
+"Зверніть увагу, що коли ви встановлюєте додаток з розділу \"Бета-версія\" сторінки додатка, ви будете й надалі отримувати оновлення для бета-версії цього додатка з цього розділу. Всі бета-версії "
+"додатків не проходять перевірку Mozilla і можуть нашкодити вашому комп'ютеру."
 
 msgid "How do I report an inappropriate or spam user review?"
 msgstr "Як я можу повідомити про невідповідний відгук чи спам?"
@@ -7396,11 +7227,11 @@ msgstr "Що таке мобільні додатки?"
 
 #, python-format
 msgid ""
-"Mobile add-ons work with <a href=\"%(mobile_url)s\">Firefox for Mobile</a> and add or modify functionality just like desktop add-ons. You can find add-ons that work with Firefox for Mobile in our <a"
-" href=\"%(gallery_url)s\">gallery</a>."
+"Mobile add-ons work with <a href=\"%(mobile_url)s\">Firefox for Android</a> and add or modify functionality just like desktop add-ons. You can find add-ons that work with Firefox for Android in our "
+"<a href=\"%(gallery_url)s\">gallery</a>."
 msgstr ""
-"Мобільні додатки працюють з <a href=\"%(mobile_url)s\">Firefox для мобільних пристроїв</a> і додають або змінюють функціональність, як і додатки для настільних комп'ютерів. Ви можете знайти додатки,"
-" які працюють з Firefox для мобільних пристроїв, в нашій <a href=\"%(gallery_url)s\">галереї</a>."
+"Мобільні додатки працюють з <a href=\"%(mobile_url)s\">Firefox для Android</a> і додають або змінюють його функціональність так само, як і додатки для комп'ютера. Ви можете знайти додатки, які "
+"працюють з Firefox для Android в нашій <a href=\"%(gallery_url)s\">галереї</a>."
 
 msgid "Developer Topics"
 msgstr "Теми для розробників"
@@ -8398,8 +8229,8 @@ msgstr "мій оснований на SDK додаток успішно оно�
 msgid "someone writes a review of my add-on"
 msgstr "хтось пише відгук до мого додатку"
 
-msgid "add-on contests or events are announced"
-msgstr "оголошені конкурси чи події для додатків"
+msgid "stay up-to-date with news and events relevant to add-on developers"
+msgstr "будьте в курсі новин та подій, пов'язаних з розробкою додатків"
 
 msgid "my add-on's compatibility cannot be upgraded"
 msgstr "сумісність мого додатку не може бути оновлена"
@@ -8704,9 +8535,6 @@ msgstr "Випущено {0}"
 #, python-format
 msgid "Source code released under <a href=\"%(url)s\">%(name)s</a>"
 msgstr "Програмний код випущено на умовах <a href=\"%(url)s\">%(name)s</a>"
-
-msgid "View the source"
-msgstr "Переглянути джерело"
 
 #. {0} is an add-on name.
 msgid "{0} Version History"

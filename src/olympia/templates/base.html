@@ -14,7 +14,7 @@
     {% block rss_feed %}{% endblock %}
 
     {# L10n: {0} is an application, like Firefox. #}
-    <link title="{{ _('{0} Add-ons')|f(APP.pretty) }}"
+    <link title="{{ _('{0} Add-ons')|format_html(APP.pretty) }}"
           rel="search" type="application/opensearchdescription+xml"
           href="{{ url('amo.opensearch') }}" />
 
@@ -23,8 +23,6 @@
     {% endblock %}
     {% block site_css %}
       {{ css('zamboni/css') }}
-      <!--[if IE]><link rel="stylesheet" href="{{ static('css/legacy/ie.css') }}"><![endif]-->
-      <!--[if IE 7]><link rel="stylesheet" href="{{ static('css/legacy/ie7.css') }}"><![endif]-->
     {% endblock %}
 
     {% block extrahead %}{% endblock %}

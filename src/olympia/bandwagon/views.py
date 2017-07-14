@@ -14,9 +14,7 @@ from django.utils.translation import ugettext_lazy as _lazy, ugettext
 
 import caching.base as caching
 from django_statsd.clients import statsd
-from rest_framework.mixins import ListModelMixin
-from rest_framework.permissions import AllowAny, BasePermission
-from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 import olympia.core.logger
 from olympia import amo
@@ -30,7 +28,10 @@ from olympia.accounts.views import AccountViewSet
 from olympia.accounts.utils import redirect_for_login
 from olympia.addons.models import Addon
 from olympia.addons.views import BaseFilter
-from olympia.api.permissions import AllOf, AnyOf, GroupPermission
+from olympia.api.filters import OrderingAliasFilter
+from olympia.api.permissions import (
+    AllOf, AllowReadOnlyIfPublic, AnyOf, GroupPermission,
+    PreventActionPermission)
 from olympia.legacy_api.utils import addon_to_dict
 from olympia.tags.models import Tag
 from olympia.translations.query import order_by_translation
@@ -39,7 +40,8 @@ from olympia.users.models import UserProfile
 from .models import (
     Collection, CollectionAddon, CollectionWatcher, CollectionVote,
     SPECIAL_SLUGS)
-from .serializers import CollectionAddonSerializer, SimpleCollectionSerializer
+from .permissions import AllowCollectionAuthor
+from .serializers import CollectionAddonSerializer, CollectionSerializer
 from . import forms, tasks
 
 log = olympia.core.logger.getLogger('z.collections')
@@ -318,7 +320,7 @@ def collection_vote(request, username, slug, direction):
 
 
 def initial_data_from_request(request):
-    return dict(author=request.user, application=request.APP.id)
+    return {'author': request.user, 'application': request.APP.id}
 
 
 def collection_message(request, collection, option):
@@ -374,12 +376,12 @@ def add(request):
 def ajax_new(request):
     form = forms.CollectionForm(
         request.POST or None,
-        initial={'author': request.user, 'application': request.APP.id},
-    )
+        initial=initial_data_from_request(request))
 
     if request.method == 'POST' and form.is_valid():
         collection = form.save()
-        addon_id = request.REQUEST['addon_id']
+        addon_id = request.POST['addon_id']
+
         collection.add_addon(Addon.objects.get(pk=addon_id))
         log.info('Created collection %s' % collection.id)
         return http.HttpResponseRedirect(reverse('collections.ajax_list') +
@@ -645,65 +647,63 @@ def mine(request, username=None, slug=None):
         return collection_detail(request, username, slug)
 
 
-class AllowCollectionAuthor(BasePermission):
-
-    def has_permission(self, request, view):
-        return view.get_account_viewset().self_view
-
-    def has_object_permission(self, request, view, obj):
-        return self.has_permission(request, view)
-
-
-class AllowNonListActions(BasePermission):
-
-    def has_permission(self, request, view):
-        return getattr(view, 'action', '') != 'list'
-
-    def has_object_permission(self, request, view, obj):
-        return True
-
-
-class AllowListedCollectionOnly(BasePermission):
-
-    def has_permission(self, request, view):
-        return True
-
-    def has_object_permission(self, request, view, obj):
-        # Anyone can access a collection if they know the slug, if it's listed.
-        return obj.listed
-
-
-class CollectionViewSet(ReadOnlyModelViewSet):
-    permission_classes = [AnyOf(AllowCollectionAuthor,
-                                GroupPermission(amo.permissions.USERS_EDIT),
-                                AllOf(AllowListedCollectionOnly,
-                                      AllowNonListActions)),
-                          ]
-    serializer_class = SimpleCollectionSerializer
+class CollectionViewSet(ModelViewSet):
+    permission_classes = [
+        AnyOf(
+            # Collection authors can do everything.
+            AllowCollectionAuthor,
+            # Admins can do everything except create.
+            AllOf(GroupPermission(amo.permissions.COLLECTIONS_EDIT),
+                  PreventActionPermission('create')),
+            # Everyone else can do read-only stuff, except list.
+            AllOf(AllowReadOnlyIfPublic,
+                  PreventActionPermission('list'))),
+    ]
+    serializer_class = CollectionSerializer
     lookup_field = 'slug'
 
     def get_account_viewset(self):
         if not hasattr(self, 'account_viewset'):
             self.account_viewset = AccountViewSet(
                 request=self.request,
+                permission_classes=[],  # We handled permissions already.
                 kwargs={'pk': self.kwargs['user_pk']})
         return self.account_viewset
 
     def get_queryset(self):
         return Collection.objects.filter(
-            author=self.get_account_viewset().get_object())
+            author=self.get_account_viewset().get_object()).order_by(
+            '-modified')
 
 
-class CollectionAddonViewSet(ListModelMixin, GenericViewSet):
-    permission_classes = [AllowAny]
+class CollectionAddonViewSet(ModelViewSet):
+    permission_classes = []  # We don't need extra permissions.
     serializer_class = CollectionAddonSerializer
+    lookup_field = 'addon'
+    filter_backends = (OrderingAliasFilter,)
+    ordering_fields = ()
+    ordering_field_aliases = {'popularity': 'addon__weekly_downloads',
+                              'name': 'addon__name__localized_string',
+                              'added': 'created'}
+    ordering = ('-addon__weekly_downloads',)
 
-    def get_queryset(self):
-        if not hasattr(self, 'collection_object'):
-            self.collection_object = CollectionViewSet(
+    def get_collection_viewset(self):
+        if not hasattr(self, 'collection_viewset'):
+            # CollectionViewSet's permission_classes are good for us.
+            self.collection_viewset = CollectionViewSet(
                 request=self.request,
                 kwargs={'user_pk': self.kwargs['user_pk'],
-                        'slug': self.kwargs['collection_slug']}).get_object()
+                        'slug': self.kwargs['collection_slug']})
+        return self.collection_viewset
 
+    def get_object(self):
+        self.lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs.get(self.lookup_url_kwarg)
+        # if the lookup is not a number, its probably the slug instead.
+        if lookup_value and not unicode(lookup_value).isdigit():
+            self.lookup_field = '%s__slug' % self.lookup_field
+        return super(CollectionAddonViewSet, self).get_object()
+
+    def get_queryset(self):
         return CollectionAddon.objects.filter(
-            collection=self.collection_object)
+            collection=self.get_collection_viewset().get_object())

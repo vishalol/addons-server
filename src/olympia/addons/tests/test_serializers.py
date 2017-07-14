@@ -5,7 +5,7 @@ from elasticsearch_dsl import Search
 from rest_framework.test import APIRequestFactory
 
 from olympia import amo
-from olympia.amo.helpers import absolutify
+from olympia.amo.templatetags.jinja_helpers import absolutify
 from olympia.amo.tests import (
     addon_factory, ESTestCase, file_factory, TestCase, version_factory,
     user_factory)
@@ -30,6 +30,13 @@ class AddonSerializerOutputTestMixin(object):
         super(AddonSerializerOutputTestMixin, self).setUp()
         self.request = APIRequestFactory().get('/')
 
+    def check_author(self, author, result):
+        assert result == {
+            'id': author.pk,
+            'name': author.name,
+            'url': absolutify(author.get_url_path()),
+            'picture_url': absolutify(author.picture_url)}
+
     def _test_version(self, version, data):
         assert data['id'] == version.pk
 
@@ -49,6 +56,7 @@ class AddonSerializerOutputTestMixin(object):
         assert result_file['created'] == (
             file_.created.replace(microsecond=0).isoformat() + 'Z')
         assert result_file['hash'] == file_.hash
+        assert result_file['is_restart_required'] == file_.is_restart_required
         assert result_file['is_webextension'] == file_.is_webextension
         assert result_file['platform'] == (
             amo.PLATFORM_CHOICES_API[file_.platform])
@@ -76,6 +84,7 @@ class AddonSerializerOutputTestMixin(object):
             description=u'My Addôn description',
             file_kw={
                 'hash': 'fakehash',
+                'is_restart_required': False,
                 'is_webextension': True,
                 'platform': amo.PLATFORM_WIN.id,
                 'size': 42,
@@ -151,14 +160,8 @@ class AddonSerializerOutputTestMixin(object):
 
         assert result['authors']
         assert len(result['authors']) == 2
-        assert result['authors'][0] == {
-            'id': first_author.pk,
-            'name': first_author.name,
-            'url': absolutify(first_author.get_url_path())}
-        assert result['authors'][1] == {
-            'id': second_author.pk,
-            'name': second_author.name,
-            'url': absolutify(second_author.get_url_path())}
+        self.check_author(first_author, result['authors'][0])
+        self.check_author(second_author, result['authors'][1])
 
         assert result['edit_url'] == absolutify(self.addon.get_dev_url())
         assert result['default_locale'] == self.addon.default_locale
@@ -426,8 +429,7 @@ class AddonSerializerOutputTestMixin(object):
             'http://testserver/static/img/addon-icons/default-64.png')
 
     def test_webextension(self):
-        self.addon = addon_factory(
-            file_kw={'is_webextension': True})
+        self.addon = addon_factory(file_kw={'is_webextension': True})
         # Give one of the versions some webext permissions to test that.
         WebextPermission.objects.create(
             file=self.addon.current_version.all_files[0],
@@ -441,6 +443,13 @@ class AddonSerializerOutputTestMixin(object):
         # Double check the permissions got correctly set.
         assert result['current_version']['files'][0]['permissions'] == ([
             'bookmarks', 'random permission'])
+
+    def test_is_restart_required(self):
+        self.addon = addon_factory(file_kw={'is_restart_required': True})
+        result = self.serialize()
+
+        self._test_version(
+            self.addon.current_version, result['current_version'])
 
 
 class TestAddonSerializerOutput(AddonSerializerOutputTestMixin, TestCase):
@@ -481,6 +490,13 @@ class TestESAddonSerializerOutput(AddonSerializerOutputTestMixin, ESTestCase):
         with self.assertNumQueries(0):
             result = self.serializer.to_representation(obj)
         return result
+
+    def check_author(self, author, result):
+        """Override because the ES serializer doesn't include picture_url."""
+        assert result == {
+            'id': author.pk,
+            'name': author.name,
+            'url': absolutify(author.get_url_path())}
 
 
 class TestVersionSerializerOutput(TestCase):

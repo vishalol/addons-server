@@ -15,6 +15,7 @@ from django.core.files.storage import default_storage as storage
 from django.db import models, transaction
 from django.db.models import F, Max, Q, signals as dbsignals
 from django.dispatch import receiver
+from django.utils.functional import cached_property
 from django.utils.translation import trans_real, ugettext_lazy as _
 
 import caching.base as caching
@@ -29,7 +30,7 @@ from olympia.amo.models import (
 from olympia.access import acl
 from olympia.addons.utils import (
     get_creatured_ids, get_featured_ids, generate_addon_guid)
-from olympia.amo import helpers
+from olympia.amo.templatetags import jinja_helpers
 from olympia.amo.decorators import use_master, write
 from olympia.amo.utils import (
     attach_trans_dict, cache_ns_key, chunked,
@@ -74,7 +75,7 @@ def clean_slug(instance, slug_field='slug'):
         else:
             slug = instance.__class__.__name__
 
-    max_length = instance._meta.get_field_by_name(slug_field)[0].max_length
+    max_length = instance._meta.get_field(slug_field).max_length
     slug = slugify(slug)[:max_length]
 
     if DeniedSlug.blocked(slug):
@@ -259,9 +260,10 @@ class Addon(OnChangeMixin, ModelBase):
                                       db_column='defaultlocale')
 
     type = models.PositiveIntegerField(
-        choices=amo.ADDON_TYPE.items(), db_column='addontype_id', default=0)
+        choices=amo.ADDON_TYPE.items(), db_column='addontype_id',
+        default=amo.ADDON_EXTENSION)
     status = models.PositiveIntegerField(
-        choices=STATUS_CHOICES.items(), db_index=True, default=0)
+        choices=STATUS_CHOICES.items(), db_index=True, default=amo.STATUS_NULL)
     icon_type = models.CharField(max_length=25, blank=True,
                                  db_column='icontype')
     homepage = TranslatedField()
@@ -299,7 +301,6 @@ class Addon(OnChangeMixin, ModelBase):
                                            db_column='inactive')
     view_source = models.BooleanField(default=True, db_column='viewsource')
     public_stats = models.BooleanField(default=False, db_column='publicstats')
-    prerelease = models.BooleanField(default=False)
     admin_review = models.BooleanField(default=False, db_column='adminreview')
     external_software = models.BooleanField(default=False,
                                             db_column='externalsoftware')
@@ -353,6 +354,7 @@ class Addon(OnChangeMixin, ModelBase):
 
     is_experimental = models.BooleanField(default=False,
                                           db_column='experimental')
+    reputation = models.SmallIntegerField(default=0, null=True)
 
     # The order of those managers is very important:
     # The first one discovered, if it has "use_for_related_fields = True"
@@ -373,6 +375,14 @@ class Addon(OnChangeMixin, ModelBase):
 
     class Meta:
         db_table = 'addons'
+        index_together = [
+            ['weekly_downloads', 'type'],
+            ['created', 'type'],
+            ['bayesian_rating', 'type'],
+            ['last_updated', 'type'],
+            ['average_daily_users', 'type'],
+            ['type', 'status', 'disabled_by_user'],
+        ]
 
     @staticmethod
     def __new__(cls, *args, **kw):
@@ -466,7 +476,7 @@ class Addon(OnChangeMixin, ModelBase):
                 'name': self.name,
                 'slug': self.slug,
                 'total_downloads': self.total_downloads,
-                'url': helpers.absolutify(self.get_url_path()),
+                'url': jinja_helpers.absolutify(self.get_url_path()),
                 'user_str': ("%s, %s (%s)" % (user.display_name or
                                               user.username, user.email,
                                               user.id) if user else "Unknown"),
@@ -510,7 +520,7 @@ class Addon(OnChangeMixin, ModelBase):
 
     @classmethod
     def initialize_addon_from_upload(cls, data, upload, channel):
-        fields = cls._meta.get_all_field_names()
+        fields = [field.name for field in cls._meta.get_fields()]
         guid = data.get('guid')
         old_guid_addon = None
         if guid:  # It's an extension.
@@ -631,7 +641,7 @@ class Addon(OnChangeMixin, ModelBase):
 
     @property
     def reviews_url(self):
-        return helpers.url('addons.reviews.list', self.slug)
+        return jinja_helpers.url('addons.reviews.list', self.slug)
 
     def get_ratings_url(self, action='list', args=None, add_prefix=True):
         return reverse('ratings.themes.%s' % action,
@@ -653,7 +663,7 @@ class Addon(OnChangeMixin, ModelBase):
     def share_url(self):
         return reverse('addons.share', args=[self.slug])
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def listed_authors(self):
         return UserProfile.objects.filter(
             addons=self,
@@ -830,13 +840,13 @@ class Addon(OnChangeMixin, ModelBase):
             pass
         return None
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def latest_unlisted_version(self):
         """Shortcut property for Addon.find_latest_version(
         channel=RELEASE_CHANNEL_UNLISTED)."""
         return self.find_latest_version(channel=amo.RELEASE_CHANNEL_UNLISTED)
 
-    @amo.cached_property
+    @cached_property
     def binary(self):
         """Returns if the current version has binary files."""
         version = self.current_version
@@ -844,7 +854,7 @@ class Addon(OnChangeMixin, ModelBase):
             return version.files.filter(binary=True).exists()
         return False
 
-    @amo.cached_property
+    @cached_property
     def binary_components(self):
         """Returns if the current version has files with binary_components."""
         version = self.current_version
@@ -853,7 +863,7 @@ class Addon(OnChangeMixin, ModelBase):
         return False
 
     def get_icon_dir(self):
-        return os.path.join(helpers.user_media_path('addon_icons'),
+        return os.path.join(jinja_helpers.user_media_path('addon_icons'),
                             '%s' % (self.id / 1000))
 
     def get_icon_url(self, size, use_default=True):
@@ -905,7 +915,7 @@ class Addon(OnChangeMixin, ModelBase):
                 split_id.group(2) or '0',
                 '{0}-{1}.png?modified={2}'.format(self.id, size, modified),
             ])
-            return helpers.user_media_url('addon_icons') + path
+            return jinja_helpers.user_media_url('addon_icons') + path
 
     def get_default_icon_url(self, size):
         return '{0}img/addon-icons/{1}-{2}.png'.format(
@@ -1065,7 +1075,7 @@ class Addon(OnChangeMixin, ModelBase):
     def show_adu(self):
         return self.type != amo.ADDON_SEARCH
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def current_beta_version(self):
         """Retrieves the latest version of an addon, in the beta channel."""
         versions = self.versions.filter(files__status=amo.STATUS_BETA)[:1]
@@ -1197,10 +1207,11 @@ class Addon(OnChangeMixin, ModelBase):
         return get_featured_ids(app, lang)
 
     @property
-    def requires_restart(self):
+    def is_restart_required(self):
         """Whether the add-on current version requires a browser restart to
         work."""
-        return self.current_version and self.current_version.requires_restart
+        return (
+            self.current_version and self.current_version.is_restart_required)
 
     def is_featured(self, app, lang=None):
         """Is add-on globally featured for this app and language?"""
@@ -1215,7 +1226,7 @@ class Addon(OnChangeMixin, ModelBase):
         """Is developer profile (partially or entirely) completed?"""
         return self.the_reason or self.the_future
 
-    @amo.cached_property
+    @cached_property
     def tags_partitioned_by_developer(self):
         """Returns a tuple of developer tags and user tags for this addon."""
         tags = self.tags.not_denied()
@@ -1225,7 +1236,7 @@ class Addon(OnChangeMixin, ModelBase):
         dev_tags = tags.exclude(id__in=[t.id for t in user_tags])
         return dev_tags, user_tags
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def compatible_apps(self):
         """Shortcut to get compatible apps for the current version."""
         # Search providers and personas don't list their supported apps.
@@ -1249,18 +1260,11 @@ class Addon(OnChangeMixin, ModelBase):
         return [app for app, ver in self.compatible_apps.items() if ver and
                 version_int(ver.max.version) < version_int(app.latest_version)]
 
-    def has_author(self, user, roles=None):
-        """True if ``user`` is an author with any of the specified ``roles``.
-
-        ``roles`` should be a list of valid roles (see amo.AUTHOR_ROLE_*). If
-        not specified, has_author will return true if the user has any role.
-        """
+    def has_author(self, user):
+        """True if ``user`` is an author of the add-on."""
         if user is None or user.is_anonymous():
             return False
-        if roles is None:
-            roles = dict(amo.AUTHOR_CHOICES).keys()
-        return AddonUser.objects.filter(addon=self, user=user,
-                                        role__in=roles).exists()
+        return AddonUser.objects.filter(addon=self, user=user).exists()
 
     @property
     def takes_contributions(self):
@@ -1291,12 +1295,12 @@ class Addon(OnChangeMixin, ModelBase):
                     .extra(select={'last_updated': 'created'}))
         return dict(public=public, exp=exp, personas=personas)
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def all_categories(self):
         return filter(
             None, [cat.to_static_category() for cat in self.categories.all()])
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def all_previews(self):
         return list(self.get_previews())
 
@@ -1333,7 +1337,8 @@ class Addon(OnChangeMixin, ModelBase):
         return ''
 
     def can_review(self, user):
-        return not(user and self.has_author(user))
+        """Check whether the user should be prompted to add a review or not."""
+        return not user.is_authenticated() or not self.has_author(user)
 
     @property
     def all_dependencies(self):
@@ -1511,7 +1516,7 @@ class Persona(caching.CachingMixin, models.Model):
         return self.persona_id == 0
 
     def _image_url(self, filename):
-        host = helpers.user_media_url('addons')
+        host = jinja_helpers.user_media_url('addons')
         image_url = posixpath.join(host, str(self.addon.id), filename or '')
         # TODO: Bust the cache on the hash of the image contents or something.
         if self.addon.modified is not None:
@@ -1521,10 +1526,10 @@ class Persona(caching.CachingMixin, models.Model):
         return '%s?%s' % (image_url, modified)
 
     def _image_path(self, filename):
-        return os.path.join(helpers.user_media_path('addons'),
+        return os.path.join(jinja_helpers.user_media_path('addons'),
                             str(self.addon.id), filename)
 
-    @amo.cached_property
+    @cached_property
     def thumb_url(self):
         """
         Handles deprecated GetPersonas URL.
@@ -1536,7 +1541,7 @@ class Persona(caching.CachingMixin, models.Model):
         else:
             return self._image_url('preview.jpg')
 
-    @amo.cached_property
+    @cached_property
     def thumb_path(self):
         """
         Handles deprecated GetPersonas path.
@@ -1548,7 +1553,7 @@ class Persona(caching.CachingMixin, models.Model):
         else:
             return self._image_path('preview.jpg')
 
-    @amo.cached_property
+    @cached_property
     def icon_url(self):
         """URL to personas square preview."""
         if self.is_new():
@@ -1556,7 +1561,7 @@ class Persona(caching.CachingMixin, models.Model):
         else:
             return self._image_url('preview_small.jpg')
 
-    @amo.cached_property
+    @cached_property
     def icon_path(self):
         """Path to personas square preview."""
         if self.is_new():
@@ -1564,7 +1569,7 @@ class Persona(caching.CachingMixin, models.Model):
         else:
             return self._image_path('preview_small.jpg')
 
-    @amo.cached_property
+    @cached_property
     def preview_url(self):
         """URL to Persona's big, 680px, preview."""
         if self.is_new():
@@ -1572,7 +1577,7 @@ class Persona(caching.CachingMixin, models.Model):
         else:
             return self._image_url('preview_large.jpg')
 
-    @amo.cached_property
+    @cached_property
     def preview_path(self):
         """Path to Persona's big, 680px, preview."""
         if self.is_new():
@@ -1580,23 +1585,23 @@ class Persona(caching.CachingMixin, models.Model):
         else:
             return self._image_path('preview_large.jpg')
 
-    @amo.cached_property
+    @cached_property
     def header_url(self):
         return self._image_url(self.header)
 
-    @amo.cached_property
+    @cached_property
     def footer_url(self):
         return self.footer and self._image_url(self.footer) or ''
 
-    @amo.cached_property
+    @cached_property
     def header_path(self):
         return self._image_path(self.header)
 
-    @amo.cached_property
+    @cached_property
     def footer_path(self):
         return self.footer and self._image_path(self.footer) or ''
 
-    @amo.cached_property
+    @cached_property
     def update_url(self):
         locale = settings.LANGUAGE_URL_MAP.get(trans_real.get_language())
         return settings.NEW_PERSONAS_UPDATE_URL % {
@@ -1604,7 +1609,7 @@ class Persona(caching.CachingMixin, models.Model):
             'id': self.addon.id
         }
 
-    @amo.cached_property
+    @cached_property
     def theme_data(self):
         """Theme JSON Data for Browser/extension preview."""
         def hexcolor(color):
@@ -1628,7 +1633,7 @@ class Persona(caching.CachingMixin, models.Model):
             'previewURL': self.preview_url,
             'iconURL': self.icon_url,
             'updateURL': self.update_url,
-            'detailURL': helpers.absolutify(self.addon.get_url_path()),
+            'detailURL': jinja_helpers.absolutify(self.addon.get_url_path()),
             'version': '1.0'
         }
 
@@ -1650,7 +1655,7 @@ class Persona(caching.CachingMixin, models.Model):
                           authors__in=self.addon.listed_authors)
                   .distinct())
 
-    @amo.cached_property(writable=True)
+    @cached_property
     def listed_authors(self):
         return self.addon.listed_authors
 
@@ -1859,21 +1864,21 @@ class Preview(ModelBase):
     @property
     def thumbnail_url(self):
         template = (
-            helpers.user_media_url('previews') +
+            jinja_helpers.user_media_url('previews') +
             'thumbs/%s/%d.png?modified=%s')
         return self._image_url(template)
 
     @property
     def image_url(self):
         template = (
-            helpers.user_media_url('previews') +
+            jinja_helpers.user_media_url('previews') +
             'full/%s/%d.png?modified=%s')
         return self._image_url(template)
 
     @property
     def thumbnail_path(self):
         template = os.path.join(
-            helpers.user_media_path('previews'),
+            jinja_helpers.user_media_path('previews'),
             'thumbs',
             '%s',
             '%d.png'
@@ -1883,7 +1888,7 @@ class Preview(ModelBase):
     @property
     def image_path(self):
         template = os.path.join(
-            helpers.user_media_path('previews'),
+            jinja_helpers.user_media_path('previews'),
             'full',
             '%s',
             '%d.png'
@@ -2021,7 +2026,7 @@ class CompatOverride(ModelBase):
             id_map[compat_id].compat_ranges = list(ranges)
 
     # May be filled in by a transformer for performance.
-    @amo.cached_property(writable=True)
+    @cached_property
     def compat_ranges(self):
         return list(self._compat_ranges.all())
 
@@ -2122,6 +2127,16 @@ def update_incompatible_versions(sender, instance, **kw):
     versions = instance.compat.addon.versions.values_list('id', flat=True)
     for chunk in chunked(versions, 50):
         tasks.update_incompatible_appversions.delay(chunk)
+
+
+class ReplacementAddon(ModelBase):
+    guid = models.CharField(max_length=255, unique=True, null=True)
+    path = models.CharField(max_length=255, null=True,
+                            help_text=_('Addon and collection paths need to '
+                                        'end with "/"'))
+
+    class Meta:
+        db_table = 'replacement_addons'
 
 
 models.signals.post_save.connect(update_incompatible_versions,

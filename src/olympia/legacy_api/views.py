@@ -11,14 +11,13 @@ from datetime import date, timedelta
 from django.core.cache import cache
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponsePermanentRedirect
+from django.template import engines
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext, ugettext_lazy as _, get_language
 from django.utils.encoding import force_bytes
 
-import jingo
 import waffle
 from caching.base import cached_with
-from jingo import get_standard_processors
 
 import olympia.core.logger
 from olympia import amo, legacy_api
@@ -40,9 +39,10 @@ OUT_OF_DATE = _(
     u'The API version, {0:.1f}, you are using is not valid. '
     u'Please upgrade to the current version {1:.1f} API.')
 
-xml_env = jingo.get_env().overlay()
+xml_env = engines['jinja2'].env.overlay()
 old_finalize = xml_env.finalize
-xml_env.finalize = lambda x: amo.helpers.strip_controls(old_finalize(x))
+xml_env.finalize = lambda x: amo.templatetags.jinja_helpers.strip_controls(
+    old_finalize(x))
 
 
 # Hard limit of 30.  The buffer is to try for locale-specific add-ons.
@@ -63,10 +63,8 @@ def partition(seq, key):
 def render_xml_to_string(request, template, context=None):
     if context is None:
         context = {}
-    if not jingo._helpers_loaded:
-        jingo.load_helpers()
 
-    for processor in get_standard_processors():
+    for processor in engines['jinja2'].context_processors:
         context.update(processor(request))
 
     template = xml_env.get_template(template)
@@ -220,7 +218,7 @@ class APIView(object):
     def __call__(self, request, api_version, *args, **kwargs):
 
         self.version = float(api_version)
-        self.format = request.REQUEST.get('format', 'xml')
+        self.format = request.GET.get('format', 'xml')
         self.content_type = ('text/xml' if self.format == 'xml'
                              else 'application/json')
         self.request = request
