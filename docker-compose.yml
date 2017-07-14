@@ -58,6 +58,9 @@ services:
       - RABBITMQ_DEFAULT_VHOST=olympia
 
   selenium-firefox:
-    image: selenium/standalone-firefox
+    image: selenium/standalone-firefox-debug
     expose:
       - "4444"
+    ports:
+      - "5900"
+    shm_size: 2g
