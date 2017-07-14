@@ -30,19 +30,12 @@ from olympia.landfill.collection import generate_collection
 from olympia.landfill.generators import generate_themes
 from olympia.reviews.models import Review
 from olympia.users.models import UserProfile
-from pytest_django import live_server_helper
-
-# TODO: Change imports to allow running tests against deployed instances.
 
 
 @pytest.fixture(scope='function')
 def my_base_url(base_url, request, pytestconfig):
-    """Base URL used to start the 'live_server'."""
-    if base_url:
-        pytestconfig.option.usingliveserver = False
-        return base_url
-    else:
-        return request.getfixturevalue("live_server").url
+    pytestconfig.option.usingliveserver = False
+    return base_url
 
 
 @pytest.fixture
@@ -69,7 +62,7 @@ def fxa_account(my_base_url):
     return FxATestAccount(url)
 
 
-@pytest.fixture()
+@pytest.fixture
 def jwt_issuer(my_base_url, variables):
     """JWT Issuer from variables file or env variable named 'JWT_ISSUER'"""
     try:
@@ -79,7 +72,7 @@ def jwt_issuer(my_base_url, variables):
         return os.getenv('JWT_ISSUER')
 
 
-@pytest.fixture()
+@pytest.fixture
 def jwt_secret(my_base_url, variables):
     """JWT Secret from variables file or env vatiable named "JWT_SECRET"""
     try:
@@ -90,7 +83,7 @@ def jwt_secret(my_base_url, variables):
 
 
 @pytest.fixture
-def initial_data(transactional_db, pytestconfig):
+def initial_data(pytestconfig):
     """Fixture used to fill database will dummy addons.
 
     Creates exactly 10 random addons with users that are also randomly
@@ -104,7 +97,7 @@ def initial_data(transactional_db, pytestconfig):
 
 
 @pytest.fixture
-def theme(transactional_db, create_superuser, pytestconfig):
+def theme(create_superuser, pytestconfig):
     """Creates a custom theme named 'Ui-Test Theme'.
 
     This theme will be a featured theme and will belong to the user created by
@@ -149,7 +142,14 @@ def theme(transactional_db, create_superuser, pytestconfig):
 
 
 @pytest.fixture
-def addon(transactional_db, create_superuser, pytestconfig):
+def selenium(selenium):
+    selenium.implicitly_wait(10)
+    selenium.maximize_window()
+    return selenium
+
+
+@pytest.fixture
+def addon(create_superuser, pytestconfig):
     """Creates a custom addon named 'Ui-Addon'.
 
     This addon will be a featured addon and will have a featured collecton
@@ -207,7 +207,7 @@ def addon(transactional_db, create_superuser, pytestconfig):
 
 
 @pytest.fixture
-def minimal_addon(transactional_db, create_superuser, pytestconfig):
+def minimal_addon(create_superuser, pytestconfig):
     """Creates a custom addon named 'Ui-Addon-2'.
 
     It will belong to the user created by the 'create_superuser' fixture.
@@ -254,7 +254,7 @@ def minimal_addon(transactional_db, create_superuser, pytestconfig):
 
 
 @pytest.fixture
-def themes(transactional_db, create_superuser, pytestconfig):
+def themes(create_superuser, pytestconfig):
     """Creates exactly 6 themes that will be not featured.
 
     These belong to the user created by the 'create_superuser' fixture.
@@ -271,7 +271,7 @@ def themes(transactional_db, create_superuser, pytestconfig):
 
 
 @pytest.fixture
-def collections(transactional_db, pytestconfig):
+def collections(pytestconfig):
     """Creates exactly 4 collections that are featured.
 
     This fixture uses the generate_collection function from olympia.
@@ -286,7 +286,7 @@ def collections(transactional_db, pytestconfig):
 
 
 @pytest.fixture
-def gen_webext(create_superuser, pytestconfig, tmpdir, transactional_db):
+def gen_webext(create_superuser, pytestconfig, tmpdir):
     """Creates a a blank webextenxtension."""
     if not pytestconfig.option.usingliveserver:
         return
@@ -360,27 +360,30 @@ def gen_webext(create_superuser, pytestconfig, tmpdir, transactional_db):
     addon.save()
 
 
+# @pytest.fixture
+# def gen_webext2(addon):
+#     import django
+
+#     from olympia.files.models import File, FileUpload
+#     from olympia.versions.models import Version
+#     from olympia.amo.tests.test_helpers import get_addon_file
+#     from django.utils.translation import activate
+#     from olympia.files.tests.test_helpers import get_file
+
+#     activate('en')
+
+#     f = File()
+#     upload = FileUpload.objects.create(path=get_file('webextension_no_id.xpi'), hash=f.generate_hash(get_file('webextension_no_id.xpi')))
+#     # upload = FileUpload.objects.create(path=tmpdir.join('webext_comp.xpi'))
+#     Version.from_upload(upload=upload, addon=addon, platforms=[amo.PLATFORM_ALL.id], channel=amo.RELEASE_CHANNEL_LISTED)
+
+
 @pytest.fixture
-def gen_webext2(addon):
-    import django
-
-    from olympia.files.models import File, FileUpload
-    from olympia.versions.models import Version
-    from olympia.amo.tests.test_helpers import get_addon_file
-    from django.utils.translation import activate
-    from olympia.files.tests.test_helpers import get_file
-
-    activate('en')
-
-    f = File()
-    upload = FileUpload.objects.create(path=get_file('webextension_no_id.xpi'), hash=f.generate_hash(get_file('webextension_no_id.xpi')))
-    # upload = FileUpload.objects.create(path=tmpdir.join('webext_comp.xpi'))
-    Version.from_upload(upload=upload, addon=addon, platforms=[amo.PLATFORM_ALL.id], channel=amo.RELEASE_CHANNEL_LISTED)
-
-
-@pytest.fixture
-def create_superuser(transactional_db, my_base_url, tmpdir, variables):
+def create_superuser(my_base_url, tmpdir, variables):
     """Creates a superuser."""
+    if not pytestconfig.option.usingliveserver:
+        return
+
     create_switch('super-create-accounts')
     call_command('loaddata', 'initial.json')
 
@@ -400,6 +403,9 @@ def create_superuser(transactional_db, my_base_url, tmpdir, variables):
 @pytest.fixture
 def user(create_superuser, my_base_url, fxa_account, jwt_token):
     """This creates a user for logging into the AMO site."""
+    if not pytestconfig.option.usingliveserver:
+        return
+
     url = '{base_url}/api/v3/accounts/super-create/'.format(
         base_url=my_base_url)
 
@@ -412,46 +418,6 @@ def user(create_superuser, my_base_url, fxa_account, jwt_token):
     assert requests.codes.created == response.status_code
     params.update(response.json())
     return params
-
-
-@pytest.fixture(scope='function')
-def live_server(request, transactional_db, pytestconfig):
-    """This fixture overrides the live_server fixture provided by pytest_django.
-
-    live_server allows us to create a running version of the
-    addons django application within pytest for testing.
-
-    cgrebs:
-    From what I found out was that the `live_server` fixture (in our setup,
-    couldn't reproduce in a fresh project) apparently starts up the
-    LiveServerThread way too early before pytest-django configures the
-    settings correctly.
-
-    That resulted in the LiveServerThread querying the 'default' database
-    which was different from what the other fixtures and tests were using
-    which resulted in the problem that the just created api keys could not
-    be found in the api methods in the live-server.
-
-    I worked around that by implementing the live_server fixture ourselfs
-    and make it function-scoped so that it now runs in a proper
-    database-transaction.
-
-    This is a HACK and I'll work on a more permanent solution but for now
-    it should be enough to continue working on porting tests...
-
-    Also investigating if there are any problems in pytest-django directly.
-    """
-
-    addr = (request.config.getvalue('liveserver') or
-            os.getenv('DJANGO_LIVE_TEST_SERVER_ADDRESS'))
-
-    if not addr:
-        addr = 'localhost:8081,8100-8200'
-
-    server = live_server_helper.LiveServer(addr)
-    pytestconfig.option.usingliveserver = True
-    yield server
-    server.stop()
 
 
 @pytest.fixture
