@@ -1,0 +1,9 @@
+{
+  "api": {
+    "web": {
+      "username": "uitest", 
+      "jwt_secret": "300dd232cd42a1a5a6d878b0144fc5f29a2df242a88ba2c44c0caa0c3f9e23a6", 
+      "jwt_issuer": "user:10969:743"
+    }
+  }
+}

@@ -75,6 +75,8 @@ def jwt_issuer(my_base_url, variables):
     """JWT Issuer from variables file or env variable named 'JWT_ISSUER'"""
     try:
         hostname = urlparse.urlsplit(my_base_url).hostname
+        hostname = 'web'
+        print('xxxxxxx', my_base_url, hostname)
         return variables['api'][hostname]['jwt_issuer']
     except KeyError:
         return os.getenv('JWT_ISSUER')
@@ -85,6 +87,7 @@ def jwt_secret(my_base_url, variables):
     """JWT Secret from variables file or env vatiable named "JWT_SECRET"""
     try:
         hostname = urlparse.urlsplit(my_base_url).hostname
+        hostname = 'web'
         return variables['api'][hostname]['jwt_secret']
     except KeyError:
         return os.getenv('JWT_SECRET')
@@ -377,8 +380,13 @@ def gen_webext(create_superuser, pytestconfig, tmpdir):
 
 
 @pytest.fixture
-def create_superuser(my_base_url, tmpdir, variables, pytestconfig):
+def create_superuser(my_base_url, settings, variables, pytestconfig):
     """Creates a superuser."""
+    with open(os.path.join(settings.ROOT, 'variables.json')) as fobj:
+        variables.update(json.load(fobj))
+
+    return
+
     create_switch('super-create-accounts')
     call_command('loaddata', 'initial.json')
 
