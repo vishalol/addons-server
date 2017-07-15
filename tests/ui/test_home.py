@@ -5,7 +5,7 @@ from pages.desktop.home import Home
 
 @pytest.mark.nondestructive
 def test_there_are_ten_most_popular_extensions(
-        my_base_url, selenium, initial_data):
+        db, my_base_url, selenium, initial_data):
     """Ten most popular add-ons are listed"""
     page = Home(selenium, my_base_url).open()
     assert len(page.most_popular.extensions) == 10

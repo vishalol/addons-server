@@ -32,9 +32,9 @@ from olympia.reviews.models import Review
 from olympia.users.models import UserProfile
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='session')
 def my_base_url(base_url, request, pytestconfig):
-    pytestconfig.option.usingliveserver = False
+    pytestconfig.option.usingliveserver = True
     return base_url
 
 
@@ -44,6 +44,14 @@ def capabilities(capabilities):
     capabilities['marionette'] = True
     capabilities['acceptInsecureCerts'] = True
     return capabilities
+
+
+# @pytest.fixture
+# def selenium(selenium):
+#     selenium.implicitly_wait(10)
+#     selenium.maximize_window()
+#     return selenium
+
 
 
 @pytest.fixture
@@ -83,17 +91,19 @@ def jwt_secret(my_base_url, variables):
 
 
 @pytest.fixture
-def initial_data(pytestconfig):
+def initial_data(create_superuser, my_base_url, jwt_token):
     """Fixture used to fill database will dummy addons.
 
-    Creates exactly 10 random addons with users that are also randomly
+    Creates exactly 11 random addons with users that are also randomly
     generated.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    url = '{base_url}/api/v3/landfill/generate-addon-user/'.format(
+        base_url=my_base_url)
 
-    for _ in range(10):
-        AddonUser.objects.create(user=user_factory(), addon=addon_factory())
+    params = {'count': 11}
+    headers = {'Authorization': 'JWT {token}'.format(token=jwt_token)}
+    response = requests.post(url, data=params, headers=headers)
+    assert response.status_code == requests.codes.created
 
 
 @pytest.fixture
@@ -105,8 +115,7 @@ def theme(create_superuser, pytestconfig):
 
     It has one author.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    return
 
     addon = addon_factory(
         status=STATUS_PUBLIC,
@@ -141,12 +150,6 @@ def theme(create_superuser, pytestconfig):
     return addon
 
 
-@pytest.fixture
-def selenium(selenium):
-    selenium.implicitly_wait(10)
-    selenium.maximize_window()
-    return selenium
-
 
 @pytest.fixture
 def addon(create_superuser, pytestconfig):
@@ -159,8 +162,7 @@ def addon(create_superuser, pytestconfig):
     It has 1 preview, 5 reviews, and 2 authors. The second author is named
     'ui-tester2'. It has a version number as well as a beta version.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    return
 
     default_icons = [x[0] for x in icons() if x[0].startswith('icon/')]
     addon = addon_factory(
@@ -214,8 +216,7 @@ def minimal_addon(create_superuser, pytestconfig):
 
     It has 1 preview, and 2 reviews.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    return
 
     default_icons = [x[0] for x in icons() if x[0].startswith('icon/')]
     addon = addon_factory(
@@ -260,8 +261,7 @@ def themes(create_superuser, pytestconfig):
     These belong to the user created by the 'create_superuser' fixture.
     It will also create 6 themes that are featured with random authors.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    return
 
     owner = UserProfile.objects.get(username='uitest')
     generate_themes(6, owner)
@@ -276,8 +276,7 @@ def collections(pytestconfig):
 
     This fixture uses the generate_collection function from olympia.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    return
 
     for _ in range(4):
         addon = addon_factory(type=amo.ADDON_EXTENSION)
@@ -288,8 +287,7 @@ def collections(pytestconfig):
 @pytest.fixture
 def gen_webext(create_superuser, pytestconfig, tmpdir):
     """Creates a a blank webextenxtension."""
-    if not pytestconfig.option.usingliveserver:
-        return
+    return
 
     from olympia.files.models import File, FileUpload
     from olympia.versions.models import Version
@@ -381,9 +379,6 @@ def gen_webext(create_superuser, pytestconfig, tmpdir):
 @pytest.fixture
 def create_superuser(my_base_url, tmpdir, variables, pytestconfig):
     """Creates a superuser."""
-    if not pytestconfig.option.usingliveserver:
-        return
-
     create_switch('super-create-accounts')
     call_command('loaddata', 'initial.json')
 
@@ -396,6 +391,7 @@ def create_superuser(my_base_url, tmpdir, variables, pytestconfig):
         save_api_credentials=str(tmpdir.join('variables.json')),
         hostname=urlparse.urlsplit(my_base_url).hostname
     )
+
     with tmpdir.join('variables.json').open() as f:
         variables.update(json.load(f))
 
@@ -403,9 +399,6 @@ def create_superuser(my_base_url, tmpdir, variables, pytestconfig):
 @pytest.fixture
 def user(create_superuser, my_base_url, fxa_account, jwt_token):
     """This creates a user for logging into the AMO site."""
-    if not pytestconfig.option.usingliveserver:
-        return
-
     url = '{base_url}/api/v3/accounts/super-create/'.format(
         base_url=my_base_url)
 
