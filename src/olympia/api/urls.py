@@ -11,4 +11,6 @@ urlpatterns = [
     url(r'^v3/statistics/', include('olympia.stats.api_urls')),
     url(r'^v3/activity/', include('olympia.activity.urls')),
     url(r'^v3/github/', include('olympia.github.urls')),
+
+    url(r'^v3/landfill/', include('olympia.landfill.urls')),
 ]

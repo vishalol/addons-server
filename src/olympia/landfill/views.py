@@ -1,7 +1,10 @@
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from waffle.decorators import waffle_switch
 
 from olympia import amo
+from olympia.amo.tests import user_factory, addon_factory
 from olympia.api.authentication import JWTKeyAuthentication
 from olympia.api.permissions import GroupPermission
 from olympia.addons.models import AddonUser
