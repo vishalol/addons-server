@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from elasticsearch_dsl.result import Result
+from elasticsearch_dsl.response.hit import Hit
 from rest_framework.serializers import ModelSerializer
 
 from .fields import ESTranslationSerializerField, TranslationSerializerField
@@ -44,7 +45,7 @@ class BaseESSerializer(ModelSerializer):
     def to_representation(self, data):
         # Support `Result` instances to allow passing in ElasticSearch
         # results directly into the serializer.
-        if isinstance(data, Result):
+        if isinstance(data, (Result, Hit)):
             data = data.to_dict()
 
         obj = self.fake_object(data)
@@ -79,5 +80,7 @@ class BaseESSerializer(ModelSerializer):
     def _attach_translations(self, obj, data, field_names):
         """Deserialize ES translation fields."""
         for field_name in field_names:
-            self.fields[field_name].attach_translations(obj, data, field_name)
+            if field_name in self.fields:
+                self.fields[field_name].attach_translations(
+                    obj, data, field_name)
         return obj

@@ -1,4 +1,3 @@
-from django.db.transaction import non_atomic_requests
 from django.template.loader import render_to_string
 from django.utils.translation import (
     ugettext, ugettext_lazy as _, pgettext_lazy)
@@ -8,7 +7,6 @@ import jinja2
 from olympia import amo
 from olympia.amo.templatetags.jinja_helpers import urlparams
 from olympia.amo.urlresolvers import reverse
-from olympia.amo.utils import render
 
 
 @jinja2.contextfunction
@@ -136,6 +134,8 @@ class InstallButton(object):
             rv['data-after'] = 'contrib'
         if addon.type == amo.ADDON_SEARCH:
             rv['data-search'] = 'true'
+        if addon.type in amo.NO_COMPAT:
+            rv['data-no-compat-necessary'] = 'true'
         return rv
 
     def links(self):
@@ -214,9 +214,3 @@ class Link(object):
 
     def __init__(self, text, url, os=None, file=None):
         self.text, self.url, self.os, self.file = text, url, os, file
-
-
-@non_atomic_requests
-def js(request):
-    return render(request, 'addons/popups.html',
-                  content_type='text/javascript')

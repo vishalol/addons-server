@@ -326,9 +326,6 @@ class Addon(OnChangeMixin, ModelBase):
         null=True, help_text=_('Users have the option of contributing more '
                                'or less than this amount.'))
 
-    total_contributions = models.DecimalField(max_digits=9, decimal_places=2,
-                                              blank=True, null=True)
-
     annoying = models.PositiveIntegerField(
         choices=amo.CONTRIB_CHOICES, default=0,
         help_text=_(u'Users will always be asked in the Add-ons'
@@ -355,6 +352,7 @@ class Addon(OnChangeMixin, ModelBase):
     is_experimental = models.BooleanField(default=False,
                                           db_column='experimental')
     reputation = models.SmallIntegerField(default=0, null=True)
+    requires_payment = models.BooleanField(default=False)
 
     # The order of those managers is very important:
     # The first one discovered, if it has "use_for_related_fields = True"
@@ -597,6 +595,9 @@ class Addon(OnChangeMixin, ModelBase):
         if not data.get('is_webextension') or not default_locale:
             # Don't change anything if we don't meet the requirements
             return data
+
+        # find_language might have expanded short to full locale, so update it.
+        data['default_locale'] = default_locale
 
         fields = ('name', 'homepage', 'summary')
         messages = extract_translations(upload)
@@ -1128,7 +1129,9 @@ class Addon(OnChangeMixin, ModelBase):
         latest_version = self.find_latest_version(
             amo.RELEASE_CHANNEL_LISTED, exclude=(amo.STATUS_BETA,))
 
-        return latest_version is not None and latest_version.files.exists()
+        return (latest_version is not None and
+                latest_version.files.exists() and
+                not any(file.reviewed for file in latest_version.all_files))
 
     def is_persona(self):
         return self.type == amo.ADDON_PERSONA
@@ -1213,10 +1216,9 @@ class Addon(OnChangeMixin, ModelBase):
         return (
             self.current_version and self.current_version.is_restart_required)
 
-    def is_featured(self, app, lang=None):
+    def is_featured(self, app=None, lang=None):
         """Is add-on globally featured for this app and language?"""
-        if app:
-            return self.id in get_featured_ids(app, lang)
+        return self.id in get_featured_ids(app, lang)
 
     def has_full_profile(self):
         """Is developer profile public (completed)?"""
@@ -1821,11 +1823,19 @@ class Category(OnChangeMixin, ModelBase):
         return staticcategory
 
     @classmethod
-    def from_static_category(cls, static_category):
+    def from_static_category(cls, static_category, save=False):
         """Return a Category instance created from a StaticCategory.
 
-        Does not save it into the database. Useful in tests."""
-        return cls(**static_category.__dict__)
+        Does not save it into the database by default. Useful in tests."""
+        # we need to drop description as it's a StaticCategory only property.
+        _dict = dict(static_category.__dict__)
+        del _dict['description']
+        if save:
+            category, _ = Category.objects.get_or_create(
+                id=static_category.id, defaults=_dict)
+            return category
+        else:
+            return cls(**_dict)
 
 
 dbsignals.pre_save.connect(save_signal, sender=Category,

@@ -68,7 +68,7 @@ paypal_log = olympia.core.logger.getLogger('z.paypal')
 
 # We use a session cookie to make sure people see the dev agreement.
 
-MDN_BASE = 'https://developer.mozilla.org/Add-ons'
+MDN_BASE = 'https://developer.mozilla.org/en-US/Add-ons'
 
 
 class AddonFilter(BaseFilter):
@@ -162,7 +162,8 @@ def ajax_compat_update(request, addon_id, addon, version_id):
         raise http.Http404()
     version = get_object_or_404(Version.objects, pk=version_id, addon=addon)
     compat_form = forms.CompatFormSet(request.POST or None,
-                                      queryset=version.apps.all())
+                                      queryset=version.apps.all(),
+                                      form_kwargs={'version': version})
     if request.method == 'POST' and compat_form.is_valid():
         for compat in compat_form.save(commit=False):
             compat.version = version
@@ -621,6 +622,11 @@ def handle_upload(filedata, user, channel, app_id=None, version_id=None,
         upload.user = user
         upload.save()
     if app_id and version_id:
+        # If app_id and version_id are present, we are dealing with a
+        # compatibility check (i.e. this is not an upload meant for submission,
+        # we were called from check_addon_compatibility()), which essentially
+        # consists in running the addon uploaded against the legacy validator
+        # with a specific min/max appversion override.
         app = amo.APPS_ALL.get(int(app_id))
         if not app:
             raise http.Http404()
@@ -1107,7 +1113,9 @@ def version_edit(request, addon_id, addon, version_id):
         # We should be in no-caching land but this one stays cached for some
         # reason.
         qs = version.apps.all().no_cache()
-        compat_form = forms.CompatFormSet(request.POST or None, queryset=qs)
+        compat_form = forms.CompatFormSet(
+            request.POST or None, queryset=qs,
+            form_kwargs={'version': version})
         data['compat_form'] = compat_form
 
     if (request.method == 'POST' and

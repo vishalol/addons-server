@@ -438,8 +438,7 @@ class TestReviewHelper(TestCase):
         assert not self.version.has_info_request
 
         assert len(mail.outbox) == 1
-        assert mail.outbox[0].subject == '%s %s' % (
-            self.preamble, amo.LOG.REVIEWER_REPLY_VERSION.short)
+        assert mail.outbox[0].subject == self.preamble
 
         assert self.check_log_count(amo.LOG.REVIEWER_REPLY_VERSION.id) == 1
 
@@ -451,8 +450,7 @@ class TestReviewHelper(TestCase):
         assert self.version.has_info_request
 
         assert len(mail.outbox) == 1
-        assert mail.outbox[0].subject == '%s %s' % (
-            self.preamble, amo.LOG.REQUEST_INFORMATION.short)
+        assert mail.outbox[0].subject == self.preamble
 
         assert self.check_log_count(amo.LOG.REQUEST_INFORMATION.id) == 1
 
@@ -744,6 +742,7 @@ class TestReviewHelper(TestCase):
                                .filter(action=amo.LOG.CONFIRM_AUTO_APPROVED.id)
                                .get())
         assert activity.arguments == [self.addon, self.version]
+        assert activity.details['comments'] == ''
 
     def test_public_with_unreviewed_version_addon_confirm_auto_approval(self):
         self.grant_permission(self.request.user, 'Addons:PostReview')

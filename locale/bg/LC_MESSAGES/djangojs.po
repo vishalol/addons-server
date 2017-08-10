@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: AMO-JS 0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-06-15 03:41+0000\n"
-"PO-Revision-Date: 2017-06-14 08:07+0000\n"
+"POT-Creation-Date: 2017-08-10 06:27+0000\n"
+"PO-Revision-Date: 2017-08-09 08:39+0000\n"
 "Last-Translator: :stoyan <stoyan@gmx.com>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -66,7 +66,9 @@ msgstr "Пълен доклад за валидацията"
 msgid "Validating {0}"
 msgstr "Валидиране {0}"
 
-#. L10n: first argument is an HTTP status code
+msgid "Your add-on exceeds the maximum size of {0}."
+msgstr ""
+
 msgid "Received an empty response from the server; status: {0}"
 msgstr "Получен е празен отговор от сървъра; състояние {0}"
 
@@ -109,7 +111,7 @@ msgid "Include detailed version notes (this can be done in the next step)."
 msgstr "Включете подробен отчет на промените (може и на следващата стъпка)."
 
 msgid "If your add-on requires an account to a website in order to be fully tested, include a test username and password in the Notes to Reviewer (this can be done in the next step)."
-msgstr "Ако добавката ви, за да бъде пълнофункционална, изисква сметка в уебсайт добавете тестово потребителско име и парола в Бележката към рецензента (може и на следващата стъпка)."
+msgstr "Ако вашата добавка, за да бъде пълнофункционална, изисква сметка в уеб страница добавете тестово потребителско име и парола в Бележката към рецензента (може и на следващата стъпка)."
 
 msgid "Add-on submission checklist"
 msgstr "Стъпки за изпращане на добавка"
@@ -132,6 +134,9 @@ msgstr "Съжаляваме, не е открита поддържана пла
 
 msgid "The filetype you uploaded isn't recognized."
 msgstr "Видът на файла, който качихте не е разпознат."
+
+msgid "Your file exceeds the maximum size of {0}."
+msgstr ""
 
 msgid "You cancelled the upload."
 msgstr "Вие отказахте качването."
@@ -394,10 +399,10 @@ msgid "Browse Listing Up and Coming Sort"
 msgstr ""
 
 msgid "Total Amount Contributed"
-msgstr "Обща дарена сума"
+msgstr "Общо принос"
 
 msgid "Average Contribution"
-msgstr "Средно дарена сума"
+msgstr "Среден принос"
 
 msgid "Usage"
 msgstr "Употреба"
@@ -505,11 +510,11 @@ msgstr "Източници на изтегляния от {0} до {1}"
 
 #. L10n: {0} is an integer.
 msgid "Contributions, last {0} days"
-msgstr "Дарения последните {0} дни"
+msgstr "Принос за последните {0} дни"
 
 #. L10n: both {0} and {1} are dates in YYYY-MM-DD format.
 msgid "Contributions from {0} to {1}"
-msgstr "Дарения от {0} от {1}"
+msgstr "Принос от {0} от {1}"
 
 #. L10n: {0} is an integer.
 msgid "Site Metrics, last {0} days"
@@ -648,18 +653,6 @@ msgstr "Приемане и инсталиране"
 msgid "Add to {0}"
 msgstr "Добавяне към {0}"
 
-msgid "Download Now"
-msgstr "Изтегляне"
-
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr "Добавката не е обновена да поддържа default-to-compatible."
-
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr "Трябва да използвате Firefox 10.0 или по-нов."
-
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr "Mozilla маркира тази версия като несъвместима с Вашата версия на Firefox."
-
 #. L10n: {0} is an platform like Windows or Linux.
 msgid "Install for {0} anyway"
 msgstr "Инсталиране за {0} така или иначе"
@@ -670,9 +663,13 @@ msgstr "Изтегляне за {0} въпреки това"
 msgid "Not available for your platform"
 msgstr "Не е налично за платформата ви"
 
-#. L10n: {0} is an app name, {1} is the app version.
-msgid "Not available for {0} {1}"
-msgstr "Не е налично за {0} {1}"
+#. L10n: {0} is an app name.
+#, fuzzy
+msgid "This add-on is not compatible with your version of {0}."
+msgstr "Тази тема е несъвместима с вашата версия на {0}"
+
+msgid "View other versions"
+msgstr "Други версии"
 
 msgid "Works with {app} {min} - {max}"
 msgstr "Работи с {app} {min} - {max}"
@@ -680,17 +677,8 @@ msgstr "Работи с {app} {min} - {max}"
 msgid "Works with {app}"
 msgstr "Работи с {app}"
 
-msgid "View other versions"
-msgstr "Виж други версии"
-
 msgid "Only with Firefox — Get Firefox Now!"
 msgstr "Само с Firefox — Изтеглете Firefox сега!"
-
-msgid "Download now"
-msgstr "Изтегляне"
-
-msgid "Only available on Firefox Desktop"
-msgstr "Достъпна само за настолната версия на Firefox"
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
 msgstr "Съжаляваме, трябва да имате Mozilla-базиран браузър (като Firefox), за да инсталирате търсеща добавка."
@@ -841,7 +829,7 @@ msgid "Rejected"
 msgstr "Отказан"
 
 msgid "Approved"
-msgstr "Одобрен"
+msgstr "Одобрена"
 
 msgid "No results found"
 msgstr "Няма резултати"

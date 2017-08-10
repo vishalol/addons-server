@@ -16,6 +16,7 @@ from lxml.html import fromstring, HTMLParser
 import mock
 from mock import Mock, patch
 from pyquery import PyQuery as pq
+from freezegun import freeze_time
 
 from olympia import amo, core, reviews
 from olympia.amo.tests import (
@@ -240,6 +241,42 @@ class TestReviewLog(EditorTest):
         assert r.status_code == 200
         assert pq(r.content)('#log-listing tr:not(.hide)').length == 3
 
+    def test_start_filter(self):
+        with freeze_time('2017-08-01 10:00'):
+            self.make_approvals()
+
+        # Make sure we show the stuff we just made.
+        r = self.client.get(self.url, {'start': '2017-07-31'})
+
+        assert r.status_code == 200
+
+        doc = pq(r.content)('#log-listing tbody')
+
+        assert doc('tr:not(.hide)').length == 2
+        assert doc('tr.hide').eq(0).text() == 'youwin'
+
+    def test_start_default_filter(self):
+        with freeze_time('2017-07-31 10:00'):
+            self.make_approvals()
+
+        with freeze_time('2017-08-01 10:00'):
+            addon = Addon.objects.first()
+
+            ActivityLog.create(
+                amo.LOG.REJECT_VERSION, addon, addon.current_version,
+                user=self.get_user(), details={'comments': 'youwin'})
+
+        # Make sure the default 'start' to the 1st of a month works properly
+        with freeze_time('2017-08-03 11:00'):
+            r = self.client.get(self.url)
+
+            assert r.status_code == 200
+
+            doc = pq(r.content)('#log-listing tbody')
+
+            assert doc('tr:not(.hide)').length == 1
+            assert doc('tr.hide').eq(0).text() == 'youwin'
+
     def test_search_comment_exists(self):
         """Search by comment."""
         self.make_an_approval(amo.LOG.REQUEST_SUPER_REVIEW, comment='hello')
@@ -350,25 +387,32 @@ class TestReviewLog(EditorTest):
         assert pq(r.content)('#log-listing tr td a').eq(1).text() == (
             'commented')
 
+    @freeze_time('2017-08-03')
     def test_review_url(self):
         self.login_as_admin()
         addon = addon_factory()
         unlisted_version = version_factory(
             addon=addon, channel=amo.RELEASE_CHANNEL_UNLISTED)
 
-        al = ActivityLog.create(
+        ActivityLog.create(
             amo.LOG.APPROVE_VERSION, addon, addon.current_version,
             user=self.get_user(), details={'comments': 'foo'})
 
-        al.update(created=self.days_ago(1))
         r = self.client.get(self.url)
         url = reverse('editors.review', args=[addon.slug])
-        assert pq(r.content)('#log-listing tr td a').eq(1).attr('href') == url
 
-        ActivityLog.create(
+        link = pq(r.content)('#log-listing tbody tr[data-addonid] a').eq(1)
+        assert link.attr('href') == url
+
+        entry = ActivityLog.create(
             amo.LOG.APPROVE_VERSION, addon,
             unlisted_version,
             user=self.get_user(), details={'comments': 'foo'})
+
+        # Force the latest entry to be at the top of the list so that we can
+        # pick it more reliably later from the HTML
+        entry.update(created=datetime.now() + timedelta(days=1))
+
         r = self.client.get(self.url)
         url = reverse(
             'editors.review',
@@ -2438,6 +2482,19 @@ class TestReview(ReviewBase):
         assert r.status_code == 200
         self.assertContains(r, 'View Privacy Policy')
 
+    def test_requires_payment_indicator(self):
+        assert not self.addon.requires_payment
+        r = self.client.get(self.url)
+        assert r.status_code == 200
+        doc = pq(r.content)
+        assert 'No' in doc('tr.requires-payment td').text()
+
+        self.addon.update(requires_payment=True)
+        r = self.client.get(self.url)
+        assert r.status_code == 200
+        doc = pq(r.content)
+        assert 'Yes' in doc('tr.requires-payment td').text()
+
     def test_viewing(self):
         url = reverse('editors.review_viewing')
         r = self.client.post(url, {'addon_id': self.addon.id})
@@ -2650,11 +2707,17 @@ class TestReview(ReviewBase):
         AutoApprovalSummary.objects.create(
             version=self.addon.current_version, verdict=amo.AUTO_APPROVED)
         self.login_as_senior_editor()
-        response = self.client.post(
-            self.url, {'action': 'confirm_auto_approved'})
+        response = self.client.post(self.url, {
+            'action': 'confirm_auto_approved',
+            'comments': 'ignore me this action does not support comments'
+        })
         assert response.status_code == 302
         assert ActivityLog.objects.filter(
             action=amo.LOG.CONFIRM_AUTO_APPROVED.id).count() == 1
+        a_log = ActivityLog.objects.filter(
+            action=amo.LOG.CONFIRM_AUTO_APPROVED.id).get()
+        assert a_log.details['version'] == self.addon.current_version.version
+        assert a_log.details['comments'] == ''
 
     def test_user_changes_log(self):
         # Activity logs related to user changes should be displayed.
