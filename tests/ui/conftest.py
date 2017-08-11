@@ -34,8 +34,12 @@ from olympia.users.models import UserProfile
 
 
 @pytest.fixture(scope='function')
-def my_base_url(base_url, request, pytestconfig):
+def my_base_url(base_url, request, pytestconfig, variables):
     pytestconfig.option.usingliveserver = False
+
+    with open('tests/ui/variables.json') as fobj:
+        variables.update(json.load(fobj))
+
     return base_url
 
 
@@ -84,17 +88,39 @@ def jwt_secret(my_base_url, variables):
 
 
 @pytest.fixture
-def initial_data(pytestconfig):
+def initial_data(my_base_url, jwt_token):
     """Fixture used to fill database will dummy addons.
 
     Creates exactly 10 random addons with users that are also randomly
     generated.
     """
-    if not pytestconfig.option.usingliveserver:
-        return
+    headers = {'Authorization': 'JWT {token}'.format(token=jwt_token)}
 
-    for _ in range(10):
-        AddonUser.objects.create(user=user_factory(), addon=addon_factory())
+    response = requests.post(
+        '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url),
+        headers=headers)
+    print('XXXXXXXXXXXXXXXXXXXXXXX', response.json())
+
+    assert requests.codes.ok == response.status_code
+
+    url = '{base_url}/api/v3/landfill/generate-addons/'.format(
+        base_url=my_base_url)
+    print('xxxxxxxxx', url)
+
+    response = requests.post(
+        url,
+        data={'count': 10},
+        headers=headers)
+
+    print('XXXXXXXXXXXXXXXXXXXXXXX', response.json())
+
+    assert requests.codes.created == response.status_code
+
+    yield
+
+    response = requests.post(
+        '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url))
+    assert requests.codes.ok == response.status_code
 
 
 @pytest.fixture
@@ -402,20 +428,18 @@ def create_superuser(my_base_url, tmpdir, variables):
 
 
 @pytest.fixture
-def user(create_superuser, my_base_url, fxa_account, jwt_token):
+def user(my_base_url, fxa_account, jwt_token):
     """This creates a user for logging into the AMO site."""
-    if not pytestconfig.option.usingliveserver:
-        return
-
     url = '{base_url}/api/v3/accounts/super-create/'.format(
         base_url=my_base_url)
-
+    print('xxxxxxxxx', url)
     params = {
         'email': fxa_account.email,
         'password': fxa_account.password,
         'username': fxa_account.email.split('@')[0]}
     headers = {'Authorization': 'JWT {token}'.format(token=jwt_token)}
     response = requests.post(url, data=params, headers=headers)
+    print('XXXXXXXXXXXXXXXXXXXXXXX', response.json())
     assert requests.codes.created == response.status_code
     params.update(response.json())
     return params
