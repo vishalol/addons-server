@@ -97,30 +97,31 @@ def initial_data(my_base_url, jwt_token):
     headers = {'Authorization': 'JWT {token}'.format(token=jwt_token)}
 
     response = requests.post(
-        '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url),
+        '{base}/api/v3/landfill/dump-current-state/'.format(base=my_base_url),
         headers=headers)
 
-    assert requests.codes.ok == response.status_code
+    assert requests.codes.ok == response.status_code, response.content
+
+    original_database_state = response.json()['state']
 
     url = '{base_url}/api/v3/landfill/generate-addons/'.format(
         base_url=my_base_url)
-    print('xxxxxxxxx', url)
 
     response = requests.post(
         url,
         data={'count': 10},
         headers=headers)
 
-    print('generated add-ons', response.json())
-    assert requests.codes.created == response.status_code
+    assert requests.codes.created == response.status_code, response.json()
 
     yield
 
     response = requests.post(
-        '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url),
+        '{base}/api/v3/landfill/restore-current-state/'.format(base=my_base_url),
+        data={'state': original_database_state},
         headers=headers)
 
-    assert requests.codes.ok == response.status_code
+    assert requests.codes.ok == response.status_code, response.json()
 
 
 @pytest.fixture

@@ -2,16 +2,11 @@ import random
 
 from rest_framework import serializers
 
-from olympia.addons.models import AddonUser
 from olympia.amo.tests import user_factory, addon_factory
 from olympia import amo
 from olympia.addons.forms import icons
 from olympia.addons.models import Preview
 from olympia.addons.utils import generate_addon_guid
-from olympia.amo.tests import (
-    addon_factory,
-    user_factory,
-)
 from olympia.constants.applications import FIREFOX
 from olympia.constants.base import (
     ADDON_EXTENSION,
@@ -20,7 +15,6 @@ from olympia.constants.base import (
 from olympia.landfill.collection import generate_collection
 from olympia.reviews.models import Review
 from olympia.users.models import UserProfile
-
 
 
 class GenerateAddonsSerializer(serializers.Serializer):
@@ -51,7 +45,7 @@ class GenerateAddonsSerializer(serializers.Serializer):
                       'selenium', 'python'],
                 total_reviews=777,
                 weekly_downloads=22233879,
-                developer_comments='This is a testing addon, used within pytest.',
+                developer_comments='This is a testing addon.',
             )
             Preview.objects.create(addon=addon, position=1)
             Review.objects.create(addon=addon, rating=5, user=user_factory())
@@ -59,5 +53,10 @@ class GenerateAddonsSerializer(serializers.Serializer):
             addon.reload()
 
             addon.save()
-            generate_collection(addon, app=FIREFOX, type=amo.COLLECTION_FEATURED)
-            print('Created addon {0} for testing successfully'.format(addon.name))
+            generate_collection(
+                addon,
+                app=FIREFOX,
+                type=amo.COLLECTION_FEATURED)
+            print(
+                'Created addon {0} for testing successfully'
+                .format(addon.name))
