@@ -71,8 +71,16 @@ class RestoreCurrentState(APIView):
         print('Found data to restore')
 
         print('Truncate...')
-        # Truncate the whole database
 
+        # Alternate approach:
+        # * set "ui-tests-running" flag so that QA and others know not to touch
+        #   anything (e.g if on -dev, for docker... who cares...)
+        # * get next mysql sequence number
+        # * iterate through all apps and objects just like
+        #   `serialize_db_to_string` does
+        # * delete 'em all
+
+        # Truncate the whole database
         databases = TransactionTestCase._databases_names(include_mirrors=False)
         for db_name in databases:
             # Flush the database
