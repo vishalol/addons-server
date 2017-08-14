@@ -99,7 +99,6 @@ def initial_data(my_base_url, jwt_token):
     response = requests.post(
         '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url),
         headers=headers)
-    print('XXXXXXXXXXXXXXXXXXXXXXX', response.json())
 
     assert requests.codes.ok == response.status_code
 
@@ -112,14 +111,15 @@ def initial_data(my_base_url, jwt_token):
         data={'count': 10},
         headers=headers)
 
-    print('XXXXXXXXXXXXXXXXXXXXXXX', response.json())
-
+    print('generated add-ons', response.json())
     assert requests.codes.created == response.status_code
 
     yield
 
     response = requests.post(
-        '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url))
+        '{base}/api/v3/landfill/cleanup/'.format(base=my_base_url),
+        headers=headers)
+
     assert requests.codes.ok == response.status_code
 
 
