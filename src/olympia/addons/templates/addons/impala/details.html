@@ -6,11 +6,6 @@
 {% set is_staff = action_allowed(amo.permissions.REVIEWER_ADMIN_TOOLS_VIEW) %}
 
 {% block title %}{{ page_title(addon.name) }}{% endblock %}
-{% block js %}
-  {% if addon.takes_contributions %}
-    <script async defer src="{{ settings.PAYPAL_JS_URL }}"></script>
-  {% endif %}
-{% endblock %}
 {% block bodyclass %}gutter addon-details {{ super() }}{% endblock %}
 
 {% block extrahead %}
@@ -86,7 +81,7 @@
       <p class="manage-button"><a href="{{ addon.get_dev_url() }}" class="button developer prominent"><span>{{ _('Manage') }}</span></a></p>
     {% endif %}
     {% if is_reviewer %}
-      <p class="manage-button"><a href="{{ url('editors.review', addon.slug) }}" class="button"><span>{{ _('Add-on Review') }}</span></a></p>
+      <p class="manage-button"><a href="{{ url('reviewers.review', addon.slug) }}" class="button"><span>{{ _('Add-on Review') }}</span></a></p>
     {% endif %}
     {% if is_staff %}
       <p class="manage-button"><a href="{{ url('zadmin.addon_manage', addon.slug) }}" class="button"><span>{{ _('Admin Manage') }}</span></a></p>
@@ -124,27 +119,24 @@
 
     {{ dependencies_note(addon) }}
 
-    {% if addon.takes_contributions %}
-      {{ impala_contribution(addon=addon, src='dp-btn-primary') }}
-    {% elif addon.has_profile() and addon.listed_authors %}
+    {% if addon.contributions %}
       <div class="notice c author">
-        {% with single_dev = addon.listed_authors|random %}
-          <h3>
-            {% trans count=addon.listed_authors|length,
-                     name=single_dev.name,
-                     url=addon.meet_the_dev_url() %}
-              Meet the Developer: <a href="{{ url }}">{{ name }}</a>
-            {% pluralize %}
-              <a href="{{ url }}">Meet the Developers</a>
-            {% endtrans %}
-          </h3>
-          <img class="avatar" alt="{{ single_dev.name }}" height="64" alt=""
-               width="64" src="{{ single_dev.picture_url }}"/>
-          <p>{{ _("Learn why {0} was created and find out what's next for this "
-                  "add-on.")|format_html(addon.name) }}</p>
-        {% endwith %}
+        <div class="button-wrapper">
+          <a class="button contribute prominent" id="contribution-url-button"
+             target="_blank" rel="noopener"
+             href="{{ addon.contributions|external_url }}">
+            <b></b>{{ _('Contribute') }}
+          </a>
+        </div>
+        <h3>{{ _('Enjoy this add-on?') }}</h3>
+        <p>
+        {% trans %}
+          The developer of this add-on asks that you help support its
+          continued development by making a small contribution.
+        {% endtrans %}
+        </p>
       </div>
-    {% endif %}
+  {% endif %}
   </section>
 </div>
 {% endblock header_content %}
@@ -204,18 +196,18 @@
   {% if version %}
     <ul>
       <li>{{ _('Version {0}')|format_html(version.version) }} <a class="scrollto" href="#detail-relnotes">{{ _('Info') }}</a></li>
-      <li>{% trans %}Last Updated:{% endtrans %} {{ version.created|datetime }}</li>
+      <li>{% trans %}Last Updated:{% endtrans %} {{ version.created|date }}</li>
       <li class="source-license">
         {% set license = version.license %}
         {% if license %}
           {% if license.url %}
             {% trans url = license.url,
-                     name = license.name if license.builtin else _('Custom License') %}
+                     name = license if license.builtin else _('Custom License') %}
               Released under <a href="{{ url }}">{{ name }}</a>
             {% endtrans %}
           {% else %}
             {% trans url = version.license_url(),
-                     name = license.name if license.builtin else _('Custom License') %}
+                     name = license if license.builtin else _('Custom License') %}
               Released under <a href="{{ url }}">{{ name }}</a>
             {% endtrans %}
           {% endif %}

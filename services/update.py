@@ -1,10 +1,7 @@
-import smtplib
 import sys
-import traceback
 
 from django.utils.encoding import force_bytes
 from email.Utils import formatdate
-from email.mime.text import MIMEText
 from time import time
 from urlparse import parse_qsl
 
@@ -12,9 +9,6 @@ from services.utils import mypool, settings
 
 # This has to be imported after the settings so statsd knows where to log to.
 from django_statsd.clients import statsd
-
-import MySQLdb as mysql
-import sqlalchemy.pool as pool
 
 try:
     from compare import version_int
@@ -26,6 +20,7 @@ import olympia.core.logger
 
 from utils import (
     APP_GUIDS, get_cdn_url, log_configure, PLATFORMS)
+
 
 # Go configure the log.
 log_configure()
@@ -339,7 +334,7 @@ def application(environ, start_response):
             update = Update(data, compat_mode)
             output = force_bytes(update.get_rdf())
             start_response(status, update.get_headers(len(output)))
-        except:
+        except Exception:
             log_exception(data)
             raise
     return [output]

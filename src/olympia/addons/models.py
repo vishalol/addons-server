@@ -6,6 +6,7 @@ import os
 import posixpath
 import re
 import time
+import urlparse
 from operator import attrgetter
 from datetime import datetime
 
@@ -26,7 +27,8 @@ from jinja2.filters import do_dictsort
 import olympia.core.logger
 from olympia import activity, amo, core
 from olympia.amo.models import (
-    SlugField, OnChangeMixin, ModelBase, ManagerBase, manual_order)
+    manual_order, ManagerBase, ModelBase, OnChangeMixin, SaveUpdateMixin,
+    SlugField)
 from olympia.access import acl
 from olympia.addons.utils import (
     get_creatured_ids, get_featured_ids, generate_addon_guid)
@@ -275,8 +277,6 @@ class Addon(OnChangeMixin, ModelBase):
     developer_comments = PurifiedField(db_column='developercomments')
     eula = PurifiedField()
     privacy_policy = PurifiedField(db_column='privacypolicy')
-    the_reason = PurifiedField()
-    the_future = PurifiedField()
 
     average_rating = models.FloatField(max_length=255, default=0, null=True,
                                        db_column='averagerating')
@@ -284,6 +284,8 @@ class Addon(OnChangeMixin, ModelBase):
                                         db_column='bayesianrating')
     total_reviews = models.PositiveIntegerField(default=0,
                                                 db_column='totalreviews')
+    text_reviews_count = models.PositiveIntegerField(
+        default=0, db_column='textreviewscount')
     weekly_downloads = models.PositiveIntegerField(
         default=0, db_column='weeklydownloads', db_index=True)
     total_downloads = models.PositiveIntegerField(
@@ -317,24 +319,7 @@ class Addon(OnChangeMixin, ModelBase):
         max_length=255, blank=True, null=True,
         help_text="For dictionaries and language packs")
 
-    wants_contributions = models.BooleanField(default=False)
-    paypal_id = models.CharField(max_length=255, blank=True)
-    charity = models.ForeignKey('Charity', null=True)
-
-    suggested_amount = models.DecimalField(
-        max_digits=9, decimal_places=2, blank=True,
-        null=True, help_text=_('Users have the option of contributing more '
-                               'or less than this amount.'))
-
-    annoying = models.PositiveIntegerField(
-        choices=amo.CONTRIB_CHOICES, default=0,
-        help_text=_(u'Users will always be asked in the Add-ons'
-                    u' Manager (Firefox 4 and above).'
-                    u' Only applies to desktop.'))
-    enable_thankyou = models.BooleanField(
-        default=False, help_text='Should the thank you note be sent to '
-                                 'contributors?')
-    thankyou_note = TranslatedField()
+    contributions = models.URLField(max_length=255, blank=True)
 
     authors = models.ManyToManyField('users.UserProfile', through='AddonUser',
                                      related_name='addons')
@@ -543,9 +528,7 @@ class Addon(OnChangeMixin, ModelBase):
 
         addon.status = amo.STATUS_NULL
         locale_is_set = (addon.default_locale and
-                         addon.default_locale in (
-                             settings.AMO_LANGUAGES +
-                             settings.HIDDEN_LANGUAGES) and
+                         addon.default_locale in settings.AMO_LANGUAGES and
                          data.get('default_locale') == addon.default_locale)
         if not locale_is_set:
             addon.default_locale = to_language(trans_real.get_language())
@@ -1062,7 +1045,6 @@ class Addon(OnChangeMixin, ModelBase):
         for persona in Persona.objects.no_cache().filter(addon__in=personas):
             addon = addon_dict[persona.addon_id]
             addon.persona = persona
-            addon.weekly_downloads = persona.popularity
 
         # Attach previews.
         Addon.attach_previews(addons, addon_dict=addon_dict)
@@ -1129,7 +1111,9 @@ class Addon(OnChangeMixin, ModelBase):
         latest_version = self.find_latest_version(
             amo.RELEASE_CHANNEL_LISTED, exclude=(amo.STATUS_BETA,))
 
-        return latest_version is not None and latest_version.files.exists()
+        return (latest_version is not None and
+                latest_version.files.exists() and
+                not any(file.reviewed for file in latest_version.all_files))
 
     def is_persona(self):
         return self.type == amo.ADDON_PERSONA
@@ -1218,13 +1202,20 @@ class Addon(OnChangeMixin, ModelBase):
         """Is add-on globally featured for this app and language?"""
         return self.id in get_featured_ids(app, lang)
 
+    def get_featured_by_app(self):
+        qset = (self.collections.filter(featuredcollection__isnull=False)
+                .distinct().values_list('featuredcollection__application',
+                                        'featuredcollection__locale'))
+        out = collections.defaultdict(set)
+        for app, locale in qset:
+            out[app].add(locale)
+        return out
+
     def has_full_profile(self):
-        """Is developer profile public (completed)?"""
-        return self.the_reason and self.the_future
+        pass
 
     def has_profile(self):
-        """Is developer profile (partially or entirely) completed?"""
-        return self.the_reason or self.the_future
+        pass
 
     @cached_property
     def tags_partitioned_by_developer(self):
@@ -1268,9 +1259,7 @@ class Addon(OnChangeMixin, ModelBase):
 
     @property
     def takes_contributions(self):
-        return (self.status == amo.STATUS_PUBLIC and
-                self.wants_contributions and
-                (self.paypal_id or self.charity_id))
+        pass
 
     @classmethod
     def _last_updated_queries(cls):
@@ -1417,6 +1406,10 @@ def watch_status(old_attr=None, new_attr=None, instance=None,
     old_status = old_attr.get('status')
     latest_version = instance.find_latest_version(
         channel=amo.RELEASE_CHANNEL_LISTED)
+
+    # Update the author's account profile visibility
+    if new_status != old_status:
+        [author.update_is_public() for author in instance.authors.all()]
 
     if (new_status not in amo.VALID_ADDON_STATUSES or
             not new_status or not latest_version):
@@ -1625,7 +1618,9 @@ class Persona(caching.CachingMixin, models.Model):
                          addon.all_categories else ''),
             # TODO: Change this to be `addons_users.user.display_name`.
             'author': self.display_username,
-            'description': unicode(addon.description),
+            'description': (unicode(addon.description)
+                            if addon.description is not None
+                            else addon.description),
             'header': self.header_url,
             'footer': self.footer_url or '',
             'headerURL': self.header_url,
@@ -1677,7 +1672,8 @@ class AddonCategory(caching.CachingMixin, models.Model):
         return get_creatured_ids(category, lang)
 
 
-class AddonUser(caching.CachingMixin, models.Model):
+class AddonUser(caching.CachingMixin, OnChangeMixin, SaveUpdateMixin,
+                models.Model):
     addon = models.ForeignKey(Addon, on_delete=models.CASCADE)
     user = UserForeignKey()
     role = models.SmallIntegerField(default=amo.AUTHOR_ROLE_OWNER,
@@ -1694,6 +1690,14 @@ class AddonUser(caching.CachingMixin, models.Model):
 
     class Meta:
         db_table = 'addons_users'
+
+
+@AddonUser.on_change
+def watch_addon_user(old_attr=None, new_attr=None, instance=None, sender=None,
+                     **kwargs):
+    instance.user.update_is_public()
+    # Update ES because authors is included.
+    update_search_index(sender=sender, instance=instance.addon, **kwargs)
 
 
 class AddonDependency(models.Model):
@@ -1721,11 +1725,19 @@ class AddonFeatureCompatibility(ModelBase):
 class AddonApprovalsCounter(ModelBase):
     """Model holding a counter of the number of times a listed version
     belonging to an add-on has been approved by a human. Reset everytime a
-    listed version is auto-approved for this add-on."""
+    listed version is auto-approved for this add-on.
+
+    Holds 2 additional date fields:
+    - last_human_review, the date of the last time a human fully reviewed the
+      add-on
+    - last_content_review, the date of the last time a human fully reviewed the
+      add-on content (not code).
+    """
     addon = models.OneToOneField(
         Addon, primary_key=True, on_delete=models.CASCADE)
     counter = models.PositiveIntegerField(default=0)
     last_human_review = models.DateTimeField(null=True)
+    last_content_review = models.DateTimeField(null=True)
 
     def __unicode__(self):
         return u'%s: %d' % (unicode(self.pk), self.counter) if self.pk else u''
@@ -1734,12 +1746,15 @@ class AddonApprovalsCounter(ModelBase):
     def increment_for_addon(cls, addon):
         """
         Increment approval counter for the specified addon, setting the last
-        human review date to now. If an AddonApprovalsCounter already exists,
-        it updates it, otherwise it creates and saves a new instance.
+        human review date and last content review date to now.
+        If an AddonApprovalsCounter already exists, it updates it, otherwise it
+        creates and saves a new instance.
         """
+        now = datetime.now()
         data = {
             'counter': 1,
-            'last_human_review': datetime.now(),
+            'last_human_review': now,
+            'last_content_review': now,
         }
         obj, created = cls.objects.get_or_create(
             addon=addon, defaults=data)
@@ -1751,10 +1766,19 @@ class AddonApprovalsCounter(ModelBase):
     @classmethod
     def reset_for_addon(cls, addon):
         """
-        Reset the approval counter for the specified addon.
+        Reset the approval counter (but not the dates) for the specified addon.
         """
         obj, created = cls.objects.update_or_create(
             addon=addon, defaults={'counter': 0})
+        return obj
+
+    @classmethod
+    def approve_content_for_addon(cls, addon):
+        """
+        Set last_content_review for this addon.
+        """
+        obj, created = cls.objects.update_or_create(
+            addon=addon, defaults={'last_content_review': datetime.now()})
         return obj
 
 
@@ -2145,6 +2169,13 @@ class ReplacementAddon(ModelBase):
 
     class Meta:
         db_table = 'replacement_addons'
+
+    @staticmethod
+    def path_is_external(path):
+        return urlparse.urlsplit(path).scheme in ['http', 'https']
+
+    def has_external_url(self):
+        return self.path_is_external(self.path)
 
 
 models.signals.post_save.connect(update_incompatible_versions,

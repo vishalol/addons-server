@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-17 08:37+0000\n"
+"POT-Creation-Date: 2017-11-02 03:33+0000\n"
 "PO-Revision-Date: 2015-02-01 09:53+0000\n"
 "Last-Translator: Vanja <tumbas93@gmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -652,18 +652,6 @@ msgstr "Prihvati i instaliraj"
 msgid "Add to {0}"
 msgstr "Dodaj u {0}"
 
-msgid "Download Now"
-msgstr "Preuzmi odmah"
-
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr "Dodatak nije ažuriran da podržava default-to-compatible."
-
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr "Morate koristiti Firefox 10.0 ili novije."
-
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr "Mozilla je označila ovu verziju kao nekompatabilnu sa Vašom verzijom Firefox-a."
-
 #. L10n: {0} is an platform like Windows or Linux.
 msgid "Install for {0} anyway"
 msgstr "Instaliraj za {0} u svakom slučaju"
@@ -674,9 +662,13 @@ msgstr "Preuzmi za {0} u svakom slučaju"
 msgid "Not available for your platform"
 msgstr "Nije dostupno za Vašu platformu"
 
-#. L10n: {0} is an app name, {1} is the app version.
-msgid "Not available for {0} {1}"
-msgstr "Nije dostupno za {0} {1}"
+#. L10n: {0} is an app name.
+#, fuzzy
+msgid "This add-on is not compatible with your version of {0}."
+msgstr "Ova tema nije kompatibilna sa Vašom verzijom {0}"
+
+msgid "View other versions"
+msgstr "Pogledaj ostale verzije"
 
 msgid "Works with {app} {min} - {max}"
 msgstr "Radi sa {app} {min} - {max}"
@@ -685,17 +677,7 @@ msgstr "Radi sa {app} {min} - {max}"
 msgid "Works with {app}"
 msgstr "Radi sa {app} {min} - {max}"
 
-msgid "View other versions"
-msgstr "Pogledaj ostale verzije"
-
 msgid "Only with Firefox — Get Firefox Now!"
-msgstr ""
-
-#, fuzzy
-msgid "Download now"
-msgstr "Preuzmi odmah"
-
-msgid "Only available on Firefox Desktop"
 msgstr ""
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
@@ -771,17 +753,26 @@ msgid_plural "{reviews} user reviews"
 msgstr[0] "{reviews} korisnička recenzija"
 msgstr[1] "{reviews} korisničke recenzije"
 
-msgid "Learn more"
-msgstr "Saznajte više"
-
 msgid "Image changes being processed"
 msgstr "Izmene na slici se obrađuju"
 
-msgid "Must be a valid e-mail address."
-msgstr "Adresa e-pošte mora biti ispravna."
-
 msgid "No results found."
 msgstr "Nema rezultata."
+
+msgid "Loading..."
+msgstr "Učitavanje..."
+
+#. L10n: {0} is the number of characters left.
+msgid "<b>{0}</b> character left."
+msgid_plural "<b>{0}</b> characters left."
+msgstr[0] "<b>{0}</b> karakter preostao."
+msgstr[1] "<b>{0}</b> karaktera preostala."
+
+msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
+msgstr "Ova mogućnost je privremeno onemogućena dok obavljamo zadatak održavanja sajta. Molimo probajte malo kasnije."
+
+msgid "Remove this localization"
+msgstr "Ukloni ovu lokalizaciju"
 
 msgid "{name} was viewing this page first."
 msgstr "{name} je prvi gledao ovu stranicu."
@@ -818,21 +809,6 @@ msgstr ""
 
 msgid "Number of Reviews"
 msgstr ""
-
-msgid "Loading..."
-msgstr "Učitavanje..."
-
-#. L10n: {0} is the number of characters left.
-msgid "<b>{0}</b> character left."
-msgid_plural "<b>{0}</b> characters left."
-msgstr[0] "<b>{0}</b> karakter preostao."
-msgstr[1] "<b>{0}</b> karaktera preostala."
-
-msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
-msgstr "Ova mogućnost je privremeno onemogućena dok obavljamo zadatak održavanja sajta. Molimo probajte malo kasnije."
-
-msgid "Remove this localization"
-msgstr "Ukloni ovu lokalizaciju"
 
 msgid "Requested Info"
 msgstr "Zahtevane informacije"

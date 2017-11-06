@@ -72,13 +72,10 @@ def addon_to_dict(addon, disco=False, src='api'):
     if addon.developer_comments:
         d['dev_comments'] = unicode(addon.developer_comments)
 
-    if addon.takes_contributions:
-        contribution = {
-            'link': url(addon.contribution_url, src=src),
-            'meet_developers': url(addon.meet_the_dev_url(), src=src),
-            'suggested_amount': addon.suggested_amount,
+    if addon.contributions:
+        d['contribution'] = {
+            'meet_developers': addon.contributions,
         }
-        d['contribution'] = contribution
 
     if addon.type == amo.ADDON_PERSONA:
         d['previews'] = [addon.persona.preview_url]

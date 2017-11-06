@@ -16,11 +16,10 @@ from django.utils.encoding import force_text
 from django.utils.functional import cached_property, lazy
 
 import caching.base as caching
-import waffle
-from waffle.models import Switch
 
 import olympia.core.logger
 from olympia import amo, core
+from olympia.amo.decorators import write
 from olympia.amo.models import OnChangeMixin, ManagerBase, ModelBase
 from olympia.access.models import Group, GroupUser
 from olympia.amo.urlresolvers import reverse
@@ -142,7 +141,11 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     failed_login_attempts = models.PositiveIntegerField(default=0,
                                                         editable=False)
 
-    is_verified = models.BooleanField(default=True)
+    # Is the profile page for this account publicly viewable?
+    # Note: this is only used for API responses (thus addons-frontend) - all
+    # users's profile pages are publicly viewable on legacy frontend.
+    # TODO: Remove this note once legacy profile pages are removed.
+    is_public = models.BooleanField(default=False, db_column='public')
 
     fxa_id = models.CharField(blank=True, null=True, max_length=128)
 
@@ -151,6 +154,11 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     # use) and django sessions. Should be changed if a user is known to have
     # been compromised.
     auth_id = models.PositiveIntegerField(null=True, default=generate_auth_id)
+
+    # Date that the developer agreement last changed (currently, the last
+    # changed happened when we switched to post-review). Used to show the
+    # developer agreement to developers again when it changes.
+    last_developer_agreement_change = datetime(2017, 9, 22, 17, 36)
 
     class Meta:
         db_table = 'users'
@@ -181,14 +189,7 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
     def has_read_developer_agreement(self):
         if self.read_dev_agreement is None:
             return False
-        if waffle.switch_is_active('post-review'):
-            # We want to make sure developers read the latest version of the
-            # agreement. The cutover date is the date the switch was last
-            # modified to turn it on. (When removing the waffle, change this
-            # for a static date).
-            switch = Switch.objects.get(name='post-review')
-            return self.read_dev_agreement > switch.modified
-        return True
+        return self.read_dev_agreement > self.last_developer_agreement_change
 
     backend = 'django.contrib.auth.backends.ModelBackend'
 
@@ -287,11 +288,26 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
         return self.addonuser_set.filter(
             addon__type=amo.ADDON_PERSONA).exists()
 
+    @write
+    def update_is_public(self):
+        pre = self.is_public
+        is_public = (
+            self.addonuser_set.filter(
+                role__in=[amo.AUTHOR_ROLE_OWNER, amo.AUTHOR_ROLE_DEV],
+                listed=True,
+                addon__status=amo.STATUS_PUBLIC).no_cache().exists())
+        if is_public != pre:
+            log.info('Updating %s.is_public from %s to %s' % (
+                self.pk, pre, is_public))
+            self.update(is_public=is_public)
+        else:
+            log.info('Not changing %s.is_public from %s' % (self.pk, pre))
+
     @property
     def name(self):
         if self.display_name:
             return force_text(self.display_name)
-        elif self.has_anonymous_username():
+        elif self.has_anonymous_username:
             # L10n: {id} will be something like "13ad6a", just a random number
             # to differentiate this user from other anonymous users.
             return ugettext('Anonymous user {id}').format(
@@ -308,7 +324,7 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
         return self.username
 
     def _anonymous_username_id(self):
-        if self.has_anonymous_username():
+        if self.has_anonymous_username:
             return self.username.split('-')[1][:6]
 
     def anonymize_username(self):
@@ -320,11 +336,13 @@ class UserProfile(OnChangeMixin, ModelBase, AbstractBaseUser):
         self.username = 'anonymous-{}'.format(os.urandom(16).encode('hex'))
         return self.username
 
+    @property
     def has_anonymous_username(self):
-        return re.match('^anonymous-[0-9a-f]{32}$', self.username)
+        return re.match('^anonymous-[0-9a-f]{32}$', self.username) is not None
 
+    @property
     def has_anonymous_display_name(self):
-        return not self.display_name and self.has_anonymous_username()
+        return not self.display_name and self.has_anonymous_username
 
     @cached_property
     def reviews(self):

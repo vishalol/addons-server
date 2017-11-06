@@ -10,9 +10,9 @@
     "potools": "potools"
   },
   "dependencies": {
-    "addons-linter": "0.22.6",
-    "clean-css": "4.1.7",
-    "clean-css-cli": "4.1.6",
+    "addons-linter": "0.28.1",
+    "clean-css": "4.1.9",
+    "clean-css-cli": "4.1.10",
     "jqmodal": "1.4.2",
     "jquery": "3.2.1",
     "jquery.browser": "0.1.0",
@@ -21,13 +21,14 @@
     "jquery-pjax": "2.0.1",
     "jquery-ui": "1.12.1",
     "less": "2.7.2",
+    "source-map": "0.6.1",
     "stylus": "0.54.5",
-    "raven-js": "3.17.0",
+    "raven-js": "3.19.1",
     "timeago": "1.6.1",
-    "uglify-js": "3.0.27",
+    "uglify-js": "3.1.7",
     "underscore": "1.8.3"
   },
   "devDependencies": {
-    "potools": "0.0.7"
+    "potools": "0.1.0"
   }
 }

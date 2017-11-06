@@ -23,9 +23,7 @@ from django.test.client import Client, RequestFactory
 from django.test.utils import override_settings
 from django.conf import urls as django_urls
 from django.utils import translation
-from django.utils.encoding import force_bytes
 from django.utils.importlib import import_module
-from django.utils.http import urlencode
 
 import mock
 import pytest
@@ -45,6 +43,7 @@ from olympia.accounts.utils import fxa_login_url
 from olympia.addons.models import (
     Addon, AddonCategory, Category, Persona,
     update_search_index as addon_update_search_index)
+from olympia.addons.tasks import version_changed
 from olympia.amo.urlresolvers import get_url_prefix, Prefixer, set_url_prefix
 from olympia.addons.tasks import unindex_addons
 from olympia.applications.models import AppVersion
@@ -205,15 +204,18 @@ def check_links(expected, elements, selected=None, verify=True):
             assert bool(e.length) == (text == selected)
 
 
-def assert_url_equal(url, other, compare_host=False):
+def assert_url_equal(url, expected, compare_host=False):
     """Compare url paths and query strings."""
     parsed = urlparse(unicode(url))
-    parsed_other = urlparse(unicode(other))
-    assert parsed.path == parsed_other.path  # Paths are equal.
-    # Params are equal.
-    assert parse_qs(parsed.query) == parse_qs(parsed_other.query)
+    parsed_expected = urlparse(unicode(expected))
+    compare_url_part(parsed.path, parsed_expected.path)
+    compare_url_part(parse_qs(parsed.query), parse_qs(parsed_expected.query))
     if compare_host:
-        assert parsed.netloc == parsed_other.netloc
+        compare_url_part(parsed.netloc, parsed_expected.netloc)
+
+
+def compare_url_part(part, expected):
+    assert part == expected, u'Expected %s, got %s' % (expected, part)
 
 
 def create_sample(name=None, **kw):
@@ -329,17 +331,6 @@ class APITestClient(APIClient):
         """
         self.defaults.pop('HTTP_AUTHORIZATION', None)
 
-    def get(self, path, data=None, **extra):
-        # Work around DRF #4458 since we're running an old version that does
-        # not have this fix yet.
-        r = {
-            'QUERY_STRING': urlencode(data or {}, doseq=True),
-        }
-        if not data and '?' in path:
-            r['QUERY_STRING'] = force_bytes(path.split('?')[1])
-        r.update(extra)
-        return self.generic('GET', path, **r)
-
 
 def days_ago(days):
     return datetime.now().replace(microsecond=0) - timedelta(days=days)
@@ -353,9 +344,9 @@ ES_patchers = [
     mock.patch('olympia.amo.search.get_es', spec=True),
     mock.patch('elasticsearch.Elasticsearch'),
     mock.patch('olympia.addons.models.update_search_index', spec=True),
-    mock.patch('olympia.addons.tasks.index_addons.delay', spec=True),
-    mock.patch('olympia.bandwagon.tasks.index_collections.delay', spec=True),
-    mock.patch('olympia.bandwagon.tasks.unindex_collections.delay', spec=True),
+    mock.patch('olympia.addons.tasks.index_addons', spec=True),
+    mock.patch('olympia.bandwagon.tasks.index_collections', spec=True),
+    mock.patch('olympia.bandwagon.tasks.unindex_collections', spec=True),
 ]
 
 
@@ -669,9 +660,13 @@ def addon_factory(
     users = kw.pop('users', [])
     when = _get_created(kw.pop('created', None))
     category = kw.pop('category', None)
+    default_locale = kw.get('default_locale', settings.LANGUAGE_CODE)
 
     # Keep as much unique data as possible in the uuid: '-' aren't important.
     name = kw.pop('name', u'Addôn %s' % unicode(uuid.uuid4()).replace('-', ''))
+    slug = kw.pop('slug', None)
+    if slug is None:
+        slug = name.replace(' ', '-').lower()[:30]
 
     kwargs = {
         # Set artificially the status to STATUS_PUBLIC for now, the real
@@ -679,8 +674,9 @@ def addon_factory(
         # call. This prevents issues when calling addon_factory with
         # STATUS_DELETED.
         'status': amo.STATUS_PUBLIC,
+        'default_locale': default_locale,
         'name': name,
-        'slug': name.replace(' ', '-').lower()[:30],
+        'slug': slug,
         'average_daily_users': popularity or random.randint(200, 2000),
         'weekly_downloads': popularity or random.randint(200, 2000),
         'created': when,
@@ -689,27 +685,28 @@ def addon_factory(
     if type_ != amo.ADDON_PERSONA:
         # Personas don't have a summary.
         kwargs['summary'] = u'Summary for %s' % name
+    if type_ not in [amo.ADDON_PERSONA, amo.ADDON_SEARCH]:
+        # Personas and search engines don't need guids
+        kwargs['guid'] = kw.pop('guid', '{%s}' % unicode(uuid.uuid4()))
     kwargs.update(kw)
 
     # Save 1.
-    if type_ == amo.ADDON_PERSONA:
-        # Personas need to start life as an extension for versioning.
-        addon = Addon.objects.create(type=amo.ADDON_EXTENSION, **kwargs)
-    else:
+    with translation.override(default_locale):
         addon = Addon.objects.create(type=type_, **kwargs)
 
     # Save 2.
     version = version_factory(file_kw, addon=addon, **version_kw)
-    addon.update_version()
-    addon.status = status
-    if type_ == amo.ADDON_PERSONA:
-        addon.type = type_
+    if addon.type == amo.ADDON_PERSONA:
+        addon._current_version = version
         persona_id = persona_id if persona_id is not None else addon.id
 
         # Save 3.
         Persona.objects.create(
-            addon=addon, popularity=addon.weekly_downloads,
+            addon=addon, popularity=addon.average_daily_users,
             persona_id=persona_id)
+
+    addon.update_version()
+    addon.status = status
 
     for tag in tags:
         Tag(tag_text=tag).save_tag(addon)
@@ -720,7 +717,7 @@ def addon_factory(
     application = version_kw.get('application', amo.FIREFOX.id)
     if not category:
         static_category = random.choice(
-            CATEGORIES[application][type_].values())
+            CATEGORIES[application][addon.type].values())
         category = Category.from_static_category(static_category, True)
     AddonCategory.objects.create(addon=addon, category=category)
 
@@ -730,6 +727,16 @@ def addon_factory(
 
     # Save 4.
     addon.save()
+
+    if addon.type == amo.ADDON_PERSONA:
+        # Personas only have one version and signals.version_changed is never
+        # fired for them - instead it gets updated through a cron (!). We do
+        # need to get it right in some tests like the ui tests, so we call the
+        # task ourselves.
+        version_changed(addon.pk)
+
+    # Potentially update is_public on authors
+    [user.update_is_public() for user in users]
 
     if 'nomination' in version_kw:
         # If a nomination date was set on the version, then it might have been
@@ -825,6 +832,7 @@ def user_factory(**kw):
 def version_factory(file_kw=None, **kw):
     # We can't create duplicates of AppVersions, so make sure the versions are
     # not already created in fixtures (use fake versions).
+    addon_type = getattr(kw.get('addon'), 'type', None)
     min_app_version = kw.pop('min_app_version', '4.0.99')
     max_app_version = kw.pop('max_app_version', '5.0.99')
     version_str = kw.pop('version', '%.1f' % random.uniform(0, 2))
@@ -841,7 +849,7 @@ def version_factory(file_kw=None, **kw):
     ver = Version.objects.create(version=version_str, **kw)
     ver.created = ver.last_updated = _get_created(kw.pop('created', 'now'))
     ver.save()
-    if kw.get('addon').type not in amo.NO_COMPAT:
+    if addon_type not in amo.NO_COMPAT:
         av_min, _ = AppVersion.objects.get_or_create(application=application,
                                                      version=min_app_version)
         av_max, _ = AppVersion.objects.get_or_create(application=application,
@@ -849,8 +857,9 @@ def version_factory(file_kw=None, **kw):
         ApplicationsVersions.objects.get_or_create(application=application,
                                                    version=ver, min=av_min,
                                                    max=av_max)
-    file_kw = file_kw or {}
-    file_factory(version=ver, **file_kw)
+    if addon_type != amo.ADDON_PERSONA:
+        file_kw = file_kw or {}
+        file_factory(version=ver, **file_kw)
     return ver
 
 

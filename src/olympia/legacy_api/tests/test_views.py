@@ -77,22 +77,11 @@ class UtilsTest(TestCase):
         assert d['summary'] == 'i &lt;3 amo!'
         assert d['description'] == 'i &lt;3 amo!'
 
-    def test_contrib_info(self):
-        self.a.wants_contributions = True
-        self.a.suggested_amount = 5
-        self.a.paypal_id = 'alice@example.com'
-        self.a.save()
+    def test_simple_contributions(self):
+        self.a.update(contributions='https://paypal.me/blah')
         d = addon_to_dict(self.a)
-        assert d['contribution']['suggested_amount'] == 5
-
-    def test_no_contrib_info_until_approved(self):
-        self.a.wants_contributions = True
-        self.a.suggested_amount = 5
-        self.a.status = amo.STATUS_NOMINATED
-        self.a.paypal_id = 'alice@example.com'
-        self.a.save()
-        d = addon_to_dict(self.a)
-        assert 'contribution' not in d
+        assert d['contribution']['meet_developers'] == self.a.contributions
+        assert 'link' not in d['contribution']
 
 
 class No500ErrorsTest(TestCase):
@@ -395,8 +384,8 @@ class APITest(TestCase):
     def test_15_addon_detail(self):
         """
         For an api>1.5 we need to verify we have:
-        # Contributions information, including a link to contribute, suggested
-          amount, and Meet the Developers page
+        # Contributions information, which is now just the contributions url,
+        # sent as the link to Meet the Developers
         # Number of user reviews and link to view them
         # Total downloads, weekly downloads, and latest daily user counts
         # Add-on creation date
@@ -409,11 +398,8 @@ class APITest(TestCase):
         needles = (
             '<addon id="4664">',
             '<contribution_data>',
-            '%s/en-US/firefox/addon/4664/contribute/?src=api</link>' % (
-                settings.SITE_URL),
             '<meet_developers>',
-            '%s/en-US/firefox/addon/4664/developers?src=api' % (
-                settings.SITE_URL),
+            'https://patreon.com/blah',
             '</meet_developers>',
             '<reviews num="131">',
             '%s/en-US/firefox/addon/4664/reviews/?src=api' % settings.SITE_URL,
@@ -453,8 +439,6 @@ class APITest(TestCase):
         doc = pq(response.content)
 
         tags = {
-            'suggested_amount': (
-                {'currency': 'USD', 'amount': '5.00'}, '$5.00'),
             'created': ({'epoch': '1174109035'}, '2007-03-17T05:23:55Z'),
             'last_updated': ({'epoch': '1272301783'}, '2010-04-26T17:09:43Z')}
 
@@ -472,16 +456,6 @@ class APITest(TestCase):
         for tag, needle in url_needles.iteritems():
             url = doc(tag).text()
             self.assertUrlEqual(url, needle)
-
-    def test_no_contribs_until_approved(self):
-        Addon.objects.filter(id=4664).update(status=amo.STATUS_NOMINATED)
-        response = make_call('addon/4664', version=1.5)
-        self.assertNotContains(response, 'contribution_data')
-
-    def test_no_suggested_amount(self):
-        Addon.objects.filter(id=4664).update(suggested_amount=None)
-        response = make_call('addon/4664', version=1.5)
-        assert '<suggested_amount' not in response.content
 
     def test_beta_channel(self):
         """
@@ -823,6 +797,15 @@ class TestGuidSearch(TestCase):
         # We should get back the fr version, not the en-US one.
         response = make_call(self.good, lang='fr')
         self.assertContains(response, '<summary>Francais')
+
+    def test_api_caching_app(self):
+        response = make_call(self.good)
+        assert 'en-US/firefox/addon/None/reviews/?src=api' in response.content
+        assert 'en-US/android/addon/None/reviews/' not in response.content
+
+        response = make_call(self.good, app='android')
+        assert 'en-US/android/addon/None/reviews/?src=api' in response.content
+        assert 'en-US/firefox/addon/None/reviews/' not in response.content
 
     def test_xss(self):
         addon_factory(guid='test@xss', name='<script>alert("test");</script>')

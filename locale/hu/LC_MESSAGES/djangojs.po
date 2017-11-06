@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-17 08:37+0000\n"
-"PO-Revision-Date: 2017-07-17 11:33+0000\n"
+"POT-Creation-Date: 2017-11-02 03:33+0000\n"
+"PO-Revision-Date: 2017-09-10 11:46+0000\n"
 "Last-Translator: Balázs Meskó <meskobalazs@gmail.com>\n"
 "Language-Team: Hungarian <kde-l10n-hu@kde.org>\n"
 "Language: hu\n"
@@ -112,8 +112,8 @@ msgstr "Adjon meg részletes verzióinformációt (ezt a következő lépésben 
 
 msgid "If your add-on requires an account to a website in order to be fully tested, include a test username and password in the Notes to Reviewer (this can be done in the next step)."
 msgstr ""
-"Ha a kiegészítőnek egy weboldalhoz tartozó felhasználói fiókra van szüksége a teljes teszteléshez, adjon meg egy teszt felhasználónevet és jelszót a Megjegyzés a vizsgálatot végzőknek résznél (ezt a"
-" következő lépésben is megteheti)."
+"Ha a kiegészítőnek egy weboldalhoz tartozó felhasználói fiókra van szüksége a teljes teszteléshez, adjon meg egy teszt felhasználónevet és jelszót a Megjegyzés a vizsgálatot végzőknek résznél (ezt "
+"a következő lépésben is megteheti)."
 
 msgid "Add-on submission checklist"
 msgstr "Ellenőrzőlista kiegészítő beküldéséhez"
@@ -250,7 +250,7 @@ msgid "Amount, in USD"
 msgstr "Mennyiség, USD-ben"
 
 msgid "Number of Contributions"
-msgstr "Hozzájárulások száma"
+msgstr "Támogatások száma"
 
 msgid "More Info..."
 msgstr "Tovább…"
@@ -404,7 +404,7 @@ msgid "Total Amount Contributed"
 msgstr "Teljes adomány"
 
 msgid "Average Contribution"
-msgstr "Átlagos adomány"
+msgstr "Átlagos támogatás"
 
 msgid "Usage"
 msgstr "Használat"
@@ -512,11 +512,11 @@ msgstr "Letöltési források {0} és {1} között"
 
 #. L10n: {0} is an integer.
 msgid "Contributions, last {0} days"
-msgstr "Adományok az elmúlt {0} napban"
+msgstr "Támogatások az elmúlt {0} napban"
 
 #. L10n: both {0} and {1} are dates in YYYY-MM-DD format.
 msgid "Contributions from {0} to {1}"
-msgstr "Adományok {0} és {1} között"
+msgstr "Támogatások {0} és {1} között"
 
 #. L10n: {0} is an integer.
 msgid "Site Metrics, last {0} days"
@@ -655,18 +655,6 @@ msgstr "Elfogadás és telepítés"
 msgid "Add to {0}"
 msgstr "Hozzáadás ehhez: {0}"
 
-msgid "Download Now"
-msgstr "Letöltés most"
-
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr "A kiegészítő nem lett frissítve, hogy támogassa az alapértelmezett kompatibilitást."
-
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr "Firefox 10.0 vagy annál frissebb verziót kell használnia."
-
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr "A Mozilla szerint ez a verzió nem működik a Firefox verziójával."
-
 #. L10n: {0} is an platform like Windows or Linux.
 msgid "Install for {0} anyway"
 msgstr "Telepítés mindenképpen erre: {0}"
@@ -677,9 +665,12 @@ msgstr "Letöltés mindenképpen erre: {0}"
 msgid "Not available for your platform"
 msgstr "Nem érhető el ezen a platformon"
 
-#. L10n: {0} is an app name, {1} is the app version.
-msgid "Not available for {0} {1}"
-msgstr "Nem érhető el a(z) {0} {1} verzióhoz"
+#. L10n: {0} is an app name.
+msgid "This add-on is not compatible with your version of {0}."
+msgstr "Ez a kiegészítő nem kompatibilis ezzel a {0} verzióval."
+
+msgid "View other versions"
+msgstr "További verziók megtekintése"
 
 msgid "Works with {app} {min} - {max}"
 msgstr "Ezzel működik: {app} {min} - {max}"
@@ -687,17 +678,8 @@ msgstr "Ezzel működik: {app} {min} - {max}"
 msgid "Works with {app}"
 msgstr "Ezzel működik: {app}"
 
-msgid "View other versions"
-msgstr "További verziók megtekintése"
-
 msgid "Only with Firefox — Get Firefox Now!"
 msgstr "Csak a Firefoxszal – szerezze be a Firefoxot most!"
-
-msgid "Download now"
-msgstr "Letöltés most"
-
-msgid "Only available on Firefox Desktop"
-msgstr "Csak a Firefox asztali változatán érhető el"
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
 msgstr "A keresőszolgáltatások telepítéséhez szükség van egy Mozilla-alapú böngészőre (pl. Firefox)."
@@ -772,17 +754,26 @@ msgid_plural "{reviews} user reviews"
 msgstr[0] "{reviews} felhasználói értékelés"
 msgstr[1] "{reviews} felhasználói értékelés"
 
-msgid "Learn more"
-msgstr "Tudjon meg többet"
-
 msgid "Image changes being processed"
 msgstr "A kép módosítása folyamatban van"
 
-msgid "Must be a valid e-mail address."
-msgstr "Érvényes e-mail címnek kell lennie."
-
 msgid "No results found."
 msgstr "Nincs találat."
+
+msgid "Loading..."
+msgstr "Betöltés…"
+
+#. L10n: {0} is the number of characters left.
+msgid "<b>{0}</b> character left."
+msgid_plural "<b>{0}</b> characters left."
+msgstr[0] "<b>{0}</b> karakter maradt."
+msgstr[1] "<b>{0}</b> karakter maradt."
+
+msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
+msgstr "Ez a funkció a weboldal karbantartása alatt, átmenetileg nem érhető el. Kérjük, látogasson vissza kicsit később."
+
+msgid "Remove this localization"
+msgstr "Honosítás eltávolítása"
 
 msgid "{name} was viewing this page first."
 msgstr "{name} nézte meg először az oldalt."
@@ -819,21 +810,6 @@ msgstr "Átlagos értékelések"
 
 msgid "Number of Reviews"
 msgstr "Értékelések száma"
-
-msgid "Loading..."
-msgstr "Betöltés…"
-
-#. L10n: {0} is the number of characters left.
-msgid "<b>{0}</b> character left."
-msgid_plural "<b>{0}</b> characters left."
-msgstr[0] "<b>{0}</b> karakter maradt."
-msgstr[1] "<b>{0}</b> karakter maradt."
-
-msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
-msgstr "Ez a funkció a weboldal karbantartása alatt, átmenetileg nem érhető el. Kérjük, látogasson vissza kicsit később."
-
-msgid "Remove this localization"
-msgstr "Honosítás eltávolítása"
 
 msgid "Requested Info"
 msgstr "Kért információ"

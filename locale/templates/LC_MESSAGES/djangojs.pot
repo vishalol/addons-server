@@ -4,14 +4,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT 1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-18 17:53+0000\n"
+"POT-Creation-Date: 2017-11-02 03:33+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.4.0\n"
+"Generated-By: Babel 2.5.1\n"
 
 #: static/js/common/ratingwidget.js:31
 msgid "{0} star"
@@ -72,7 +72,7 @@ msgid_plural "&hellip;and {0} more"
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/js/common/upload-addon.js:236 static/js/common/upload-addon.js:525
+#: static/js/common/upload-addon.js:236 static/js/common/upload-addon.js:532
 msgid "See full validation report"
 msgstr ""
 
@@ -80,83 +80,83 @@ msgstr ""
 msgid "Validating {0}"
 msgstr ""
 
-#: static/js/common/upload-addon.js:287
+#: static/js/common/upload-addon.js:286
 msgid "Your add-on exceeds the maximum size of {0}."
 msgstr ""
 
-#: static/js/common/upload-addon.js:293
+#: static/js/common/upload-addon.js:292
 msgid "Received an empty response from the server; status: {0}"
 msgstr ""
 
-#: static/js/common/upload-addon.js:374
+#: static/js/common/upload-addon.js:373
 msgid "Unexpected server error while validating."
 msgstr ""
 
-#: static/js/common/upload-addon.js:413
+#: static/js/common/upload-addon.js:420
 msgid "Finished validating {0}"
 msgstr ""
 
-#: static/js/common/upload-addon.js:419
+#: static/js/common/upload-addon.js:426
 msgid "Your add-on validation timed out, it will be manually reviewed."
 msgstr ""
 
-#: static/js/common/upload-addon.js:422
+#: static/js/common/upload-addon.js:429
 msgid "Your add-on was validated with no errors and {0} warning."
 msgid_plural "Your add-on was validated with no errors and {0} warnings."
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/js/common/upload-addon.js:427
+#: static/js/common/upload-addon.js:434
 msgid "Your add-on was validated with no errors and {0} message."
 msgid_plural "Your add-on was validated with no errors and {0} messages."
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/js/common/upload-addon.js:432
+#: static/js/common/upload-addon.js:439
 msgid "Your add-on was validated with no errors or warnings."
 msgstr ""
 
-#: static/js/common/upload-addon.js:447
+#: static/js/common/upload-addon.js:454
 msgid "Your submission will be automatically signed."
 msgstr ""
 
-#: static/js/common/upload-addon.js:453
+#: static/js/common/upload-addon.js:460
 msgid "WebExtension upgrade"
 msgstr ""
 
-#: static/js/common/upload-addon.js:454
+#: static/js/common/upload-addon.js:461
 msgid ""
 "We allow and encourage an upgrade but you cannot reverse this process. Once "
 "your users have the WebExtension installed, they will not be able to install "
 "a legacy add-on."
 msgstr ""
 
-#: static/js/common/upload-addon.js:458
+#: static/js/common/upload-addon.js:465
 msgid "Porting a legacy Firefox add-on on MDN"
 msgstr ""
 
-#: static/js/common/upload-addon.js:469
+#: static/js/common/upload-addon.js:476
 msgid "Include detailed version notes (this can be done in the next step)."
 msgstr ""
 
-#: static/js/common/upload-addon.js:470
+#: static/js/common/upload-addon.js:477
 msgid ""
 "If your add-on requires an account to a website in order to be fully tested, "
 "include a test username and password in the Notes to Reviewer (this can be "
 "done in the next step)."
 msgstr ""
 
-#: static/js/common/upload-addon.js:489
+#: static/js/common/upload-addon.js:496
 msgid "Add-on submission checklist"
 msgstr ""
 
-#: static/js/common/upload-addon.js:490
+#: static/js/common/upload-addon.js:497
 msgid ""
 "Please verify the following points before finalizing your submission. This "
 "will minimize delays or misunderstanding during the review process:"
 msgstr ""
 
-#: static/js/common/upload-addon.js:492
+#: static/js/common/upload-addon.js:499
 msgid ""
 "Compiled binaries, as well as minified or obfuscated scripts (excluding known"
 " libraries) need to have their sources submitted separately for review. Make "
@@ -164,11 +164,11 @@ msgid ""
 "submission rejected."
 msgstr ""
 
-#: static/js/common/upload-addon.js:510
+#: static/js/common/upload-addon.js:517
 msgid "The validation process found these issues that can lead to rejections:"
 msgstr ""
 
-#: static/js/common/upload-addon.js:563
+#: static/js/common/upload-addon.js:570
 msgid "Sorry, no supported platform has been found."
 msgstr ""
 
@@ -253,7 +253,7 @@ msgstr ""
 msgid "Marked for deletion"
 msgstr ""
 
-#: static/js/impala/search.js:103
+#: static/js/impala/search.js:108
 msgid "Updating results&hellip;"
 msgstr ""
 
@@ -827,8 +827,8 @@ msgstr ""
 msgid "Other"
 msgstr ""
 
-#: static/js/zamboni/admin_validation.js:24 static/js/zamboni/devhub.js:1355
-#: static/js/zamboni/editors.js:326
+#: static/js/zamboni/admin_validation.js:24 static/js/zamboni/devhub.js:1287
+#: static/js/zamboni/reviewers.js:326
 msgid "Select an application first"
 msgstr ""
 
@@ -845,73 +845,49 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. L10n: {0} is an app name like Firefox.
-#: static/js/zamboni/buttons.js:73
+#: static/js/zamboni/buttons.js:67
 msgid "Accept and Install"
 msgstr ""
 
-#: static/js/zamboni/buttons.js:73
+#: static/js/zamboni/buttons.js:67
 msgid "Add to {0}"
 msgstr ""
 
-#: static/js/zamboni/buttons.js:78
-msgid "Download Now"
-msgstr ""
-
-#: static/js/zamboni/buttons.js:121
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr ""
-
-#: static/js/zamboni/buttons.js:126
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr ""
-
-#: static/js/zamboni/buttons.js:138
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr ""
-
 #. L10n: {0} is an platform like Windows or Linux.
-#: static/js/zamboni/buttons.js:219
+#: static/js/zamboni/buttons.js:174
 msgid "Install for {0} anyway"
 msgstr ""
 
-#: static/js/zamboni/buttons.js:219
+#: static/js/zamboni/buttons.js:174
 msgid "Download for {0} anyway"
 msgstr ""
 
-#: static/js/zamboni/buttons.js:276
+#: static/js/zamboni/buttons.js:214
 msgid "Not available for your platform"
 msgstr ""
 
-#. L10n: {0} is an app name, {1} is the app version.
-#: static/js/zamboni/buttons.js:288 static/js/zamboni/buttons.js:326
-msgid "Not available for {0} {1}"
+#. L10n: {0} is an app name.
+#: static/js/zamboni/buttons.js:222
+msgid "This add-on is not compatible with your version of {0}."
 msgstr ""
 
-#: static/js/zamboni/buttons.js:354
-msgid "Works with {app} {min} - {max}"
-msgstr ""
-
-#: static/js/zamboni/buttons.js:355
-msgid "Works with {app}"
-msgstr ""
-
-#: static/js/zamboni/buttons.js:358
+#: static/js/zamboni/buttons.js:226 static/js/zamboni/buttons.js:247
 msgid "View other versions"
 msgstr ""
 
-#: static/js/zamboni/buttons.js:406
+#: static/js/zamboni/buttons.js:243
+msgid "Works with {app} {min} - {max}"
+msgstr ""
+
+#: static/js/zamboni/buttons.js:244
+msgid "Works with {app}"
+msgstr ""
+
+#: static/js/zamboni/buttons.js:278
 msgid "Only with Firefox — Get Firefox Now!"
 msgstr ""
 
-#: static/js/zamboni/buttons.js:413
-msgid "Download now"
-msgstr ""
-
-#: static/js/zamboni/buttons.js:415
-msgid "Only available on Firefox Desktop"
-msgstr ""
-
-#: static/js/zamboni/buttons.js:529
+#: static/js/zamboni/buttons.js:322
 msgid ""
 "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search"
 " plugin."
@@ -981,96 +957,40 @@ msgstr ""
 msgid "Stop following"
 msgstr ""
 
-#: static/js/zamboni/devhub.js:110
+#: static/js/zamboni/devhub.js:105
 msgid "Your browser does not support the video tag"
 msgstr ""
 
-#: static/js/zamboni/devhub.js:373
+#: static/js/zamboni/devhub.js:363
 msgid "Changes Saved"
 msgstr ""
 
-#: static/js/zamboni/devhub.js:389
+#: static/js/zamboni/devhub.js:379
 msgid "Enter a new author's email address"
 msgstr ""
 
-#: static/js/zamboni/devhub.js:539
+#: static/js/zamboni/devhub.js:529
 msgid "There was an error uploading your file."
 msgstr ""
 
-#: static/js/zamboni/devhub.js:684
+#: static/js/zamboni/devhub.js:674
 msgid "{files} file"
 msgid_plural "{files} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/js/zamboni/devhub.js:687
+#: static/js/zamboni/devhub.js:677
 msgid "{reviews} user review"
 msgid_plural "{reviews} user reviews"
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/js/zamboni/devhub.js:925
-msgid "Learn more"
-msgstr ""
-
-#: static/js/zamboni/devhub.js:1256
+#: static/js/zamboni/devhub.js:1188
 msgid "Image changes being processed"
-msgstr ""
-
-#: static/js/zamboni/devhub.js:1406
-msgid "Must be a valid e-mail address."
 msgstr ""
 
 #: static/js/zamboni/devhub_search.js:8
 msgid "No results found."
-msgstr ""
-
-#: static/js/zamboni/editors.js:130
-msgid "{name} was viewing this page first."
-msgstr ""
-
-#: static/js/zamboni/editors.js:181
-msgid "Receipt checked by app."
-msgstr ""
-
-#: static/js/zamboni/editors.js:183
-msgid "Receipt was not checked by app."
-msgstr ""
-
-#: static/js/zamboni/editors.js:254
-msgid "{name} was viewing this add-on first."
-msgstr ""
-
-#: static/js/zamboni/editors.js:265 static/js/zamboni/editors.js:287
-msgid "Loading&hellip;"
-msgstr ""
-
-#: static/js/zamboni/editors.js:270
-msgid "Version Notes"
-msgstr ""
-
-#: static/js/zamboni/editors.js:275
-msgid "Notes for Reviewers"
-msgstr ""
-
-#: static/js/zamboni/editors.js:280
-msgid "No version notes found"
-msgstr ""
-
-#: static/js/zamboni/editors.js:292
-msgid "Review Text"
-msgstr ""
-
-#: static/js/zamboni/editors.js:297
-msgid "Review notes found"
-msgstr ""
-
-#: static/js/zamboni/editors.js:361
-msgid "Average Reviews"
-msgstr ""
-
-#: static/js/zamboni/editors.js:417
-msgid "Number of Reviews"
 msgstr ""
 
 #: static/js/zamboni/global.js:407
@@ -1092,6 +1012,54 @@ msgstr ""
 
 #: static/js/zamboni/l10n.js:45
 msgid "Remove this localization"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:130
+msgid "{name} was viewing this page first."
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:181
+msgid "Receipt checked by app."
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:183
+msgid "Receipt was not checked by app."
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:254
+msgid "{name} was viewing this add-on first."
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:265 static/js/zamboni/reviewers.js:287
+msgid "Loading&hellip;"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:270
+msgid "Version Notes"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:275
+msgid "Notes for Reviewers"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:280
+msgid "No version notes found"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:292
+msgid "Review Text"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:297
+msgid "Review notes found"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:361
+msgid "Average Reviews"
+msgstr ""
+
+#: static/js/zamboni/reviewers.js:417
+msgid "Number of Reviews"
 msgstr ""
 
 #: static/js/zamboni/themes_review.js:176

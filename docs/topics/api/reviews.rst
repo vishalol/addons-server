@@ -81,6 +81,7 @@ This endpoint allows you to fetch a review by its id.
     :>json string user.id: The user id.
     :>json string user.name: The user name.
     :>json string user.url: The user profile URL.
+    :>json string user.username: The user username.
 
 ----
 Post
@@ -170,7 +171,6 @@ Flag
 This endpoint allows you to flag an existing user review, to let a moderator know
 that something may be wrong with it.
 
-An empty response will be returned on success.
 
  .. note::
      Requires authentication and a user account different from the one that
@@ -181,6 +181,7 @@ An empty response will be returned on success.
     :<json string flag: A :ref:`constant<review-flag-constants>` describing the reason behind the flagging.
     :<json string|null note: A note to explain further the reason behind the flagging.
         This field is required if the flag is ``review_flag_reason_other``, and passing it will automatically change the flag to that value.
+    :>json object: If successful, an object with a ``msg`` property containing a success message. If not, an object indicating which fields contain errors.
 
 .. _review-flag-constants:
 

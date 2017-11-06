@@ -21,7 +21,7 @@ from olympia.access import acl
 from olympia.addons.decorators import addon_view_factory
 from olympia.addons.models import Addon
 from olympia.addons.views import AddonChildMixin
-from olympia.api.paginator import OneOrZeroPageNumberPagination
+from olympia.api.pagination import OneOrZeroPageNumberPagination
 from olympia.api.permissions import (
     AllowAddonAuthor, AllowIfPublic, AllowOwner,
     AllowRelatedObjectPermissions, AnyOf, ByHttpMethod, GroupPermission)
@@ -77,7 +77,8 @@ def review_list(request, addon, review_id=None, user_id=None):
     if request.user.is_authenticated():
         ctx['review_perms'] = {
             'is_admin': is_admin,
-            'is_editor': acl.is_editor(request, addon),
+            'is_reviewer': acl.action_allowed(
+                request, amo.permissions.RATINGS_MODERATE),
             'is_author': acl.check_addon_ownership(request, addon, viewer=True,
                                                    dev=True, support=True),
         }
@@ -90,7 +91,7 @@ def review_list(request, addon, review_id=None, user_id=None):
 def get_flags(request, reviews):
     reviews = [r.id for r in reviews]
     qs = ReviewFlag.objects.filter(review__in=reviews, user=request.user.id)
-    return dict((r.review_id, r) for r in qs)
+    return {obj.review_id: obj for obj in qs}
 
 
 @addon_view
@@ -112,7 +113,7 @@ def flag(request, addon, review_id):
         form.save()
         Review.objects.filter(id=review_id).update(editorreview=True)
         return {'msg': ugettext('Thanks; this review has been flagged '
-                                'for editor approval.')}
+                                'for reviewer approval.')}
     else:
         return json_view.error(form.errors)
 
@@ -445,7 +446,8 @@ class ReviewViewSet(AddonChildMixin, ModelViewSet):
         request = request._request
         response = flag(request, self.addon_object.slug, kwargs.get('pk'))
         if response.status_code == 200:
-            response.content = ''
+            # 202 is a little better than 200: we're accepting the request, but
+            # make no promises to act on it :)
             response.status_code = 202
         return response
 

@@ -22,6 +22,7 @@ from olympia.amo.decorators import use_master
 from olympia.amo.urlresolvers import reverse
 from olympia.amo.templatetags.jinja_helpers import user_media_path, id_to_path
 from olympia.applications.models import AppVersion
+from olympia.constants.licenses import LICENSES_BY_BUILTIN
 from olympia.files import utils
 from olympia.files.models import File, cleanup_file
 from olympia.translations.fields import (
@@ -89,7 +90,8 @@ class Version(OnChangeMixin, ModelBase):
     reviewed = models.DateTimeField(null=True)
 
     has_info_request = models.BooleanField(default=False)
-    has_editor_comment = models.BooleanField(default=False)
+    has_reviewer_comment = models.BooleanField(
+        db_column='has_editor_comment', default=False)
 
     deleted = models.BooleanField(default=False)
 
@@ -179,8 +181,8 @@ class Version(OnChangeMixin, ModelBase):
         # queries completely.
         version.compatible_apps = compatible_apps
 
-        if addon.type == amo.ADDON_SEARCH:
-            # Search extensions are always for all platforms.
+        if addon.type in [amo.ADDON_SEARCH, amo.ADDON_STATICTHEME]:
+            # Search extensions and static themes are always for all platforms.
             platforms = [amo.PLATFORM_ALL.id]
         else:
             platforms = cls._make_safe_platform_files(platforms)
@@ -278,11 +280,13 @@ class Version(OnChangeMixin, ModelBase):
     def is_user_disabled(self, disable):
         # User wants to disable (and the File isn't already).
         if disable:
+            activity.log_create(amo.LOG.DISABLE_VERSION, self.addon, self)
             for file in self.files.exclude(status=amo.STATUS_DISABLED).all():
                 file.update(original_status=file.status,
                             status=amo.STATUS_DISABLED)
         # User wants to re-enable (and user did the disable, not Mozilla).
         else:
+            activity.log_create(amo.LOG.ENABLE_VERSION, self.addon, self)
             for file in self.files.exclude(
                     original_status=amo.STATUS_NULL).all():
                 file.update(status=file.original_status,
@@ -291,7 +295,7 @@ class Version(OnChangeMixin, ModelBase):
     @property
     def current_queue(self):
         """Return the current queue, or None if not in a queue."""
-        from olympia.editors.models import (
+        from olympia.reviewers.models import (
             ViewFullReviewQueue, ViewPendingQueue)
 
         if self.channel == amo.RELEASE_CHANNEL_UNLISTED:
@@ -436,6 +440,20 @@ class Version(OnChangeMixin, ModelBase):
         return any(file_.is_webextension for file_ in self.all_files)
 
     @property
+    def is_mozilla_signed(self):
+        """Is the file a special "Mozilla Signed Extension"
+
+        See https://wiki.mozilla.org/Add-ons/InternalSigning for more details.
+        We use that information to workaround compatibility limits for legacy
+        add-ons and to avoid them receiving negative boosts compared to
+        WebExtensions.
+
+        See https://github.com/mozilla/addons-server/issues/6424
+        """
+        return all(
+            file_.is_mozilla_signed_extension for file_ in self.all_files)
+
+    @property
     def has_files(self):
         return bool(self.all_files)
 
@@ -572,8 +590,8 @@ class Version(OnChangeMixin, ModelBase):
         passes the most basic criteria to be considered a candidate by the
         auto_approve command."""
         return (
-            self.addon.status == amo.STATUS_PUBLIC and
-            self.addon.type == amo.ADDON_EXTENSION and
+            self.addon.status in (amo.STATUS_PUBLIC, amo.STATUS_NOMINATED) and
+            self.addon.type in (amo.ADDON_EXTENSION, amo.ADDON_LPAPP) and
             self.is_webextension and
             self.is_unreviewed and
             self.channel == amo.RELEASE_CHANNEL_LISTED)
@@ -581,7 +599,7 @@ class Version(OnChangeMixin, ModelBase):
     @property
     def was_auto_approved(self):
         """Return whether or not this version was auto-approved."""
-        from olympia.editors.models import AutoApprovalSummary
+        from olympia.reviewers.models import AutoApprovalSummary
         try:
             return self.is_public() and AutoApprovalSummary.objects.filter(
                 version=self).get().verdict == amo.AUTO_APPROVED
@@ -692,15 +710,16 @@ models.signals.post_delete.connect(
 
 class LicenseManager(ManagerBase):
 
-    def builtins(self):
-        return self.filter(builtin__gt=0).order_by('builtin')
+    def builtins(self, cc=False):
+        return self.filter(
+            builtin__gt=0, creative_commons=cc).order_by('builtin')
 
 
 class License(ModelBase):
     OTHER = 0
 
     name = TranslatedField(db_column='name')
-    url = models.URLField(null=True)
+    url = models.URLField(null=True, db_column='url')
     builtin = models.PositiveIntegerField(default=OTHER)
     text = LinkifiedField()
     on_form = models.BooleanField(
@@ -711,6 +730,7 @@ class License(ModelBase):
     icons = models.CharField(
         max_length=255, null=True,
         help_text='Space-separated list of icon identifiers.')
+    creative_commons = models.BooleanField(default=False)
 
     objects = LicenseManager()
 
@@ -718,7 +738,12 @@ class License(ModelBase):
         db_table = 'licenses'
 
     def __unicode__(self):
-        return unicode(self.name)
+        license = self._constant or self
+        return unicode(license.name)
+
+    @property
+    def _constant(self):
+        return LICENSES_BY_BUILTIN.get(self.builtin)
 
 
 models.signals.pre_save.connect(

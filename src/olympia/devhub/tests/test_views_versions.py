@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import re
 
 import mock
@@ -166,6 +167,10 @@ class TestVersion(TestCase):
         self.delete_data['disable_version'] = ''
         self.client.post(self.delete_url, self.delete_data)
         assert Version.objects.get(pk=81551).is_user_disabled
+        assert ActivityLog.objects.filter(
+            action=amo.LOG.DELETE_VERSION.id).count() == 0
+        assert ActivityLog.objects.filter(
+            action=amo.LOG.DISABLE_VERSION.id).count() == 1
 
     def test_reenable_version(self):
         Version.objects.get(pk=81551).all_files[0].update(
@@ -175,12 +180,16 @@ class TestVersion(TestCase):
             self.reenable_url, self.delete_data, follow=True)
         assert response.status_code == 200
         assert not Version.objects.get(pk=81551).is_user_disabled
+        assert ActivityLog.objects.filter(
+            action=amo.LOG.ENABLE_VERSION.id).count() == 1
 
     def test_reenable_deleted_version(self):
         Version.objects.get(pk=81551).delete()
         self.delete_url = reverse('devhub.versions.reenable', args=['a3615'])
         response = self.client.post(self.delete_url, self.delete_data)
         assert response.status_code == 404
+        assert ActivityLog.objects.filter(
+            action=amo.LOG.ENABLE_VERSION.id).count() == 0
 
     def _extra_version_and_file(self, status):
         version = Version.objects.get(id=81551)
@@ -417,7 +426,7 @@ class TestVersion(TestCase):
         buttons = doc('.version-status-actions form button').text()
         assert buttons == 'Request Review'
 
-    def test_rejected_can_request_review(self):
+    def test_in_submission_can_request_review(self):
         self.addon.update(status=amo.STATUS_NULL)
         latest_version = self.addon.find_latest_version(
             channel=amo.RELEASE_CHANNEL_LISTED)
@@ -430,6 +439,21 @@ class TestVersion(TestCase):
         # We should only show the links for one of the disabled versions.
         assert buttons.length == 1
         assert buttons.text() == u'Request Review'
+
+    def test_reviewed_cannot_request_review(self):
+        self.addon.update(status=amo.STATUS_NULL)
+        latest_version = self.addon.find_latest_version(
+            channel=amo.RELEASE_CHANNEL_LISTED)
+        for file_ in latest_version.files.all():
+            file_.update(reviewed=datetime.datetime.now(),
+                         status=amo.STATUS_DISABLED)
+        version_factory(addon=self.addon,
+                        file_kw={'reviewed': datetime.datetime.now(),
+                                 'status': amo.STATUS_DISABLED})
+        doc = pq(self.client.get(self.url).content)
+        buttons = doc('.version-status-actions form button')
+        # We should only show the links for one of the disabled versions.
+        assert buttons.length == 0
 
     def test_version_history(self):
         self.client.cookies[API_TOKEN_COOKIE] = 'magicbeans'
@@ -885,11 +909,11 @@ class TestVersionEditFiles(TestVersionEditBase):
             sorted([p.shortname for p in amo.MOBILE_PLATFORMS.values()]))
 
 
-class TestPlatformSearch(TestVersionEditMixin, TestCase):
+class TestPlatformSearchEngine(TestVersionEditMixin, TestCase):
     fixtures = ['base/users', 'base/thunderbird', 'base/addon_4594_a9.json']
 
     def setUp(self):
-        super(TestPlatformSearch, self).setUp()
+        super(TestPlatformSearchEngine, self).setUp()
         self.client.login(email='admin@mozilla.com')
         self.url = reverse('devhub.versions.edit',
                            args=['a4594', 42352])
@@ -909,6 +933,40 @@ class TestPlatformSearch(TestVersionEditMixin, TestCase):
         response = self.client.post(self.url, dd)
         assert response.status_code == 302
         file_ = Version.objects.no_cache().get(id=42352).files.all()[0]
+        assert amo.PLATFORM_ALL.id == file_.platform
+
+
+class TestPlatformStaticTheme(TestVersionEditMixin, TestCase):
+    fixtures = ['base/users', 'base/addon_3615']
+
+    def setUp(self):
+        self.get_addon().update(type=amo.ADDON_STATICTHEME)
+        super(TestPlatformStaticTheme, self).setUp()
+        self.client.login(email='admin@mozilla.com')
+        self.version = self.get_version()
+        self.file = self.version.files.all()[0]
+        self.url = reverse('devhub.versions.edit',
+                           args=[self.version.addon.slug, self.version.id])
+
+    def formset(self, *args, **kw):
+        defaults = dict(self.initial)
+        defaults.update(kw)
+        return super(TestPlatformStaticTheme, self).formset(*args, **defaults)
+
+    def test_no_platform_selector(self):
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+        assert not doc('#id_files-0-platform')
+
+    def test_no_changing_platform(self):
+        ctx = self.client.get(self.url).context
+        compat = initial(ctx['compat_form'].forms[0])
+        files = initial(ctx['file_form'].forms[0])
+        files['platform'] = amo.PLATFORM_LINUX.id
+        self.initial = formset(compat, **formset(files, prefix='files'))
+        response = self.client.post(self.url, self.formset())
+        assert response.status_code == 302
+        file_ = self.get_version().files.all()[0]
         assert amo.PLATFORM_ALL.id == file_.platform
 
 

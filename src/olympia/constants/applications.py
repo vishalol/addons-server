@@ -1,8 +1,12 @@
+import re
+
 from django.utils.translation import ugettext_lazy as _
 
 from olympia.versions.compare import version_int as vint
 
-from base import *  # noqa
+from base import (
+    ADDON_EXTENSION, ADDON_THEME, ADDON_DICT, ADDON_SEARCH, ADDON_LPAPP,
+    ADDON_PLUGIN, ADDON_PERSONA, ADDON_STATICTHEME)
 
 
 class App(object):
@@ -19,7 +23,7 @@ class FIREFOX(App):
     pretty = _(u'Firefox')
     browser = True
     types = [ADDON_EXTENSION, ADDON_THEME, ADDON_DICT, ADDON_SEARCH,
-             ADDON_LPAPP, ADDON_PLUGIN, ADDON_PERSONA]
+             ADDON_LPAPP, ADDON_PLUGIN, ADDON_PERSONA, ADDON_STATICTHEME]
     guid = '{ec8030f7-c20a-464f-9b0e-13a3a9e97384}'
     min_display_version = 3.0
     # These versions were relabeled and should not be displayed.
@@ -155,6 +159,7 @@ class UNKNOWN_APP(App):
 # UAs will attempt to match in this order.
 APP_DETECT = (ANDROID, THUNDERBIRD, SEAMONKEY, FIREFOX)
 APP_USAGE = (FIREFOX, THUNDERBIRD, ANDROID, SEAMONKEY)
+APP_USAGE_STATICTHEME = (FIREFOX,)
 APPS = {app.short: app for app in APP_USAGE}
 APPS_ALL = {app.id: app for app in APP_USAGE + (MOZILLA, SUNBIRD, MOBILE)}
 APP_IDS = {app.id: app for app in APP_USAGE}

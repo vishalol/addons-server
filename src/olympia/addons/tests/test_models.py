@@ -16,7 +16,8 @@ from mock import Mock, patch
 
 from olympia import amo, core
 from olympia.activity.models import ActivityLog, AddonLog
-from olympia.amo.tests import addon_factory, TestCase, version_factory
+from olympia.amo.tests import (
+    addon_factory, collection_factory, TestCase, version_factory)
 from olympia.amo.templatetags.jinja_helpers import absolutify, user_media_url
 from olympia.addons.models import (
     Addon, AddonApprovalsCounter, AddonCategory, AddonDependency,
@@ -24,7 +25,7 @@ from olympia.addons.models import (
     Category, Charity, CompatOverride, CompatOverrideRange, FrozenAddon,
     IncompatibleVersions, Persona, Preview, track_addon_status_change)
 from olympia.applications.models import AppVersion
-from olympia.bandwagon.models import Collection
+from olympia.bandwagon.models import Collection, FeaturedCollection
 from olympia.constants.categories import CATEGORIES
 from olympia.devhub.models import RssKey
 from olympia.files.models import File
@@ -755,49 +756,34 @@ class TestAddonModels(TestCase):
         assert a.is_featured(amo.FIREFOX, 'en-US'), (
             'globally featured add-on not recognized')
 
-    def test_has_full_profile(self):
-        """Test if an add-on's developer profile is complete (public)."""
-        def addon():
-            return Addon.objects.get(pk=3615)
+    def test_get_featured_by_app(self):
+        addon = Addon.objects.get(pk=1003)
+        featured_coll = addon.collections.get().featuredcollection_set.get()
+        assert featured_coll.locale is None
+        # Get the applications this addon is featured for.
+        assert addon.get_featured_by_app() == {amo.FIREFOX.id: {None}}
 
-        assert not addon().has_full_profile()
+        featured_coll.update(locale='fr')
+        # Check the locale works.
+        assert addon.get_featured_by_app() == {amo.FIREFOX.id: {'fr'}}
 
-        a = addon()
-        a.the_reason = 'some reason'
-        a.save()
-        assert not addon().has_full_profile()
+        pt_coll = collection_factory()
+        pt_coll.add_addon(addon)
+        FeaturedCollection.objects.create(collection=pt_coll,
+                                          application=amo.FIREFOX.id,
+                                          locale='pt-PT')
+        # Add another featured collection for the same application.
+        assert addon.get_featured_by_app() == {amo.FIREFOX.id: {'fr', 'pt-PT'}}
 
-        a.the_future = 'some future'
-        a.save()
-        assert addon().has_full_profile()
-
-        a.the_reason = ''
-        a.the_future = ''
-        a.save()
-        assert not addon().has_full_profile()
-
-    def test_has_profile(self):
-        """Test if an add-on's developer profile is (partially or entirely)
-        completed.
-        """
-        def addon():
-            return Addon.objects.get(pk=3615)
-
-        assert not addon().has_profile()
-
-        a = addon()
-        a.the_reason = 'some reason'
-        a.save()
-        assert addon().has_profile()
-
-        a.the_future = 'some future'
-        a.save()
-        assert addon().has_profile()
-
-        a.the_reason = ''
-        a.the_future = ''
-        a.save()
-        assert not addon().has_profile()
+        mobile_coll = collection_factory()
+        mobile_coll.add_addon(addon)
+        FeaturedCollection.objects.create(collection=mobile_coll,
+                                          application=amo.ANDROID.id,
+                                          locale='pt-PT')
+        # Add a featured collection for the a different application.
+        assert addon.get_featured_by_app() == {
+            amo.FIREFOX.id: {'fr', 'pt-PT'},
+            amo.ANDROID.id: {'pt-PT'}}
 
     def newlines_helper(self, string_before):
         addon = Addon.objects.get(pk=3615)
@@ -1186,25 +1172,6 @@ class TestAddonModels(TestCase):
             'Original review must show up in review list.')
         assert new_reply.pk not in review_list, (
             'Developer reply must not show up in review list.')
-
-    def test_takes_contributions(self):
-        a = Addon(status=amo.STATUS_PUBLIC, wants_contributions=True,
-                  paypal_id='$$')
-        assert a.takes_contributions
-
-        a.status = amo.STATUS_NOMINATED
-        assert not a.takes_contributions
-        a.status = amo.STATUS_PUBLIC
-
-        a.wants_contributions = False
-        assert not a.takes_contributions
-        a.wants_contributions = True
-
-        a.paypal_id = None
-        assert not a.takes_contributions
-
-        a.charity_id = 12
-        assert a.takes_contributions
 
     def test_show_beta(self):
         # Addon.current_beta_version will be empty, so show_beta is False.
@@ -1947,6 +1914,7 @@ class TestPersonaModel(TestCase):
         self.persona = self.addon.persona
         self.persona.header = 'header.png'
         self.persona.footer = 'footer.png'
+        self.persona.popularity = 12345
         self.persona.save()
         modified = int(time.mktime(self.persona.addon.modified.timetuple()))
         self.p = lambda fn: '/15663/%s?%s' % (fn, modified)
@@ -2059,6 +2027,10 @@ class TestPersonaModel(TestCase):
         data = self.persona.theme_data
         assert data['footerURL'] == ''
         assert data['footer'] == ''
+
+    def test_theme_data_with_null_description(self):
+        addon = addon_factory(type=amo.ADDON_PERSONA, description=None)
+        assert addon.persona.theme_data['description'] is None
 
 
 class TestPreviewModel(TestCase):
@@ -3016,9 +2988,16 @@ class TestAddonApprovalsCounter(TestCase):
         AddonApprovalsCounter.increment_for_addon(self.addon)
         approval_counter = AddonApprovalsCounter.objects.get(addon=self.addon)
         assert approval_counter.counter == 1
+        self.assertCloseToNow(approval_counter.last_human_review)
+        self.assertCloseToNow(approval_counter.last_content_review)
+        approval_counter.update(
+            last_human_review=self.days_ago(100),
+            last_content_review=self.days_ago(100))
         AddonApprovalsCounter.increment_for_addon(self.addon)
         approval_counter.reload()
         assert approval_counter.counter == 2
+        self.assertCloseToNow(approval_counter.last_human_review)
+        self.assertCloseToNow(approval_counter.last_content_review)
 
     def test_increment_non_existing(self):
         approval_counter = AddonApprovalsCounter.objects.create(
@@ -3026,13 +3005,22 @@ class TestAddonApprovalsCounter(TestCase):
         AddonApprovalsCounter.increment_for_addon(self.addon)
         approval_counter.reload()
         assert approval_counter.counter == 1
+        self.assertCloseToNow(approval_counter.last_human_review)
+        self.assertCloseToNow(approval_counter.last_content_review)
 
     def test_reset_existing(self):
         approval_counter = AddonApprovalsCounter.objects.create(
-            addon=self.addon, counter=42)
+            addon=self.addon, counter=42,
+            last_content_review=self.days_ago(60),
+            last_human_review=self.days_ago(30))
         AddonApprovalsCounter.reset_for_addon(self.addon)
         approval_counter.reload()
         assert approval_counter.counter == 0
+        # Dates were not touched.
+        self.assertCloseToNow(
+            approval_counter.last_human_review, now=self.days_ago(30))
+        self.assertCloseToNow(
+            approval_counter.last_content_review, now=self.days_ago(60))
 
     def test_reset_non_existing(self):
         assert not AddonApprovalsCounter.objects.filter(
@@ -3040,3 +3028,26 @@ class TestAddonApprovalsCounter(TestCase):
         AddonApprovalsCounter.reset_for_addon(self.addon)
         approval_counter = AddonApprovalsCounter.objects.get(addon=self.addon)
         assert approval_counter.counter == 0
+
+    def test_approve_content_non_existing(self):
+        assert not AddonApprovalsCounter.objects.filter(
+            addon=self.addon).exists()
+        AddonApprovalsCounter.approve_content_for_addon(self.addon)
+        approval_counter = AddonApprovalsCounter.objects.get(addon=self.addon)
+        assert approval_counter.counter == 0
+        assert approval_counter.last_human_review is None
+        self.assertCloseToNow(approval_counter.last_content_review)
+
+    def test_approve_content_existing(self):
+        approval_counter = AddonApprovalsCounter.objects.create(
+            addon=self.addon, counter=42,
+            last_content_review=self.days_ago(367),
+            last_human_review=self.days_ago(10))
+        AddonApprovalsCounter.approve_content_for_addon(self.addon)
+        approval_counter.reload()
+        # This was updated to now.
+        self.assertCloseToNow(approval_counter.last_content_review)
+        # Those fields were not touched.
+        assert approval_counter.counter == 42
+        self.assertCloseToNow(
+            approval_counter.last_human_review, now=self.days_ago(10))

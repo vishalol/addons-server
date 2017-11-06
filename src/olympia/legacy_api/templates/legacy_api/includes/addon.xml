@@ -105,16 +105,10 @@
     {% endfor -%}
     {%- endif -%}
 
-    {%- if addon.takes_contributions -%}
+    {%- if addon.contributions -%}
     <contribution_data>
-      <link>{{ addon.contribution_url|absolutify|urlparams(src='api') }}</link>
-      {% if addon.suggested_amount %}
-          <suggested_amount currency="USD" amount="{{ addon.suggested_amount }}">
-            {{ addon.suggested_amount|currencyfmt('USD') }}
-          </suggested_amount>
-      {% endif %}
       <meet_developers>
-        {{ addon.meet_the_dev_url()|absolutify|urlparams(src='api') }}
+        {{ addon.contributions }}
       </meet_developers>
     </contribution_data>
     {%- endif -%}

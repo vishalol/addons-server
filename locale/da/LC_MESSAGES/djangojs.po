@@ -1,11 +1,11 @@
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: Ad-dons\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-17 08:37+0000\n"
-"PO-Revision-Date: 2017-07-26 22:39+0000\n"
-"Last-Translator: Bente <fox@frkolsen.dk>\n"
+"POT-Creation-Date: 2017-11-02 03:33+0000\n"
+"PO-Revision-Date: 2017-08-11 15:37+0000\n"
+"Last-Translator: jakobkpetersen <jakobkpetersen@gmail.com>\n"
 "Language-Team: MozillaDanmark <joergenr@stofanet.dk>\n"
 "Language: da\n"
 "MIME-Version: 1.0\n"
@@ -57,7 +57,7 @@ msgstr[1] "Validering af din tilføjelse mislykkedes, der var {0} fejl."
 
 msgid "&hellip;and {0} more"
 msgid_plural "&hellip;and {0} more"
-msgstr[0] "&hellip;og {0} mere"
+msgstr[0] ""
 msgstr[1] ""
 
 msgid "See full validation report"
@@ -83,13 +83,13 @@ msgstr "Valideringen af din tilføjelse udløb, den vil blive manuelt bedømt."
 
 msgid "Your add-on was validated with no errors and {0} warning."
 msgid_plural "Your add-on was validated with no errors and {0} warnings."
-msgstr[0] "Din tilføjelse er valideret som fejlfri og med {0} advarsel(-ler)."
-msgstr[1] ""
+msgstr[0] "Din tilføjelse blev valideret som fejlfri og med {0} advarsel."
+msgstr[1] "Din tilføjelse blev valideret som fejlfri og med {0} advarsler."
 
 msgid "Your add-on was validated with no errors and {0} message."
 msgid_plural "Your add-on was validated with no errors and {0} messages."
-msgstr[0] "Din tilføjelse er valideret som fejlfri og med {0} advarsel(-ler)."
-msgstr[1] ""
+msgstr[0] "Din tilføjelse blev valideret som fejlfri og med {0} meddelelse."
+msgstr[1] "Din tilføjelse blev valideret som fejlfri og med {0} meddelelser."
 
 msgid "Your add-on was validated with no errors or warnings."
 msgstr "Din tilføjelse er valideret uden fejl eller advarsler."
@@ -650,18 +650,6 @@ msgstr "Accepter og installer"
 msgid "Add to {0}"
 msgstr "Føj til {0}"
 
-msgid "Download Now"
-msgstr "Hent nu"
-
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr ""
-
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr "Du nødt til at bruge Firefox 10.0 eller højere."
-
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr "Mozilla har markeret denne version som værende inkompatibel med din Firefox-version."
-
 #. L10n: {0} is an platform like Windows or Linux.
 msgid "Install for {0} anyway"
 msgstr "Installer til {0} alligevel"
@@ -672,9 +660,12 @@ msgstr "Hent til {0} alligevel"
 msgid "Not available for your platform"
 msgstr "Er ikke tilgængelig til din platform"
 
-#. L10n: {0} is an app name, {1} is the app version.
-msgid "Not available for {0} {1}"
-msgstr "Er ikke tilgængelig til {0} {1}"
+#. L10n: {0} is an app name.
+msgid "This add-on is not compatible with your version of {0}."
+msgstr "Denne tilføjelse er ikke kompatibel med din version af {0}."
+
+msgid "View other versions"
+msgstr "Vis andre versioner"
 
 msgid "Works with {app} {min} - {max}"
 msgstr "Virker med {app} {min} - {max}"
@@ -682,17 +673,8 @@ msgstr "Virker med {app} {min} - {max}"
 msgid "Works with {app}"
 msgstr "Virker med {app}"
 
-msgid "View other versions"
-msgstr "Vis andre versioner"
-
 msgid "Only with Firefox — Get Firefox Now!"
 msgstr "Kun med Firefox — Hent Firefox nu!"
-
-msgid "Download now"
-msgstr "Hent nu"
-
-msgid "Only available on Firefox Desktop"
-msgstr "Kun tilgængelig på Firefox til computer"
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
 msgstr "Beklager, du behøver en Mozilla-baseret browser (såsom Firefox) for at installere et søge-plugin."
@@ -767,17 +749,26 @@ msgid_plural "{reviews} user reviews"
 msgstr[0] "{reviews} brugeranmeldelse"
 msgstr[1] "{reviews} brugeranmeldelser"
 
-msgid "Learn more"
-msgstr "Lær mere"
-
 msgid "Image changes being processed"
 msgstr ""
 
-msgid "Must be a valid e-mail address."
-msgstr "Skal være en gyldig mailadresse."
-
 msgid "No results found."
 msgstr "Ingen resultater fundet."
+
+msgid "Loading..."
+msgstr "Indlæser..."
+
+#. L10n: {0} is the number of characters left.
+msgid "<b>{0}</b> character left."
+msgid_plural "<b>{0}</b> characters left."
+msgstr[0] "<b>{0}</b> tegn tilbage."
+msgstr[1] "<b>{0}</b> tegn tilbage."
+
+msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
+msgstr "Denne funktion er midlertidig ude af drift mens vi udfører vedligeholdelse af webstedet. Prøv igen lidt senere."
+
+msgid "Remove this localization"
+msgstr ""
 
 msgid "{name} was viewing this page first."
 msgstr ""
@@ -813,21 +804,6 @@ msgid "Average Reviews"
 msgstr ""
 
 msgid "Number of Reviews"
-msgstr ""
-
-msgid "Loading..."
-msgstr "Indlæser..."
-
-#. L10n: {0} is the number of characters left.
-msgid "<b>{0}</b> character left."
-msgid_plural "<b>{0}</b> characters left."
-msgstr[0] "<b>{0}</b> tegn tilbage."
-msgstr[1] "<b>{0}</b> tegn tilbage."
-
-msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
-msgstr "Denne funktion er midlertidig ude af drift mens vi udfører vedligeholdelse af webstedet. Prøv igen lidt senere."
-
-msgid "Remove this localization"
 msgstr ""
 
 msgid "Requested Info"

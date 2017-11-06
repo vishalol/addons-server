@@ -162,7 +162,6 @@ var installButton = function() {
             var f = _.haskey(z.button.after, after) ? z.button.after[after] : _.identity,
                 callback = _.bind(f, self),
                 install = search ? z.installSearch : z.installAddon;
-
             install(name, installer[0].href, icon, hash, callback);
         });
     };
@@ -178,6 +177,30 @@ var installButton = function() {
             msg: format(text, [name])
         };
     });
+
+    var showDownloadAnyway = function($button) {
+        var $visibleButton = $button.filter(':visible')
+        var $installShell = $visibleButton.parents('.install-shell');
+        var $downloadAnyway = $visibleButton.next('.download-anyway');
+        if ($downloadAnyway.length) {
+            // We want to be able to add the download anyway link regardless
+            // of what is already shown. There could be just an error message,
+            // or an error message plus a link to more versions. We also want
+            // those combinations to work without the download anyway link
+            // being shown.
+            // Append a separator to the .more-versions element:
+            // if it's displayed we need to separate the download anyway link
+            // from the text shown in that span.
+            var $moreVersions = $installShell.find('.more-versions');
+            $moreVersions.append(' | ');
+            // In any case, add the download anyway link to the parent div.
+            // It'll show up regardless of whether we are showing the more
+            // versions link or not.
+            var $newParent = $installShell.find('.extra .not-available');
+            $newParent.append($downloadAnyway);
+            $downloadAnyway.show();
+        }
+    }
 
     // Add version and platform warnings.  This is one
     // big function since we merge the messaging when bad platform and version
@@ -199,13 +222,16 @@ var installButton = function() {
             var msg = format(gettext('This add-on is not compatible with your version of {0}.'),
                         [z.appName, z.browserVersion]);
             var tpl = template(msg +
-                '<br/><span class="more-versions"><a href="{versions_url}">' +
+                ' <br/><span class="more-versions"><a href="{versions_url}">' +
                 gettext('View other versions') + '</a></span>');
             warn(tpl({'versions_url': versions_url}));
 
             $button.closest('div').attr('data-version-supported', false);
             $button.addClass('concealed');
             $button.closest('.item.addon').addClass('incompatible');
+            if (!badPlatform) {
+                showDownloadAnyway($button);
+            }
 
             return true;
         } else if (!unreviewed && (appSupported || no_compat_necessary)) {
@@ -217,11 +243,14 @@ var installButton = function() {
               gettext('Works with {app} {min} - {max}') :
               gettext('Works with {app}'));
             var tpl = template(msg +
-                '<span class="more-versions"><a href="{versions_url}">' +
+                '<br/><span class="more-versions"><a href="{versions_url}">' +
                 gettext('View other versions') + '</a></span>');
             var context = {'app': z.appName, 'min': min, 'max': max,
                 'versions_url': versions_url};
             addWarning(tpl(context), noappsupport);
+            if (!badPlatform) {
+                showDownloadAnyway($button);
+            }
         }
         return false;
     };
@@ -236,23 +265,15 @@ var installButton = function() {
     // Drive the install button based on its type.
     if (eula || contrib) {
         versionsAndPlatforms();
-    } else if (persona) {
+    } else if (persona && $.hasPersonas()) {
         $button.removeClass('download').addClass('add').find('span').text(addto);
-        if ($.hasPersonas()) {
-            $button.personasButton();
-        } else {
-            $button.addClass('concealed');
-        }
+        $button.personasButton();
     } else if (z.appMatchesUserAgent) {
         clickHijack();
         addToApp();
         var opts = no_compat_necessary ? {addWarning: false} : {};
         versionsAndPlatforms(opts);
     } else if (z.app == 'firefox') {
-        $('#downloadAnyway').attr('href',escape_($button.filter(':visible').attr('href')));
-        $('#downloadAnyway').show();
-        $button.addClass('concealed');
-        versionsAndPlatforms();
         $button.addClass('CTA');
         $button.text(gettext('Only with Firefox \u2014 Get Firefox Now!'));
         $button.attr('href', 'https://www.mozilla.org/firefox/new/?scene=2&utm_source=addons.mozilla.org&utm_medium=referral&utm_campaign=non-fx-button#download-fx');

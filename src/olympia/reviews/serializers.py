@@ -6,10 +6,10 @@ from django.utils.translation import ugettext
 from rest_framework import serializers
 from rest_framework.relations import PrimaryKeyRelatedField
 
+from olympia.accounts.serializers import BaseUserSerializer
 from olympia.addons.serializers import SimpleVersionSerializer
 from olympia.reviews.forms import ReviewForm
 from olympia.reviews.models import Review
-from olympia.users.serializers import BaseUserSerializer
 from olympia.versions.models import Version
 
 
@@ -85,13 +85,6 @@ class BaseReviewSerializer(serializers.ModelSerializer):
                 data['editorreview'] = True
 
         return data
-
-    def to_representation(self, obj):
-        # Set this so BaseUserSerializer doesn't need to do a query.
-        # As only developers and admins can reply they must be a developer;
-        # Developers shouldn't write reviews on their add-ons so they're not.
-        self.context['is_developer'] = (obj.reply_to is not None)
-        return super(BaseReviewSerializer, self).to_representation(obj)
 
 
 class ReviewSerializerReply(BaseReviewSerializer):

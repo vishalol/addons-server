@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from decimal import Decimal
 import json
 import random
 import re
@@ -7,6 +6,7 @@ import re
 from django.conf import settings
 from django.core import mail
 from django.core.cache import cache
+from django.utils.http import urlunquote
 from django.test.client import Client
 
 import waffle
@@ -17,22 +17,22 @@ from waffle.testutils import override_switch
 from olympia import amo
 from olympia.amo.tests import APITestClient, ESTestCase, TestCase
 from olympia.amo.templatetags.jinja_helpers import numberfmt, urlparams
-from olympia.amo.tests import addon_factory, user_factory, version_factory
-from olympia.amo.urlresolvers import reverse
+from olympia.amo.tests import (
+    addon_factory, collection_factory, user_factory, version_factory)
+from olympia.amo.urlresolvers import get_outgoing_url, reverse
 from olympia.addons.utils import generate_addon_guid
 from olympia.abuse.models import AbuseReport
 from olympia.addons.models import (
     Addon, AddonDependency, AddonFeatureCompatibility, AddonUser, Category,
-    Charity, Persona, ReplacementAddon)
+    Persona, ReplacementAddon)
 from olympia.addons.views import (
     DEFAULT_FIND_REPLACEMENT_PATH, FIND_REPLACEMENT_SRC,
     AddonSearchView, AddonAutoCompleteSearchView)
-from olympia.bandwagon.models import Collection
+from olympia.bandwagon.models import Collection, FeaturedCollection
 from olympia.constants.categories import CATEGORIES, CATEGORIES_BY_ID
+from olympia.constants.licenses import LICENSES_BY_BUILTIN
 from olympia.files.models import WebextPermission, WebextPermissionDescription
-from olympia.paypal.tests.test import other_error
 from olympia.reviews.models import Review
-from olympia.stats.models import Contribution
 from olympia.users.templatetags.jinja_helpers import users_list
 from olympia.users.models import UserProfile
 from olympia.versions.models import ApplicationsVersions, AppVersion, Version
@@ -112,6 +112,15 @@ class TestHomepage(TestCase):
             'Welcome to Thunderbird Add-ons. Add extra features and styles to '
             'make Thunderbird your own.')
 
+    def test_try_new_frontend_banner_presence(self):
+        self.url = '/en-US/firefox/'
+        response = self.client.get(self.url)
+        assert 'AMO is getting a new look.' not in response.content
+
+        with override_switch('try-new-frontend', active=True):
+            response = self.client.get(self.url)
+            assert 'AMO is getting a new look.' in response.content
+
 
 class TestHomepageFeatures(TestCase):
     fixtures = ['base/appversion',
@@ -152,293 +161,62 @@ class TestHomepageFeatures(TestCase):
             assert doc.find('%s .seeall' % id_).attr('href') == url
 
 
-class TestPromobox(TestCase):
-    fixtures = ['addons/ptbr-promobox']
-
-    def test_promo_box_ptbr(self):
-        # bug 564355, we were trying to match pt-BR and pt-br
-        response = self.client.get('/pt-BR/firefox/', follow=True)
-        assert response.status_code == 200
-
-
-class TestContributeInstalled(TestCase):
+class TestOldContributionRedirects(TestCase):
     fixtures = ['base/appversion', 'base/addon_592']
 
     def setUp(self):
-        super(TestContributeInstalled, self).setUp()
-        self.addon = Addon.objects.get(pk=592)
-        self.url = reverse('addons.installed', args=['a592'])
+        self.detail_url = reverse('addons.detail', args=['a592'])
 
-    def test_no_header_block(self):
-        # bug 565493, Port post-install contributions page
-        response = self.client.get(self.url, follow=True)
-        doc = pq(response.content)
-        header = doc('#header')
-        aux_header = doc('#aux-nav')
-        # assert that header and aux_header are empty (don't exist)
-        assert header == []
-        assert aux_header == []
+    def test_installed(self):
+        url = reverse('addons.installed', args=['a592'])
+        response = self.client.get(url, follow=True)
+        self.assert3xx(response, self.detail_url, 301)
 
-    def test_num_addons_link(self):
-        r = self.client.get(self.url)
-        a = pq(r.content)('.num-addons a')
-        assert a.length == 1
-        author = self.addon.authors.all()[0]
-        assert a.attr('href') == author.get_url_path()
-
-    def test_title(self):
-        r = self.client.get(self.url)
-        title = pq(r.content)('title').text()
-        assert title.startswith('Thank you for installing Gmail S/MIME')
-
-
-class TestContributeEmbedded(TestCase):
-    fixtures = ['base/addon_3615', 'base/addon_592', 'base/users']
-
-    def setUp(self):
-        super(TestContributeEmbedded, self).setUp()
-        self.addon = Addon.objects.get(pk=592)
-        self.detail_url = self.addon.get_url_path()
-
-    @patch('olympia.paypal.get_paykey')
-    def client_post(self, get_paykey, **kwargs):
-        get_paykey.return_value = ['abc', '']
-        url = reverse('addons.contribute', args=kwargs.pop('rev'))
-        if 'qs' in kwargs:
-            url = url + kwargs.pop('qs')
-        return self.client.post(url, kwargs.get('data', {}))
-
-    def test_client_get(self):
-        url = reverse('addons.contribute', args=[self.addon.slug])
-        assert self.client.get(url, {}).status_code == 405
-
-    def test_invalid_is_404(self):
-        """we get a 404 in case of invalid addon id"""
-        response = self.client_post(rev=[1])
-        assert response.status_code == 404
-
-    @patch('olympia.paypal.get_paykey')
-    def test_charity_name(self, get_paykey):
-        get_paykey.return_value = ('payKey', 'paymentExecStatus')
-        self.addon.charity = Charity.objects.create(name=u'foë')
-        self.addon.name = u'foë'
-        self.addon.save()
+    def test_contribute(self):
         url = reverse('addons.contribute', args=['a592'])
-        self.client.post(url)
+        response = self.client.get(url, follow=True)
+        self.assert3xx(response, self.detail_url, 301)
 
-    def test_params_common(self):
-        """Test for the some of the common values"""
-        response = self.client_post(rev=['a592'])
-        assert response.status_code == 302
-        con = Contribution.objects.all()[0]
-        assert con.charity_id is None
-        assert con.addon_id == 592
-        assert con.amount == Decimal('20.00')
+    def test_meet(self):
+        url = reverse('addons.meet', args=['a592'])
+        response = self.client.get(url, follow=True)
+        self.assert3xx(response, self.detail_url, 301)
 
-    def test_custom_amount(self):
-        """Test that we have the custom amount when given."""
-        response = self.client_post(rev=['a592'], data={'onetime-amount': 42,
-                                                        'type': 'onetime'})
-        assert response.status_code == 302
-        assert Contribution.objects.all()[0].amount == Decimal('42.00')
+    def test_thanks(self):
+        url = reverse('addons.thanks', args=['a592'])
+        response = self.client.get(url, follow=True)
+        self.assert3xx(response, self.detail_url, 301)
 
-    def test_invalid_amount(self):
-        response = self.client_post(rev=['a592'], data={'onetime-amount': 'f',
-                                                        'type': 'onetime'})
-        data = json.loads(response.content)
-        assert data['paykey'] == ''
-        assert data['error'] == 'Invalid data.'
-
-    def test_amount_length(self):
-        response = self.client_post(rev=['a592'], data={'onetime-amount': '0',
-                                                        'type': 'onetime'})
-        data = json.loads(response.content)
-        assert data['paykey'] == ''
-        assert data['error'] == 'Invalid data.'
-
-    def test_ppal_json_switch(self):
-        response = self.client_post(rev=['a592'], qs='?result_type=json')
-        assert response.status_code == 200
-        response = self.client_post(rev=['a592'])
-        assert response.status_code == 302
-
-    def test_ppal_return_url_not_relative(self):
-        response = self.client_post(rev=['a592'], qs='?result_type=json')
-        assert json.loads(response.content)['url'].startswith('http')
-
-    def test_unicode_comment(self):
-        res = self.client_post(rev=['a592'], data={'comment': u'版本历史记录'})
-        assert res.status_code == 302
-        assert settings.PAYPAL_FLOW_URL in res._headers['location'][1]
-        assert Contribution.objects.all()[0].comment == u'版本历史记录'
-
-    def test_comment_too_long(self):
-        response = self.client_post(rev=['a592'], data={'comment': u'a' * 256})
-
-        data = json.loads(response.content)
-        assert data['paykey'] == ''
-        assert data['error'] == 'Invalid data.'
-
-    def test_organization(self):
-        c = Charity.objects.create(name='moz', url='moz.com',
-                                   paypal='test@moz.com')
-        self.addon.update(charity=c)
-
-        r = self.client_post(rev=['a592'])
-        assert r.status_code == 302
-        assert self.addon.charity_id == (
-            self.addon.contribution_set.all()[0].charity_id)
-
-    def test_no_org(self):
-        r = self.client_post(rev=['a592'])
-        assert r.status_code == 302
-        assert self.addon.contribution_set.all()[0].charity_id is None
-
-    def test_no_suggested_amount(self):
-        self.addon.update(suggested_amount=None)
-        res = self.client_post(rev=['a592'])
-        assert res.status_code == 302
-        assert settings.DEFAULT_SUGGESTED_CONTRIBUTION == (
-            self.addon.contribution_set.all()[0].amount)
-
-    def test_form_suggested_amount(self):
-        res = self.client.get(self.detail_url)
-        doc = pq(res.content)
-        assert len(doc('#contribute-box input[type=radio]')) == 2
-
-    def test_form_no_suggested_amount(self):
-        self.addon.update(suggested_amount=None)
-        res = self.client.get(self.detail_url)
-        doc = pq(res.content)
-        assert len(doc('#contribute-box input[type=radio]')) == 1
-
-    @patch('olympia.paypal.get_paykey')
-    def test_paypal_error_json(self, get_paykey):
-        get_paykey.return_value = (None, None)
-        res = self.contribute()
-        assert not json.loads(res.content)['paykey']
-
-    @patch('olympia.paypal.requests.post')
-    def test_paypal_other_error_json(self, post):
-        post.return_value.text = other_error
-        res = self.contribute()
-        assert not json.loads(res.content)['paykey']
-
-    def _test_result_page(self):
-        url = self.addon.get_detail_url('paypal', ['complete'])
-        doc = pq(self.client.get(url, {'uuid': 'ballin'}).content)
-        assert doc('#paypal-result').length == 1
-        assert doc('#paypal-thanks').length == 0
-
-    def test_addons_result_page(self):
-        self._test_result_page()
-
-    @patch('olympia.paypal.get_paykey')
-    def test_not_split(self, get_paykey):
-        get_paykey.return_value = ('payKey', 'paymentExecStatus')
-        self.contribute()
-        assert 'amount' in get_paykey.call_args[0][0]
-        assert 'chains' not in get_paykey.call_args[0][0]
-
-    def contribute(self):
-        url = reverse('addons.contribute', args=[self.addon.slug])
-        return self.client.post(urlparams(url, result_type='json'))
+    def test_roadblock(self):
+        url = reverse('addons.roadblock', args=['a592'])
+        response = self.client.get(url, follow=True)
+        self.assert3xx(response, self.detail_url, 301)
 
 
-class TestDeveloperPages(TestCase):
+class TestContributionsURL(TestCase):
     fixtures = ['base/addon_3615', 'base/addon_592',
                 'base/users', 'addons/eula+contrib-addon',
                 'addons/addon_228106_info+dev+bio.json',
                 'addons/addon_228107_multiple-devs.json']
 
-    def test_paypal_js_is_present_if_contributions_are_enabled(self):
-        self.addon = Addon.objects.get(id=592)
-        assert self.addon.takes_contributions
-        response = self.client.get(reverse('addons.meet', args=['a592']))
-        assert response.status_code == 200
-        doc = pq(response.content)
-        assert doc('script[src="%s"]' % settings.PAYPAL_JS_URL)
+    def setUp(self):
+        self.addon = Addon.objects.get(pk=592)
+        user = UserProfile.objects.get(pk=999)
+        AddonUser(addon=self.addon, user=user).save()
 
-    def test_paypal_js_is_absent_if_contributions_are_disabled(self):
-        self.addon = Addon.objects.get(pk=3615)
-        assert not self.addon.takes_contributions
-        response = self.client.get(reverse('addons.meet', args=['a3615']))
-        assert response.status_code == 200
-        doc = pq(response.content)
-        assert not doc('script[src="%s"]' % settings.PAYPAL_JS_URL)
+    def test_button_appears_if_set(self):
+        response = self.client.get(self.addon.get_url_path())
+        # No button by default because Addon.contributions url not set.
+        assert pq(response.content)('#contribution-url-button').length == 0
 
-    def test_meet_the_dev_title(self):
-        r = self.client.get(reverse('addons.meet', args=['a592']))
-        title = pq(r.content)('title').text()
-        assert title.startswith('Meet the Gmail S/MIME Developer')
-
-    def test_roadblock_title(self):
-        r = self.client.get(reverse('addons.meet', args=['a592']))
-        title = pq(r.content)('title').text()
-        assert title.startswith('Meet the Gmail S/MIME Developer')
-
-    def test_meet_the_dev_src(self):
-        r = self.client.get(reverse('addons.meet', args=['a11730']))
-        button = pq(r.content)('.install-button a.button').attr('href')
-        assert button.endswith('?src=developers')
-
-    def test_nl2br_info(self):
-        r = self.client.get(reverse('addons.meet', args=['a228106']))
-        assert r.status_code == 200
-        doc = pq(r.content)
-        assert doc('.biography').html() == (
-            'Bio: This is line one.<br/><br/>This is line two')
-        addon_reasons = doc('#about-addon p')
-        assert addon_reasons.eq(0).html() == (
-            'Why: This is line one.<br/><br/>This is line two')
-        assert addon_reasons.eq(1).html() == (
-            'Future: This is line one.<br/><br/>This is line two')
-
-    def test_nl2br_info_for_multiple_devs(self):
-        # Get an Add-on that has multiple developers,
-        # which will trigger the else block in the template.
-        r = self.client.get(reverse('addons.meet', args=['a228107']))
-        assert r.status_code == 200
-        bios = pq(r.content)('.biography')
-        assert bios.eq(0).html() == (
-            'Bio1: This is line one.<br/><br/>This is line two')
-        assert bios.eq(1).html() == (
-            'Bio2: This is line one.<br/><br/>This is line two')
-
-    def test_roadblock_src(self):
-        url = reverse('addons.roadblock', args=['a11730'])
-        # If they end up at the roadblock we force roadblock on them
-        r = self.client.get(url + '?src=dp-btn-primary')
-        button = pq(r.content)('.install-button a.button').attr('href')
-        assert button.endswith('?src=dp-btn-primary')
-
-        # No previous source gets the roadblock page source
-        r = self.client.get(url)
-        button = pq(r.content)('.install-button a.button').attr('href')
-        assert button.endswith('?src=meetthedeveloper_roadblock')
-
-    def test_roadblock_different(self):
-        url = reverse('addons.roadblock', args=['a11730'])
-        r = self.client.get(url + '?src=dp-btn-primary')
-        button = pq(r.content)('.install-button a.button').attr('href')
-        assert button.endswith('?src=dp-btn-primary')
-        assert pq(r.content)('#contribute-box input[name=source]').val() == (
-            'roadblock')
-
-    def test_contribute_multiple_devs(self):
-        a = Addon.objects.get(pk=592)
-        u = UserProfile.objects.get(pk=999)
-        AddonUser(addon=a, user=u).save()
-        r = self.client.get(reverse('addons.meet', args=['a592']))
-        assert pq(r.content)('#contribute-button').length == 1
-
-    def test_purified(self):
-        addon = Addon.objects.get(pk=592)
-        addon.the_reason = addon.the_future = '<b>foo</b>'
-        addon.save()
-        url = reverse('addons.meet', args=['592'])
-        r = self.client.get(url, follow=True)
-        assert pq(r.content)('#about-addon b').length == 2
+        # Set it and it appears though.
+        self.addon.update(contributions='https://paypal.me/foooo')
+        response = self.client.get(self.addon.get_url_path()
+                                   )
+        button = pq(response.content)('#contribution-url-button')
+        assert button.length == 1, response.content
+        assert button[0].attrib['href'] == get_outgoing_url(
+            'https://paypal.me/foooo')
 
 
 class TestLicensePage(TestCase):
@@ -535,6 +313,14 @@ class TestDetailPage(TestCase):
         self.addon = Addon.objects.get(id=3615)
         self.url = self.addon.get_url_path()
         self.more_url = self.addon.get_url_path(more=True)
+
+    def test_try_new_frontend_banner_presence(self):
+        response = self.client.get(self.url)
+        assert 'AMO is getting a new look.' not in response.content
+
+        with override_switch('try-new-frontend', active=True):
+            response = self.client.get(self.url)
+            assert 'AMO is getting a new look.' in response.content
 
     def test_304(self):
         response = self.client.get(self.url)
@@ -919,16 +705,6 @@ class TestDetailPage(TestCase):
         r = self.client.get(a.get_url_path())
         assert pq(r.content)('#detail-relnotes .compat').length == 0
 
-    def test_show_profile(self):
-        selector = '.author a[href="%s"]' % self.addon.meet_the_dev_url()
-
-        assert not (self.addon.the_reason or self.addon.the_future)
-        assert not pq(self.client.get(self.url).content)(selector)
-
-        self.addon.the_reason = self.addon.the_future = '...'
-        self.addon.save()
-        assert pq(self.client.get(self.url).content)(selector)
-
     def test_is_restart_required(self):
         span_is_restart_required = (
             '<span class="is-restart-required">Requires Restart</span>')
@@ -942,16 +718,46 @@ class TestDetailPage(TestCase):
         response = self.client.get(self.url)
         assert span_is_restart_required in response.content
 
-    def test_is_webextension(self):
-        file_ = self.addon.current_version.all_files[0]
+    def test_fx57_label_is_webextension(self):
+        """Test that the Firefox 57 label is being shown.
 
+        That label depends on `is_webextension` being set or
+        if the add-on is a mozilla internally signed add-on.
+        """
+        file_ = self.addon.current_version.all_files[0]
         assert file_.is_webextension is False
+
         response = self.client.get(self.url)
         doc = pq(response.content)
         assert not doc('a.is-webextension')
 
         file_.update(is_webextension=True, is_restart_required=False)
         assert file_.is_webextension is True
+
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+        link = doc('a.is-webextension')
+        assert (
+            link.attr['href'] ==
+            'https://support.mozilla.org/kb/firefox-add-technology-modernizing'
+        )
+
+    def test_fx57_label_is_mozilla_signed_extension(self):
+        """Test that the Firefox 57 label is being shown.
+
+        That label depends on `is_webextension` being set or
+        if the add-on is a mozilla internally signed add-on.
+        """
+        file_ = self.addon.current_version.all_files[0]
+        assert file_.is_mozilla_signed_extension is False
+
+        response = self.client.get(self.url)
+        doc = pq(response.content)
+        assert not doc('a.is-webextension')
+
+        file_.update(is_mozilla_signed_extension=True)
+        assert file_.is_mozilla_signed_extension is True
+
         response = self.client.get(self.url)
         doc = pq(response.content)
         link = doc('a.is-webextension')
@@ -1013,11 +819,11 @@ class TestDetailPage(TestCase):
             self.addon.get_dev_url())
 
         # reviewer gets an 'Add-on Review' button
-        self.client.login(email='editor@mozilla.com')
+        self.client.login(email='reviewer@mozilla.com')
         content = get_detail().content
         assert pq(content)('.manage-button').length == 1
         assert pq(content)('.manage-button a').eq(0).attr('href') == (
-            reverse('editors.review', args=[self.addon.slug]))
+            reverse('reviewers.review', args=[self.addon.slug]))
 
         # admins gets devhub, 'Add-on Review' and 'Admin Manage' button too
         self.client.login(email='admin@mozilla.com')
@@ -1026,7 +832,7 @@ class TestDetailPage(TestCase):
         assert pq(content)('.manage-button a').eq(0).attr('href') == (
             self.addon.get_dev_url())
         assert pq(content)('.manage-button a').eq(1).attr('href') == (
-            reverse('editors.review', args=[self.addon.slug]))
+            reverse('reviewers.review', args=[self.addon.slug]))
         assert pq(content)('.manage-button a').eq(2).attr('href') == (
             reverse('zadmin.addon_manage', args=[self.addon.slug]))
 
@@ -1157,6 +963,22 @@ class TestDetailPage(TestCase):
         assert a.attr('href') == g
         assert a.text() == 'License to Kill'
 
+    def test_license_builtin_creative_commons(self):
+        g = 'http://google.com'
+        version = self.addon._current_version
+        constant = LICENSES_BY_BUILTIN[11]
+        license = version.license
+        license.builtin = 11
+        license.name = 'License to Kill'  # Will be overriden by constant
+        license.url = g
+        license.save()
+        assert license._constant == constant
+        assert license.builtin == 11
+        assert license.url == g
+        a = self.get_pq()('.secondary.metadata .source-license a')
+        assert a.attr('href') == g
+        assert a.text() == constant.name
+
     def test_license_link_custom(self):
         version = self.addon._current_version
         assert version.license.url is None
@@ -1202,16 +1024,6 @@ class TestDetailPage(TestCase):
                     for c in self.addon.categories.filter(
                         application=amo.FIREFOX.id)]
         amo.tests.check_links(expected, links)
-
-    def test_paypal_js_is_present_if_contributions_are_enabled(self):
-        self.addon = Addon.objects.get(id=592)
-        assert self.addon.takes_contributions
-        self.url = self.addon.get_url_path()
-        assert self.get_pq()('script[src="%s"]' % settings.PAYPAL_JS_URL)
-
-    def test_paypal_js_is_absent_if_contributions_are_disabled(self):
-        assert not self.addon.takes_contributions
-        assert not self.get_pq()('script[src="%s"]' % settings.PAYPAL_JS_URL)
 
 
 class TestPersonas(object):
@@ -1478,10 +1290,6 @@ class TestXssOnName(amo.tests.TestXss):
         url = reverse('addons.detail', args=[self.addon.slug])
         self.assertNameAndNoXSS(url)
 
-    def test_meet_page(self):
-        url = reverse('addons.meet', args=[self.addon.slug])
-        self.assertNameAndNoXSS(url)
-
     def test_privacy_page(self):
         url = reverse('addons.privacy', args=[self.addon.slug])
         self.assertNameAndNoXSS(url)
@@ -1601,6 +1409,14 @@ class TestFindReplacement(TestCase):
         response = self.client.get(self.url)
         assert response.status_code == 404
 
+    def test_external_url(self):
+        ReplacementAddon.objects.create(
+            guid='xxx', path='https://mozilla.org/')
+        self.url = reverse('addons.find_replacement') + '?guid=xxx'
+        response = self.client.get(self.url)
+        self.assert3xx(
+            response, get_outgoing_url('https://mozilla.org/'))
+
 
 class AddonAndVersionViewSetDetailMixin(object):
     """Tests that play with addon state and permissions. Shared between addon
@@ -1645,6 +1461,11 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.addon.update(status=amo.STATUS_NOMINATED)
         response = self.client.get(self.url)
         assert response.status_code == 401
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'Authentication credentials were not provided.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is False
 
     def test_get_not_public_no_rights(self):
         self.addon.update(status=amo.STATUS_NOMINATED)
@@ -1652,6 +1473,11 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.client.login_api(user)
         response = self.client.get(self.url)
         assert response.status_code == 403
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'You do not have permission to perform this action.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is False
 
     def test_get_not_public_reviewer(self):
         self.addon.update(status=amo.STATUS_NOMINATED)
@@ -1673,11 +1499,55 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.addon.update(disabled_by_user=True)
         response = self.client.get(self.url)
         assert response.status_code == 401
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'Authentication credentials were not provided.')
+        assert data['is_disabled_by_developer'] is True
+        assert data['is_disabled_by_mozilla'] is False
+
+    def test_get_disabled_by_user_other_user(self):
+        self.addon.update(disabled_by_user=True)
+        user = UserProfile.objects.create(username='someone')
+        self.client.login_api(user)
+        response = self.client.get(self.url)
+        assert response.status_code == 403
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'You do not have permission to perform this action.')
+        assert data['is_disabled_by_developer'] is True
+        assert data['is_disabled_by_mozilla'] is False
+
+    def test_disabled_by_admin_anonymous(self):
+        self.addon.update(status=amo.STATUS_DISABLED)
+        response = self.client.get(self.url)
+        assert response.status_code == 401
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'Authentication credentials were not provided.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is True
+
+    def test_disabled_by_admin_no_rights(self):
+        self.addon.update(status=amo.STATUS_DISABLED)
+        user = UserProfile.objects.create(username='someone')
+        self.client.login_api(user)
+        response = self.client.get(self.url)
+        assert response.status_code == 403
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'You do not have permission to perform this action.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is True
 
     def test_get_not_listed(self):
         self.make_addon_unlisted(self.addon)
         response = self.client.get(self.url)
         assert response.status_code == 401
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'Authentication credentials were not provided.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is False
 
     def test_get_not_listed_no_rights(self):
         user = UserProfile.objects.create(username='simpleuser')
@@ -1685,6 +1555,11 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.client.login_api(user)
         response = self.client.get(self.url)
         assert response.status_code == 403
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'You do not have permission to perform this action.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is False
 
     def test_get_not_listed_simple_reviewer(self):
         user = UserProfile.objects.create(username='reviewer')
@@ -1693,6 +1568,11 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.client.login_api(user)
         response = self.client.get(self.url)
         assert response.status_code == 403
+        data = json.loads(response.content)
+        assert data['detail'] == (
+            'You do not have permission to perform this action.')
+        assert data['is_disabled_by_developer'] is False
+        assert data['is_disabled_by_mozilla'] is False
 
     def test_get_not_listed_specific_reviewer(self):
         user = UserProfile.objects.create(username='reviewer')
@@ -1714,6 +1594,12 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.addon.delete()
         response = self.client.get(self.url)
         assert response.status_code == 404
+        data = json.loads(response.content)
+        assert data['detail'] == 'Not found.'
+        # `is_disabled_by_developer` and `is_disabled_by_mozilla` are only
+        # added for 401/403.
+        assert 'is_disabled_by_developer' not in data
+        assert 'is_disabled_by_mozilla' not in data
 
     def test_get_deleted_no_rights(self):
         self.addon.delete()
@@ -1721,6 +1607,12 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.client.login_api(user)
         response = self.client.get(self.url)
         assert response.status_code == 404
+        data = json.loads(response.content)
+        assert data['detail'] == 'Not found.'
+        # `is_disabled_by_developer` and `is_disabled_by_mozilla` are only
+        # added for 401/403.
+        assert 'is_disabled_by_developer' not in data
+        assert 'is_disabled_by_mozilla' not in data
 
     def test_get_deleted_reviewer(self):
         user = UserProfile.objects.create(username='reviewer')
@@ -1729,6 +1621,12 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.client.login_api(user)
         response = self.client.get(self.url)
         assert response.status_code == 404
+        data = json.loads(response.content)
+        assert data['detail'] == 'Not found.'
+        # `is_disabled_by_developer` and `is_disabled_by_mozilla` are only
+        # added for 401/403.
+        assert 'is_disabled_by_developer' not in data
+        assert 'is_disabled_by_mozilla' not in data
 
     def test_get_deleted_admin(self):
         user = UserProfile.objects.create(username='admin')
@@ -1746,11 +1644,23 @@ class AddonAndVersionViewSetDetailMixin(object):
         self.client.login_api(user)
         response = self.client.get(self.url)
         assert response.status_code == 404
+        data = json.loads(response.content)
+        assert data['detail'] == 'Not found.'
+        # `is_disabled_by_developer` and `is_disabled_by_mozilla` are only
+        # added for 401/403.
+        assert 'is_disabled_by_developer' not in data
+        assert 'is_disabled_by_mozilla' not in data
 
     def test_get_addon_not_found(self):
         self._set_tested_url(self.addon.pk + 42)
         response = self.client.get(self.url)
         assert response.status_code == 404
+        data = json.loads(response.content)
+        assert data['detail'] == 'Not found.'
+        # `is_disabled_by_developer` and `is_disabled_by_mozilla` are only
+        # added for 401/403.
+        assert 'is_disabled_by_developer' not in data
+        assert 'is_disabled_by_mozilla' not in data
 
 
 class TestAddonViewSetDetail(AddonAndVersionViewSetDetailMixin, TestCase):
@@ -2342,7 +2252,7 @@ class TestAddonSearchView(ESTestCase):
 
         with self.assertNumQueries(0):
             response = self.client.get(url, data, **headers)
-        assert response.status_code == expected_status
+        assert response.status_code == expected_status, response.content
         data = json.loads(response.content)
         return data
 
@@ -2469,7 +2379,7 @@ class TestAddonSearchView(ESTestCase):
         assert result['slug'] == 'my-addon'
 
     def test_with_query(self):
-        addon = addon_factory(slug='my-addon', name=u'My Addôn',
+        addon = addon_factory(slug='my-addon', name=u'My Addon',
                               tags=['some_tag'])
         addon_factory(slug='unrelated', name=u'Unrelated')
         self.refresh()
@@ -2480,7 +2390,7 @@ class TestAddonSearchView(ESTestCase):
 
         result = data['results'][0]
         assert result['id'] == addon.pk
-        assert result['name'] == {'en-US': u'My Addôn'}
+        assert result['name'] == {'en-US': u'My Addon'}
         assert result['slug'] == 'my-addon'
 
     def test_with_session_cookie(self):
@@ -2506,6 +2416,87 @@ class TestAddonSearchView(ESTestCase):
         assert data['count'] == 1
         assert len(data['results']) == 1
         assert data['results'][0]['id'] == theme.pk
+
+    @patch('olympia.addons.models.get_featured_ids')
+    def test_filter_by_featured_no_app_no_lang(self, get_featured_ids_mock):
+        addon = addon_factory(slug='my-addon', name=u'Featured Addôn')
+        addon_factory(slug='other-addon', name=u'Other Addôn')
+        get_featured_ids_mock.return_value = [addon.pk]
+        assert addon.is_featured()
+        self.reindex(Addon)
+
+        data = self.perform_search(self.url, {'featured': 'true'})
+        assert data['count'] == 1
+        assert len(data['results']) == 1
+        assert data['results'][0]['id'] == addon.pk
+
+    def test_filter_by_featured_app_and_langs(self):
+        fx_addon = addon_factory(slug='my-addon', name=u'Featured Addôn')
+        collection = collection_factory()
+        FeaturedCollection.objects.create(
+            collection=collection, application=amo.FIREFOX.id)
+        collection.add_addon(fx_addon)
+
+        fx_fr_addon = addon_factory(slug='my-addon', name=u'Lé Featured Addôn')
+        collection = collection_factory()
+        FeaturedCollection.objects.create(
+            collection=collection, application=amo.FIREFOX.id, locale='fr')
+        collection.add_addon(fx_fr_addon)
+
+        fn_addon = addon_factory(slug='my-addon', name=u'Featured Addôn 2 go')
+        collection = collection_factory()
+        FeaturedCollection.objects.create(
+            collection=collection, application=amo.ANDROID.id)
+        collection.add_addon(fn_addon)
+
+        fn_fr_addon = addon_factory(slug='my-addon', name=u'Lé Featured Mobil')
+        collection = collection_factory()
+        FeaturedCollection.objects.create(
+            collection=collection, application=amo.ANDROID.id, locale='fr')
+        collection.add_addon(fn_fr_addon)
+
+        addon_factory(slug='other-addon', name=u'Other Addôn')
+        self.reindex(Addon)
+
+        # Searching for just Firefox should return the two Firefox collections.
+        # The filter should be `Q('term', **{'featured_for.application': app})`
+        data = self.perform_search(self.url, {'featured': 'true',
+                                              'app': 'firefox'})
+        assert data['count'] == 2 == len(data['results'])
+        ids = {data['results'][0]['id'], data['results'][1]['id']}
+        self.assertSetEqual(ids, {fx_addon.pk, fx_fr_addon.pk})
+
+        # If we specify lang 'fr' too it should be the same collections.
+        # In addition to the app query above, this will be executed too:
+        # `Q('terms', **{'featured_for.locales': [locale, 'ALL']}))`
+        data = self.perform_search(
+            self.url, {'featured': 'true', 'app': 'firefox', 'lang': 'fr'})
+        assert data['count'] == 2 == len(data['results'])
+        ids = {data['results'][0]['id'], data['results'][1]['id']}
+        self.assertSetEqual(ids, {fx_addon.pk, fx_fr_addon.pk})
+
+        # But 'en-US' will exclude the 'fr' collection.
+        data = self.perform_search(
+            self.url, {'featured': 'true', 'app': 'firefox',
+                       'lang': 'en-US'})
+        assert data['count'] == 1 == len(data['results'])
+        assert data['results'][0]['id'] == fx_addon.pk
+
+        # If we only search for lang, application is ignored.
+        # Just `Q('terms', **{'featured_for.locales': [locale, 'ALL']}))` now.
+        data = self.perform_search(
+            self.url, {'featured': 'true', 'lang': 'en-US'})
+        assert data['count'] == 2 == len(data['results'])
+        ids = {data['results'][0]['id'], data['results'][1]['id']}
+        self.assertSetEqual(ids, {fx_addon.pk, fn_addon.pk})
+
+        data = self.perform_search(
+            self.url, {'featured': 'true', 'lang': 'fr'})
+        assert data['count'] == 4 == len(data['results'])
+        ids = {data['results'][0]['id'], data['results'][1]['id'],
+               data['results'][2]['id'], data['results'][3]['id']}
+        self.assertSetEqual(
+            ids, {fx_addon.pk, fx_fr_addon.pk, fn_addon.pk, fn_fr_addon.pk})
 
     def test_filter_by_platform(self):
         # First add-on is available for all platforms.
@@ -2713,6 +2704,104 @@ class TestAddonSearchView(ESTestCase):
         assert result['id'] == addon.pk
         assert result['slug'] == addon.slug
 
+    def test_filter_by_multiple_authors(self):
+        author = user_factory(username='foo')
+        author2 = user_factory(username='bar')
+        another_author = user_factory(username='someoneelse')
+        addon = addon_factory(slug='my-addon', name=u'My Addôn',
+                              tags=['some_tag'], weekly_downloads=999)
+        AddonUser.objects.create(addon=addon, user=author)
+        AddonUser.objects.create(addon=addon, user=author2)
+        addon2 = addon_factory(slug='another-addon', name=u'Another Addôn',
+                               tags=['unique_tag', 'some_tag'],
+                               weekly_downloads=333)
+        AddonUser.objects.create(addon=addon2, user=author2)
+        another_addon = addon_factory()
+        AddonUser.objects.create(addon=another_addon, user=another_author)
+        self.reindex(Addon)
+
+        data = self.perform_search(self.url, {'author': u'foo,bar'})
+        assert data['count'] == 2
+        assert len(data['results']) == 2
+
+        result = data['results'][0]
+        assert result['id'] == addon.pk
+        assert result['slug'] == addon.slug
+        result = data['results'][1]
+        assert result['id'] == addon2.pk
+        assert result['slug'] == addon2.slug
+
+    def test_find_addon_default_non_en_us(self):
+        with self.activate('en-GB'):
+            addon = addon_factory(
+                status=amo.STATUS_PUBLIC,
+                type=amo.ADDON_EXTENSION,
+                default_locale='en-GB',
+                name='Banana Bonkers',
+                description=u'Let your browser eat your bananas',
+                summary=u'Banana Summary',
+            )
+
+            addon.name = {'es': u'Banana Bonkers espanole'}
+            addon.description = {
+                'es': u'Deje que su navegador coma sus plátanos'}
+            addon.summary = {'es': u'resumen banana'}
+            addon.save()
+
+        addon_factory(
+            slug='English Addon', name=u'My English Addôn')
+
+        self.reindex(Addon)
+
+        for locale in ('en-US', 'en-GB', 'es'):
+            with self.activate(locale):
+                url = reverse('addon-search')
+
+                data = self.perform_search(url, {'lang': locale})
+
+                assert data['count'] == 2
+                assert len(data['results']) == 2
+
+                data = self.perform_search(
+                    url, {'q': 'Banana', 'lang': locale})
+
+                result = data['results'][0]
+                assert result['id'] == addon.pk
+                assert result['slug'] == addon.slug
+
+    def test_exclude_addons(self):
+        addon1 = addon_factory()
+        addon2 = addon_factory()
+        addon3 = addon_factory()
+        self.refresh()
+
+        # Exclude addon2 and addon3 by slug.
+        data = self.perform_search(
+            self.url, {'exclude_addons': u','.join(
+                (addon2.slug, addon3.slug))})
+
+        assert len(data['results']) == 1
+        assert data['count'] == 1
+        assert data['results'][0]['id'] == addon1.pk
+
+        # Exclude addon1 and addon2 by pk.
+        data = self.perform_search(
+            self.url, {'exclude_addons': u','.join(
+                map(unicode, (addon2.pk, addon1.pk)))})
+
+        assert len(data['results']) == 1
+        assert data['count'] == 1
+        assert data['results'][0]['id'] == addon3.pk
+
+        # Exclude addon1 by pk and addon3 by slug.
+        data = self.perform_search(
+            self.url, {'exclude_addons': u','.join(
+                (unicode(addon1.pk), addon3.slug))})
+
+        assert len(data['results']) == 1
+        assert data['count'] == 1
+        assert data['results'][0]['id'] == addon2.pk
+
 
 class TestAddonAutoCompleteSearchView(ESTestCase):
     client_class = APITestClient
@@ -2753,6 +2842,24 @@ class TestAddonAutoCompleteSearchView(ESTestCase):
 
         assert {itm['id'] for itm in data['results']} == {addon.pk, addon2.pk}
 
+    def test_default_locale_fallback_still_works_for_translations(self):
+        addon = addon_factory(default_locale='pt-BR', name='foobar')
+        # Couple quick checks to make sure the add-on is in the right state
+        # before testing.
+        assert addon.default_locale == 'pt-BR'
+        assert addon.name.locale == 'pt-br'
+
+        self.refresh()
+
+        # Search in a different language than the one used for the name: we
+        # should fall back to default_locale and find the translation.
+        data = self.perform_search(self.url, {'q': 'foobar', 'lang': 'fr'})
+        assert data['results'][0]['name'] == 'foobar'
+
+        # Same deal in en-US.
+        data = self.perform_search(self.url, {'q': 'foobar', 'lang': 'en-US'})
+        assert data['results'][0]['name'] == 'foobar'
+
     def test_empty(self):
         data = self.perform_search(self.url)
         assert 'count' not in data
@@ -2768,8 +2875,8 @@ class TestAddonAutoCompleteSearchView(ESTestCase):
         qset = AddonAutoCompleteSearchView().get_queryset()
 
         includes = set((
-            'icon_type', 'id', 'modified', 'name_translations', 'persona',
-            'slug', 'type'))
+            'default_locale', 'icon_type', 'id', 'modified',
+            'name_translations', 'persona', 'slug', 'type'))
 
         assert set(qset.to_dict()['_source']['includes']) == includes
 
@@ -2955,7 +3062,7 @@ class TestStaticCategoryView(TestCase):
         assert response.status_code == 200
         data = json.loads(response.content)
 
-        assert len(data) == 97
+        assert len(data) == 113
 
         # some basic checks to verify integrity
         entry = data[0]
@@ -2980,7 +3087,7 @@ class TestStaticCategoryView(TestCase):
         assert response.status_code == 200
         data = json.loads(response.content)
 
-        assert len(data) == 97
+        assert len(data) == 113
 
         # some basic checks to verify integrity
         entry = data[0]
@@ -3061,3 +3168,39 @@ class TestLanguageToolsView(TestCase):
 
         assert 'locale_disambiguation' in data['results'][0]
         assert 'target_locale' in data['results'][0]
+
+
+class TestReplacementAddonView(TestCase):
+    client_class = APITestClient
+
+    def test_basic(self):
+        # Add a single addon replacement
+        rep_addon1 = addon_factory()
+        ReplacementAddon.objects.create(
+            guid='legacy2addon@moz',
+            path=urlunquote(rep_addon1.get_url_path()))
+        # Add a collection replacement
+        author = user_factory()
+        collection = collection_factory(author=author)
+        rep_addon2 = addon_factory()
+        rep_addon3 = addon_factory()
+        collection.set_addons([rep_addon2.id, rep_addon3.id])
+        ReplacementAddon.objects.create(
+            guid='legacy2collection@moz',
+            path=urlunquote(collection.get_url_path()))
+        # Add an invalid path
+        ReplacementAddon.objects.create(
+            guid='notgonnawork@moz',
+            path='/addon/áddonmissing/')
+
+        response = self.client.get(reverse('addon-replacement-addon'))
+        assert response.status_code == 200
+        data = json.loads(response.content)
+        results = data['results']
+        assert len(results) == 3
+        assert ({'guid': 'legacy2addon@moz',
+                 'replacement': [rep_addon1.guid]} in results)
+        assert ({'guid': 'legacy2collection@moz',
+                 'replacement': [rep_addon2.guid, rep_addon3.guid]} in results)
+        assert ({'guid': 'notgonnawork@moz',
+                 'replacement': []} in results)

@@ -15,6 +15,7 @@ from olympia.amo.tests.test_helpers import get_image_path
 from olympia.amo.urlresolvers import reverse
 from olympia.applications.models import AppVersion
 from olympia.devhub.tasks import compatibility_check
+from olympia.devhub.tests.test_tasks import ValidatorTestCase
 from olympia.files.templatetags.jinja_helpers import copyfileobj
 from olympia.files.models import File, FileUpload, FileValidation
 from olympia.files.tests.test_models import UploadTest as BaseUploadTest
@@ -23,7 +24,7 @@ from olympia.users.models import UserProfile
 from olympia.zadmin.models import ValidationResult
 
 
-class TestUploadValidation(BaseUploadTest):
+class TestUploadValidation(ValidatorTestCase, BaseUploadTest):
     fixtures = ['base/users', 'devhub/invalid-id-uploaded-xpi.json']
 
     def setUp(self):
@@ -48,9 +49,9 @@ class TestUploadValidation(BaseUploadTest):
                                        args=[upload.uuid.hex]))
         assert resp.status_code == 200
         doc = pq(resp.content)
-        assert doc('td').text() == 'December  6, 2010'
+        assert doc('td').text() == 'Dec. 6, 2010'
 
-    def test_upload_processed_validation(self):
+    def test_upload_processed_validation_error(self):
         addon_file = open(
             'src/olympia/files/fixtures/files/validation-error.xpi')
         response = self.client.post(reverse('devhub.upload'),
@@ -58,7 +59,12 @@ class TestUploadValidation(BaseUploadTest):
                                      'upload': addon_file})
         uuid = response.url.split('/')[-2]
         upload = FileUpload.objects.get(uuid=uuid)
-        assert upload.processed_validation['errors'] == 1
+        assert upload.processed_validation['errors'] == 2
+        assert upload.processed_validation['messages'][0]['id'] == [
+            u'validation', u'messages', u'legacy_addons_restricted']
+        assert upload.processed_validation['messages'][1]['id'] == [
+            u'testcases_content', u'test_packed_packages',
+            u'jar_subpackage_corrupt']
 
     def test_login_required(self):
         upload = FileUpload.objects.get(name='invalid-id-20101206.xpi')
@@ -165,14 +171,14 @@ class TestFileValidation(TestCase):
         assert self.client.login(email='regular@mozilla.com')
         assert self.client.head(self.json_url, follow=True).status_code == 403
 
-    def test_editor_can_see_results(self):
+    def test_reviewer_can_see_results(self):
         self.client.logout()
-        assert self.client.login(email='editor@mozilla.com')
+        assert self.client.login(email='reviewer@mozilla.com')
         assert self.client.head(self.url, follow=True).status_code == 200
 
-    def test_editor_can_see_json_results(self):
+    def test_reviewer_can_see_json_results(self):
         self.client.logout()
-        assert self.client.login(email='editor@mozilla.com')
+        assert self.client.login(email='reviewer@mozilla.com')
         assert self.client.head(self.json_url, follow=True).status_code == 200
 
     def test_no_html_in_messages(self):
@@ -235,9 +241,12 @@ class TestValidateAddon(TestCase):
         response = self.client.get(reverse('devhub.validate_addon'))
         assert response.status_code == 302
 
-    def test_context(self):
+    def test_context_and_content(self):
         response = self.client.get(reverse('devhub.validate_addon'))
         assert response.status_code == 200
+
+        assert 'this tool only works with legacy' not in response.content
+
         doc = pq(response.content)
         assert doc('#upload-addon').attr('data-upload-url') == (
             reverse('devhub.standalone_upload'))
@@ -299,8 +308,11 @@ class TestUploadURLs(TestCase):
         self.run_validator.return_value = json.dumps(
             amo.VALIDATOR_SKELETON_RESULTS)
         self.parse_addon = self.patch('olympia.devhub.utils.parse_addon')
-        self.parse_addon.return_value = {'guid': self.addon.guid,
-                                         'version': '1.0'}
+        self.parse_addon.return_value = {
+            'guid': self.addon.guid,
+            'version': '1.0',
+            'is_webextension': False,
+        }
 
     def patch(self, *args, **kw):
         patcher = mock.patch(*args, **kw)
@@ -572,7 +584,7 @@ class TestCompatibilityResults(TestCase):
 
     def setUp(self):
         super(TestCompatibilityResults, self).setUp()
-        assert self.client.login(email='editor@mozilla.com')
+        assert self.client.login(email='reviewer@mozilla.com')
         self.addon = Addon.objects.get(slug='addon-compat-results')
         self.result = ValidationResult.objects.get(
             file__version__addon=self.addon)
@@ -688,6 +700,8 @@ class TestUploadCompatCheck(BaseUploadTest):
         assert res.status_code == 200
         doc = pq(res.content)
 
+        assert 'this tool only works with legacy add-ons' in res.content
+
         options = doc('#id_application option')
         expected = [(str(a.id), unicode(a.pretty)) for a in amo.APP_USAGE]
         for idx, element in enumerate(options):
@@ -697,7 +711,6 @@ class TestUploadCompatCheck(BaseUploadTest):
             assert e.text() == text
 
         assert doc('#upload-addon').attr('data-upload-url') == self.upload_url
-        # TODO(Kumar) actually check the form here after bug 671587
 
     @mock.patch('olympia.devhub.tasks.run_validator')
     def test_js_upload_validates_compatibility(self, run_validator):

@@ -1,4 +1,5 @@
 from django.utils import translation
+from django.utils.translation import ugettext
 
 from elasticsearch_dsl import Q, query
 from rest_framework import serializers
@@ -16,8 +17,8 @@ def get_locale_analyzer(lang):
     return analyzer
 
 
-class AddonFilterParam(object):
-    """Helper to build a simple ES lookup query from a request.GET param."""
+class AddonQueryParam(object):
+    """Helper to build a simple ES query from a request.GET param."""
     operator = 'term'  # ES filter to use when filtering.
     query_param = None
     reverse_dict = None
@@ -53,11 +54,11 @@ class AddonFilterParam(object):
     def get_value_from_object_from_reverse_dict(self):
         return self.get_object_from_reverse_dict().id
 
-    def get_es_filter(self):
+    def get_es_query(self):
         return [Q(self.operator, **{self.es_field: self.get_value()})]
 
 
-class AddonAppFilterParam(AddonFilterParam):
+class AddonAppQueryParam(AddonQueryParam):
     query_param = 'app'
     reverse_dict = amo.APPS
     valid_values = amo.APP_IDS
@@ -67,7 +68,7 @@ class AddonAppFilterParam(AddonFilterParam):
         return self.get_value_from_object_from_reverse_dict()
 
 
-class AddonAppVersionFilterParam(AddonFilterParam):
+class AddonAppVersionQueryParam(AddonQueryParam):
     query_param = 'appversion'
     # appversion need special treatment. We need to convert the query parameter
     # into a set of min and max integer values, and filter on those 2 values
@@ -76,7 +77,7 @@ class AddonAppVersionFilterParam(AddonFilterParam):
 
     def get_values(self):
         appversion = self.request.GET.get(self.query_param)
-        app = AddonAppFilterParam(self.request).get_value()
+        app = AddonAppQueryParam(self.request).get_value()
 
         if appversion and app:
             # Get a min version less than X.0, and a max greater than X.0a
@@ -87,10 +88,10 @@ class AddonAppVersionFilterParam(AddonFilterParam):
             return app, low, high
         raise ValueError(
             'Invalid combination of "%s" and "%s" parameters.' % (
-                AddonAppFilterParam.query_param,
+                AddonAppQueryParam.query_param,
                 self.query_param))
 
-    def get_es_filter(self):
+    def get_es_query(self):
         app_id, low, high = self.get_values()
         return [
             Q('range', **{'current_version.compatible_apps.%d.min' % app_id:
@@ -100,15 +101,20 @@ class AddonAppVersionFilterParam(AddonFilterParam):
         ]
 
 
-class AddonAuthorFilterParam(AddonFilterParam):
+class AddonAuthorQueryParam(AddonQueryParam):
+    # Note: this returns add-ons that have at least one matching author
+    # when several are provided (separated by a comma).
+    # It works differently from the tag filter below that needs all tags
+    # provided to match.
+    operator = 'terms'
     query_param = 'author'
     es_field = 'listed_authors.username'
 
     def get_value(self):
-        return self.request.GET.get(self.query_param, '')
+        return self.request.GET.get(self.query_param, '').split(',')
 
 
-class AddonPlatformFilterParam(AddonFilterParam):
+class AddonPlatformQueryParam(AddonQueryParam):
     query_param = 'platform'
     reverse_dict = amo.PLATFORM_DICT
     valid_values = amo.PLATFORMS
@@ -116,7 +122,7 @@ class AddonPlatformFilterParam(AddonFilterParam):
     operator = 'terms'  # Because we'll be sending a list every time.
 
     def get_value(self):
-        value = super(AddonPlatformFilterParam, self).get_value()
+        value = super(AddonPlatformQueryParam, self).get_value()
         # No matter what platform the client wants to see, we always need to
         # include PLATFORM_ALL to match add-ons compatible with all platforms.
         if value != amo.PLATFORM_ALL.id:
@@ -129,48 +135,48 @@ class AddonPlatformFilterParam(AddonFilterParam):
         return self.get_value_from_object_from_reverse_dict()
 
 
-class AddonTypeFilterParam(AddonFilterParam):
+class AddonTypeQueryParam(AddonQueryParam):
     query_param = 'type'
     reverse_dict = amo.ADDON_SEARCH_SLUGS
     valid_values = amo.ADDON_SEARCH_TYPES
     es_field = 'type'
 
 
-class AddonStatusFilterParam(AddonFilterParam):
+class AddonStatusQueryParam(AddonQueryParam):
     query_param = 'status'
     reverse_dict = amo.STATUS_CHOICES_API_LOOKUP
     valid_values = amo.STATUS_CHOICES_API
     es_field = 'status'
 
 
-class AddonCategoryFilterParam(AddonFilterParam):
+class AddonCategoryQueryParam(AddonQueryParam):
     query_param = 'category'
     es_field = 'category'
     valid_values = CATEGORIES_BY_ID.keys()
 
     def __init__(self, request):
-        super(AddonCategoryFilterParam, self).__init__(request)
+        super(AddonCategoryQueryParam, self).__init__(request)
         # Category slugs are only unique for a given type+app combination.
         # Once we have that, it's just a matter of selecting the corresponding
         # dict in the categories constants and use that as the reverse dict,
         # and make sure to use get_value_from_object_from_reverse_dict().
         try:
-            app = AddonAppFilterParam(self.request).get_value()
-            type_ = AddonTypeFilterParam(self.request).get_value()
+            app = AddonAppQueryParam(self.request).get_value()
+            type_ = AddonTypeQueryParam(self.request).get_value()
 
             self.reverse_dict = CATEGORIES[app][type_]
         except KeyError:
             raise ValueError(
                 'Invalid combination of "%s", "%s" and "%s" parameters.' % (
-                    AddonAppFilterParam.query_param,
-                    AddonTypeFilterParam.query_param,
+                    AddonAppQueryParam.query_param,
+                    AddonTypeQueryParam.query_param,
                     self.query_param))
 
     def get_value_from_reverse_dict(self):
         return self.get_value_from_object_from_reverse_dict()
 
 
-class AddonTagFilterParam(AddonFilterParam):
+class AddonTagQueryParam(AddonQueryParam):
     # query_param is needed for SearchParameterFilter below, so we need it
     # even with the custom get_value() implementation.
     query_param = 'tag'
@@ -178,10 +184,55 @@ class AddonTagFilterParam(AddonFilterParam):
     def get_value(self):
         return self.request.GET.get(self.query_param, '').split(',')
 
-    def get_es_filter(self):
+    def get_es_query(self):
         # Just using 'terms' would not work, as it would return any tag match
         # in the list, but we want to exactly match all of them.
         return [Q('term', tags=tag) for tag in self.get_value()]
+
+
+class AddonExcludeAddonsQueryParam(AddonQueryParam):
+    query_param = 'exclude_addons'
+
+    def get_value(self):
+        return self.request.GET.get(self.query_param, '').split(',')
+
+    def get_es_query(self):
+        filters = []
+        values = self.get_value()
+        ids = [value for value in values if value.isdigit()]
+        slugs = [value for value in values if not value.isdigit()]
+        if ids:
+            filters.append(Q('ids', values=ids))
+        if slugs:
+            filters.append(Q('terms', slug=slugs))
+        return filters
+
+
+class AddonFeaturedQueryParam(AddonQueryParam):
+    query_param = 'featured'
+    reverse_dict = {'true': True}
+    valid_values = [True]
+
+    def get_es_query(self):
+        self.get_value()  # Call to validate the value - we only want True.
+        app_filter = AddonAppQueryParam(self.request)
+        app = (app_filter.get_value()
+               if self.request.GET.get(app_filter.query_param) else None)
+        locale = self.request.GET.get('lang')
+        if not app and not locale:
+            # If neither app nor locale is specified fall back on is_featured.
+            return [Q('term', is_featured=True)]
+        queries = []
+        if app:
+            # Search for featured collections targeting `app`.
+            queries.append(
+                Q('term', **{'featured_for.application': app}))
+        if locale:
+            # Search for featured collections targeting `locale` or all locales
+            queries.append(
+                Q('terms', **{'featured_for.locales': [locale, 'ALL']}))
+        return [Q('nested', path='featured_for',
+                  query=query.Bool(must=queries))]
 
 
 class SearchQueryFilter(BaseFilterBackend):
@@ -189,31 +240,35 @@ class SearchQueryFilter(BaseFilterBackend):
     A django-rest-framework filter backend that performs an ES query according
     to what's in the `q` GET parameter.
     """
+    MAX_QUERY_LENGTH = 100
 
     def primary_should_rules(self, search_query, analyzer):
         """Return "primary" should rules for the query.
 
         These are the ones using the strongest boosts, so they are only applied
         to a specific set of fields like the name, the slug and authors.
+
+        Applied rules:
+
+        * Prefer phrase matches that allows swapped terms (boost=4)
+        * Then text matches, using the standard text analyzer (boost=3)
+        * Then text matches, using a language specific analyzer (boost=2.5)
+        * Then try fuzzy matches ("fire bug" => firebug) (boost=2)
+        * Then look for the query as a prefix of a name (boost=1.5)
         """
         should = []
         rules = [
+            (query.MatchPhrase, {
+                'query': search_query, 'boost': 4, 'slop': 1}),
             (query.Match, {
                 'query': search_query, 'boost': 3,
                 'analyzer': 'standard'}),
-            (query.MatchPhrase, {
-                'query': search_query, 'boost': 4,
-                'slop': 1}),
+            (query.Fuzzy, {
+                'value': search_query, 'boost': 2,
+                'prefix_length': 4}),
             (query.Prefix, {
                 'value': search_query, 'boost': 1.5}),
         ]
-
-        # Only add fuzzy queries if the search query is a single word.
-        # It doesn't make sense to do a fuzzy query for multi-word queries.
-        if ' ' not in search_query:
-            rules.append(
-                (query.Fuzzy, {'value': search_query, 'boost': 2,
-                               'prefix_length': 4}))
 
         # Apply rules to search on few base fields. Some might not be present
         # in every document type / indexes.
@@ -241,6 +296,16 @@ class SearchQueryFilter(BaseFilterBackend):
 
         These are the ones using the weakest boosts, they are applied to fields
         containing more text like description, summary and tags.
+
+        Applied rules:
+
+        * Look for phrase matches inside the summary (boost=0.8)
+        * Look for phrase matches inside the summary using language specific
+          analyzer (boost=0.6)
+        * Look for phrase matches inside the description (boost=0.3).
+        * Look for phrase matches inside the description using language
+          specific analyzer (boost=0.1).
+        * Look for matches inside tags (boost=0.1).
         """
         should = [
             query.MatchPhrase(summary={'query': search_query, 'boost': 0.8}),
@@ -266,12 +331,7 @@ class SearchQueryFilter(BaseFilterBackend):
 
         return should
 
-    def filter_queryset(self, request, qs, view):
-        search_query = request.GET.get('q', '').lower()
-
-        if not search_query:
-            return qs
-
+    def apply_search_query(self, search_query, qs):
         lang = translation.get_language()
         analyzer = get_locale_analyzer(lang)
 
@@ -287,12 +347,16 @@ class SearchQueryFilter(BaseFilterBackend):
             query.SF('field_value_factor', field='boost'),
         ]
         if waffle.switch_is_active('boost-webextensions-in-search'):
+            webext_boost_filter = (
+                Q('term', **{'current_version.files.is_webextension': True}) |
+                Q('term', **{
+                    'current_version.files.is_mozilla_signed_extension': True})
+            )
+
             functions.append(
                 query.SF({
                     'weight': WEBEXTENSIONS_WEIGHT,
-                    'filter': Q(
-                        'term',
-                        **{'current_version.files.is_webextension': True})
+                    'filter': webext_boost_filter
                 })
             )
 
@@ -302,44 +366,61 @@ class SearchQueryFilter(BaseFilterBackend):
             query=query.Bool(should=primary_should + secondary_should),
             functions=functions)
 
+    def filter_queryset(self, request, qs, view):
+        search_query = request.GET.get('q', '').lower()
+
+        if not search_query:
+            return qs
+
+        if len(search_query) > self.MAX_QUERY_LENGTH:
+            raise serializers.ValidationError(
+                ugettext('Maximum query length exceeded.'))
+
+        return self.apply_search_query(search_query, qs)
+
 
 class SearchParameterFilter(BaseFilterBackend):
     """
     A django-rest-framework filter backend for ES queries that look for items
-    matching a specific set of fields in request.GET: app, appversion,
-    platform, tag and type.
+    matching a specific set of params in request.GET: app, appversion,
+    author, category, exclude_addons, platform, tag and type.
     """
-    available_filters = [AddonAppFilterParam, AddonAppVersionFilterParam,
-                         AddonPlatformFilterParam, AddonTypeFilterParam,
-                         AddonCategoryFilterParam, AddonTagFilterParam,
-                         AddonAuthorFilterParam]
+    available_filters = [AddonAppQueryParam, AddonAppVersionQueryParam,
+                         AddonAuthorQueryParam, AddonCategoryQueryParam,
+                         AddonFeaturedQueryParam,
+                         AddonPlatformQueryParam, AddonTagQueryParam,
+                         AddonTypeQueryParam]
 
-    def filter_queryset(self, request, qs, view):
-        must = []
+    available_excludes = [AddonExcludeAddonsQueryParam]
 
-        for filter_class in self.available_filters:
+    def get_applicable_clauses(self, request, params_to_try):
+        clauses = []
+        for param_class in params_to_try:
             try:
-                # Initialize the filter class if its query parameter is present
-                # in the request, otherwise don't, to avoid  raising exceptions
-                # because of missing params in complex filters.
-                if filter_class.query_param in request.GET:
-                    filter_ = filter_class(request)
-                    must.extend(filter_.get_es_filter())
+                # Initialize the param class if its query parameter is
+                # present in the request, otherwise don't, to avoid raising
+                # exceptions because of missing params in complex filters.
+                if param_class.query_param in request.GET:
+                    clauses.extend(param_class(request).get_es_query())
             except ValueError as exc:
                 raise serializers.ValidationError(*exc.args)
+        return clauses
 
-        return qs.query(query.Bool(must=must)) if must else qs
+    def filter_queryset(self, request, qs, view):
+        bool_kwargs = {}
 
+        must = self.get_applicable_clauses(
+            request, self.available_filters)
+        must_not = self.get_applicable_clauses(
+            request, self.available_excludes)
 
-class InternalSearchParameterFilter(SearchParameterFilter):
-    """Like SearchParameterFilter, but also allows searching by status. Don't
-    use in the public search API, should only be available in the internal
-    search tool, with the right set of permissions."""
-    # FIXME: also allow searching by listed/unlisted, deleted or not,
-    # disabled or not.
-    available_filters = SearchParameterFilter.available_filters + [
-        AddonStatusFilterParam
-    ]
+        if must:
+            bool_kwargs['must'] = must
+
+        if must_not:
+            bool_kwargs['must_not'] = must_not
+
+        return qs.query(query.Bool(**bool_kwargs)) if bool_kwargs else qs
 
 
 class ReviewedContentFilter(BaseFilterBackend):
@@ -367,6 +448,7 @@ class SortingFilter(BaseFilterBackend):
         'downloads': '-weekly_downloads',
         'hotness': '-hotness',
         'name': 'name_sort',
+        'random': '_score',
         'rating': '-bayesian_rating',
         'relevance': '-_score',
         'updated': '-last_updated',
@@ -379,11 +461,37 @@ class SortingFilter(BaseFilterBackend):
         order_by = None
 
         if sort_param is not None:
+            split_sort_params = sort_param.split(',')
             try:
                 order_by = [self.SORTING_PARAMS[name] for name in
-                            sort_param.split(',')]
+                            split_sort_params]
             except KeyError:
                 raise serializers.ValidationError('Invalid "sort" parameter.')
+
+            # Random sort is a bit special.
+            # First, it can't be combined with other sorts.
+            if 'random' in split_sort_params and len(split_sort_params) > 1:
+                raise serializers.ValidationError(
+                    'The "random" "sort" parameter can not be combined.')
+
+            # Second, for perf reasons it's only available when the 'featured'
+            # param is present (to limit the number of documents we'll have to
+            # apply the random score to) and a search query is absent
+            # (to prevent clashing with the score functions coming from a
+            # search query).
+            if sort_param == 'random':
+                is_random_sort_available = (
+                    AddonFeaturedQueryParam.query_param in request.GET and
+                    not search_query_param
+                )
+                if is_random_sort_available:
+                    qs = qs.query(
+                        'function_score', functions=[query.SF('random_score')])
+                else:
+                    raise serializers.ValidationError(
+                        'The "sort" parameter "random" can only be specified '
+                        'when the "featured" parameter is also present, and '
+                        'the "q" parameter absent.')
 
         # The default sort depends on the presence of a query: we sort by
         # relevance if we have a query, otherwise by downloads.

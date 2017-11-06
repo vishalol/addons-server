@@ -10,21 +10,21 @@ import mock
 import pytest
 from PIL import Image
 
-from olympia import amo, paypal
+from olympia import amo
 from olympia.amo.tests import TestCase
 from olympia.amo.tests.test_helpers import get_image_path
 from olympia.amo.urlresolvers import reverse
 from olympia.amo.templatetags.jinja_helpers import user_media_path
 from olympia.applications.models import AppVersion
 from olympia.addons.forms import EditThemeForm, EditThemeOwnerForm, ThemeForm
-from olympia.addons.models import Addon, Category, Charity, Persona
+from olympia.addons.models import Addon, Category, Persona
 from olympia.devhub import forms
-from olympia.editors.models import RereviewQueueTheme
 from olympia.files.templatetags.jinja_helpers import copyfileobj
 from olympia.files.models import FileUpload
+from olympia.reviewers.models import RereviewQueueTheme
 from olympia.tags.models import Tag
 from olympia.users.models import UserProfile
-from olympia.versions.models import ApplicationsVersions, License
+from olympia.versions.models import License
 
 
 class TestNewUploadForm(TestCase):
@@ -82,61 +82,137 @@ class TestNewUploadForm(TestCase):
         assert mock_check_xpi_info.called
 
 
-class TestContribForm(TestCase):
-
-    def test_neg_suggested_amount(self):
-        form = forms.ContribForm({'suggested_amount': -10})
-        assert not form.is_valid()
-        assert form.errors['suggested_amount'][0] == (
-            'Please enter a suggested amount greater than 0.')
-
-    def test_max_suggested_amount(self):
-        form = forms.ContribForm(
-            {'suggested_amount': settings.MAX_CONTRIBUTION + 10})
-        assert not form.is_valid()
-        assert form.errors['suggested_amount'][0] == (
-            'Please enter a suggested amount less than $%s.' %
-            settings.MAX_CONTRIBUTION)
-
-
-class TestCharityForm(TestCase):
-
-    def setUp(self):
-        super(TestCharityForm, self).setUp()
-        self.paypal_mock = mock.Mock()
-        self.paypal_mock.return_value = (True, None)
-        paypal.check_paypal_id = self.paypal_mock
-
-    def test_always_new(self):
-        # Editing a charity should always produce a new row.
-        params = {'name': 'name', 'url': 'http://url.com/', 'paypal': 'paypal'}
-        charity = forms.CharityForm(params).save()
-        for k, v in params.items():
-            assert getattr(charity, k) == v
-        assert charity.id
-
-        # Get a fresh instance since the form will mutate it.
-        instance = Charity.objects.get(id=charity.id)
-        params['name'] = 'new'
-        new_charity = forms.CharityForm(params, instance=instance).save()
-        for k, v in params.items():
-            assert getattr(new_charity, k) == v
-
-        assert new_charity.id != charity.id
-
-
 class TestCompatForm(TestCase):
     fixtures = ['base/addon_3615']
 
-    def test_mozilla_app(self):
-        moz = amo.MOZILLA
-        appver = AppVersion.objects.create(application=moz.id)
+    def setUp(self):
+        super(TestCompatForm, self).setUp()
+        AppVersion.objects.create(
+            application=amo.THUNDERBIRD.id, version='50.0')
+        AppVersion.objects.create(
+            application=amo.THUNDERBIRD.id, version='58.0')
+        AppVersion.objects.create(
+            application=amo.FIREFOX.id, version='56.0')
+        AppVersion.objects.create(
+            application=amo.FIREFOX.id, version='56.*')
+        AppVersion.objects.create(
+            application=amo.FIREFOX.id, version='57.0')
+        AppVersion.objects.create(
+            application=amo.FIREFOX.id, version='57.*')
+
+    def test_forms(self):
         version = Addon.objects.get(id=3615).current_version
-        ApplicationsVersions(application=moz.id, version=version,
-                             min=appver, max=appver).save()
-        fs = forms.CompatFormSet(None, queryset=version.apps.all())
-        apps = [f.app for f in fs.forms]
-        assert moz in apps
+        formset = forms.CompatFormSet(None, queryset=version.apps.all(),
+                                      form_kwargs={'version': version})
+        apps = [f.app for f in formset.forms]
+        assert set(apps) == set(amo.APPS.values())
+
+    def test_form_initial(self):
+        version = Addon.objects.get(id=3615).current_version
+        current_min = version.apps.filter(application=amo.FIREFOX.id).get().min
+        current_max = version.apps.filter(application=amo.FIREFOX.id).get().max
+        formset = forms.CompatFormSet(None, queryset=version.apps.all(),
+                                      form_kwargs={'version': version})
+        form = formset.forms[0]
+        assert form.app == amo.FIREFOX
+        assert form.initial['application'] == amo.FIREFOX.id
+        assert form.initial['min'] == current_min.pk
+        assert form.initial['max'] == current_max.pk
+
+    def _test_form_choices_expect_all_versions(self, version):
+        expected_min_choices = [(u'', u'---------')] + list(
+            AppVersion.objects.filter(application=amo.FIREFOX.id)
+                              .exclude(version__contains='*')
+                              .values_list('pk', 'version')
+                              .order_by('version_int'))
+        expected_max_choices = [(u'', u'---------')] + list(
+            AppVersion.objects.filter(application=amo.FIREFOX.id)
+                              .values_list('pk', 'version')
+                              .order_by('version_int'))
+
+        formset = forms.CompatFormSet(None, queryset=version.apps.all(),
+                                      form_kwargs={'version': version})
+        form = formset.forms[0]
+        assert form.app == amo.FIREFOX
+        assert list(form.fields['min'].choices) == expected_min_choices
+        assert list(form.fields['max'].choices) == expected_max_choices
+
+    def test_form_choices(self):
+        version = Addon.objects.get(id=3615).current_version
+        version.files.all().update(is_webextension=True)
+        del version.all_files
+        self._test_form_choices_expect_all_versions(version)
+
+    def test_form_choices_no_compat(self):
+        version = Addon.objects.get(id=3615).current_version
+        version.files.all().update(is_webextension=False)
+        version.addon.update(type=amo.ADDON_DICT)
+        del version.all_files
+        self._test_form_choices_expect_all_versions(version)
+
+    def test_form_choices_language_pack(self):
+        version = Addon.objects.get(id=3615).current_version
+        version.files.all().update(is_webextension=False)
+        version.addon.update(type=amo.ADDON_LPAPP)
+        del version.all_files
+        self._test_form_choices_expect_all_versions(version)
+
+    def test_form_choices_legacy(self):
+        version = Addon.objects.get(id=3615).current_version
+        version.files.all().update(is_webextension=False)
+        del version.all_files
+
+        firefox_57 = AppVersion.objects.get(
+            application=amo.FIREFOX.id, version='57.0')
+        firefox_57_s = AppVersion.objects.get(
+            application=amo.FIREFOX.id, version='57.*')
+
+        expected_min_choices = [(u'', u'---------')] + list(
+            AppVersion.objects.filter(application=amo.FIREFOX.id)
+                              .exclude(version__contains='*')
+                              .exclude(pk__in=(firefox_57.pk, firefox_57_s.pk))
+                              .values_list('pk', 'version')
+                              .order_by('version_int'))
+        expected_max_choices = [(u'', u'---------')] + list(
+            AppVersion.objects.filter(application=amo.FIREFOX.id)
+                              .exclude(pk__in=(firefox_57.pk, firefox_57_s.pk))
+                              .values_list('pk', 'version')
+                              .order_by('version_int'))
+
+        formset = forms.CompatFormSet(None, queryset=version.apps.all(),
+                                      form_kwargs={'version': version})
+        form = formset.forms[0]
+        assert form.app == amo.FIREFOX
+        assert list(form.fields['min'].choices) == expected_min_choices
+        assert list(form.fields['max'].choices) == expected_max_choices
+
+        expected_tb_choices = [(u'', u'---------')] + list(
+            AppVersion.objects.filter(application=amo.THUNDERBIRD.id)
+            .values_list('pk', 'version').order_by('version_int'))
+        form = formset.forms[1]
+        assert form.app == amo.THUNDERBIRD
+        assert list(form.fields['min'].choices) == expected_tb_choices
+        assert list(form.fields['max'].choices) == expected_tb_choices
+
+    def test_form_choices_mozilla_signed_legacy(self):
+        version = Addon.objects.get(id=3615).current_version
+        version.files.all().update(
+            is_webextension=False,
+            is_mozilla_signed_extension=True)
+        del version.all_files
+        self._test_form_choices_expect_all_versions(version)
+
+    def test_static_theme(self):
+        version = Addon.objects.get(id=3615).current_version
+        version.files.all().update(is_webextension=True)
+        version.addon.update(type=amo.ADDON_STATICTHEME)
+        del version.all_files
+        self._test_form_choices_expect_all_versions(version)
+
+        formset = forms.CompatFormSet(None, queryset=version.apps.all(),
+                                      form_kwargs={'version': version})
+        assert formset.can_delete is False  # No deleting Firefox app plz.
+        assert formset.extra == 0  # And lets not extra apps be added.
 
 
 class TestPreviewForm(TestCase):

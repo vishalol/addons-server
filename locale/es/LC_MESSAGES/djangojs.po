@@ -1,10 +1,10 @@
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-17 08:37+0000\n"
-"PO-Revision-Date: 2017-07-20 06:42+0000\n"
+"POT-Creation-Date: 2017-11-02 03:33+0000\n"
+"PO-Revision-Date: 2017-08-15 09:12+0000\n"
 "Last-Translator: avelper <avelper@mozilla-hispano.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: es\n"
@@ -123,8 +123,8 @@ msgid ""
 "Compiled binaries, as well as minified or obfuscated scripts (excluding known libraries) need to have their sources submitted separately for review. Make sure that you use the source code upload "
 "field to avoid having your submission rejected."
 msgstr ""
-"Los binarios compilados, así como los scripts minificados u ofuscados (excluyendo bibliotecas conocidas) deben ser enviados por separado para su revisión. Asegúrate de que utilizas el campo de subir"
-" código fuente para evitar que tu envío sea rechazado."
+"Los binarios compilados, así como los scripts minificados u ofuscados (excluyendo bibliotecas conocidas) deben ser enviados por separado para su revisión. Asegúrate de que utilizas el campo de "
+"subir código fuente para evitar que tu envío sea rechazado."
 
 msgid "The validation process found these issues that can lead to rejections:"
 msgstr "El proceso de validación encontró estos problemas que pueden llevar a rechazos:"
@@ -653,18 +653,6 @@ msgstr "Aceptar e instalar"
 msgid "Add to {0}"
 msgstr "Agregar a {0}"
 
-msgid "Download Now"
-msgstr "Descargar ahora"
-
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr "El complemento no se ha actualizado para que permita la opción de ser compatible de forma predeterminada."
-
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr "Tienes que usar Firefox 10.0 o una versión superior."
-
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr "Mozilla ha marcado que esta versión es incompatible con tu versión de Firefox."
-
 #. L10n: {0} is an platform like Windows or Linux.
 msgid "Install for {0} anyway"
 msgstr "Instalar en {0} de todas formas"
@@ -675,9 +663,12 @@ msgstr "Descargar para {0} de todas formas"
 msgid "Not available for your platform"
 msgstr "No está disponible para tu plataforma"
 
-#. L10n: {0} is an app name, {1} is the app version.
-msgid "Not available for {0} {1}"
-msgstr "No está disponible para {0} {1}"
+#. L10n: {0} is an app name.
+msgid "This add-on is not compatible with your version of {0}."
+msgstr "Este complemento no es compatible con tu versión de {0}."
+
+msgid "View other versions"
+msgstr "Ver otras versiones"
 
 msgid "Works with {app} {min} - {max}"
 msgstr "Funciona con {app} {min} - {max}"
@@ -685,17 +676,8 @@ msgstr "Funciona con {app} {min} - {max}"
 msgid "Works with {app}"
 msgstr "Funciona con {app}"
 
-msgid "View other versions"
-msgstr "Ver otras versiones"
-
 msgid "Only with Firefox — Get Firefox Now!"
 msgstr "Solo con Firefox - ¡Descárgalo ahora!"
-
-msgid "Download now"
-msgstr "Descargar ahora"
-
-msgid "Only available on Firefox Desktop"
-msgstr "Solo disponible en Firefox para escritorio"
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
 msgstr "Lo sentimos, necesitas un navegador basado en Mozilla (como Firefox) para instalar un plugin de búsqueda."
@@ -770,17 +752,26 @@ msgid_plural "{reviews} user reviews"
 msgstr[0] "{reviews} valoración de usuario"
 msgstr[1] "{reviews} valoraciones de los usuarios"
 
-msgid "Learn more"
-msgstr "Más información"
-
 msgid "Image changes being processed"
 msgstr "Se están procesando los cambios en la imagen"
 
-msgid "Must be a valid e-mail address."
-msgstr "Debe ser una dirección de correo válida."
-
 msgid "No results found."
 msgstr "No se ha encontrado ningún resultado."
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+#. L10n: {0} is the number of characters left.
+msgid "<b>{0}</b> character left."
+msgid_plural "<b>{0}</b> characters left."
+msgstr[0] "<b>{0}</b> carácter restante."
+msgstr[1] "<b>{0}</b> caracteres restantes."
+
+msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
+msgstr "Esta característica está desactivada temporalmente mientras realizamos el mantenimiento de la página web. Inténtalo de nuevo pasados unos minutos."
+
+msgid "Remove this localization"
+msgstr "Eliminar esta localización"
 
 msgid "{name} was viewing this page first."
 msgstr "{name} estuvo viendo esta página antes."
@@ -817,21 +808,6 @@ msgstr "Revisiones medias"
 
 msgid "Number of Reviews"
 msgstr "Número de revisiones"
-
-msgid "Loading..."
-msgstr "Cargando..."
-
-#. L10n: {0} is the number of characters left.
-msgid "<b>{0}</b> character left."
-msgid_plural "<b>{0}</b> characters left."
-msgstr[0] "<b>{0}</b> carácter restante."
-msgstr[1] "<b>{0}</b> caracteres restantes."
-
-msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
-msgstr "Esta característica está desactivada temporalmente mientras realizamos el mantenimiento de la página web. Inténtalo de nuevo pasados unos minutos."
-
-msgid "Remove this localization"
-msgstr "Eliminar esta localización"
 
 msgid "Requested Info"
 msgstr "Información solicitada"

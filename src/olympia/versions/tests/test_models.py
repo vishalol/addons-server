@@ -16,10 +16,10 @@ from olympia.amo.utils import utc_millesecs_from_epoch
 from olympia.addons.models import (
     Addon, AddonFeatureCompatibility, CompatOverride, CompatOverrideRange)
 from olympia.applications.models import AppVersion
-from olympia.editors.models import (
-    AutoApprovalSummary, ViewFullReviewQueue, ViewPendingQueue)
 from olympia.files.models import File
 from olympia.files.tests.test_models import UploadTest
+from olympia.reviewers.models import (
+    AutoApprovalSummary, ViewFullReviewQueue, ViewPendingQueue)
 from olympia.users.models import UserProfile
 from olympia.versions.models import (
     Version, ApplicationsVersions, source_upload_path)
@@ -556,6 +556,20 @@ class TestVersion(TestCase):
         addon.type = amo.ADDON_THEME
         assert not version.is_ready_for_auto_approval
 
+        addon.type = amo.ADDON_LPAPP
+        assert version.is_ready_for_auto_approval
+
+    def test_is_ready_for_auto_approval_addon_status(self):
+        addon = Addon.objects.get(id=3615)
+        addon.status = amo.STATUS_NOMINATED
+        version = addon.current_version
+        version.all_files = [
+            File(status=amo.STATUS_AWAITING_REVIEW, is_webextension=True)]
+        assert version.is_ready_for_auto_approval
+
+        addon.status = amo.STATUS_DISABLED
+        assert not version.is_ready_for_auto_approval
+
     def test_was_auto_approved(self):
         addon = Addon.objects.get(id=3615)
         version = addon.current_version
@@ -922,8 +936,11 @@ class TestApplicationsVersions(TestCase):
         assert version.apps.all()[0].__unicode__() == 'Firefox 5.0 - 6.*'
 
     def test_repr_when_type_in_no_compat(self):
-        addon = addon_factory(type=amo.ADDON_PERSONA,
-                              version_kw=self.version_kw)
+        # addon_factory() does not create ApplicationsVersions for types in
+        # NO_COMPAT, so create an extension first and change the type
+        # afterwards.
+        addon = addon_factory(version_kw=self.version_kw)
+        addon.update(type=amo.ADDON_DICT)
         version = addon.current_version
         assert version.apps.all()[0].__unicode__() == 'Firefox 5.0 and later'
 

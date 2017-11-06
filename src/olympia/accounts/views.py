@@ -7,7 +7,7 @@ from django.contrib.auth import login, logout
 from django.core import signing
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.utils.encoding import force_bytes
 from django.utils.http import is_safe_url
 from django.utils.html import format_html
@@ -41,9 +41,8 @@ from olympia.users.notifications import NOTIFICATIONS
 
 from . import verify
 from .serializers import (
-    AccountSuperCreateSerializer, LoginUserProfileSerializer,
-    PublicUserProfileSerializer, UserNotificationSerializer,
-    UserProfileSerializer)
+    AccountSuperCreateSerializer, PublicUserProfileSerializer,
+    UserNotificationSerializer, UserProfileSerializer)
 from .utils import fxa_login_url, generate_fxa_state
 
 log = olympia.core.logger.getLogger('accounts')
@@ -305,45 +304,6 @@ class LoginStartView(LoginStartBaseView):
     ALLOWED_FXA_CONFIGS = settings.ALLOWED_FXA_CONFIGS
 
 
-class LoginBaseView(FxAConfigMixin, APIView):
-
-    @with_user(format='json')
-    def post(self, request, user, identity, next_path):
-        if user is None:
-            return Response({'error': ERROR_NO_USER}, status=422)
-        else:
-            update_user(user, identity)
-            serializer = LoginUserProfileSerializer(user)
-            response = Response(serializer.data)
-            add_api_token_to_response(response, user)
-            log.info('Logging in user {} from FxA'.format(user))
-            return response
-
-    def options(self, request):
-        return Response()
-
-
-class LoginView(LoginBaseView):
-    DEFAULT_FXA_CONFIG_NAME = settings.DEFAULT_FXA_CONFIG_NAME
-    ALLOWED_FXA_CONFIGS = settings.ALLOWED_FXA_CONFIGS
-
-
-class RegisterView(APIView):
-    authentication_classes = (SessionAuthentication,)
-
-    @with_user(format='json')
-    def post(self, request, user, identity, next_path):
-        if user is not None:
-            return Response({'error': 'That account already exists.'},
-                            status=422)
-        else:
-            user = register_user(request, identity)
-            serializer = LoginUserProfileSerializer(user)
-            response = Response(serializer.data)
-            add_api_token_to_response(response, user)
-            return response
-
-
 class AuthenticateView(FxAConfigMixin, APIView):
     DEFAULT_FXA_CONFIG_NAME = settings.DEFAULT_FXA_CONFIG_NAME
     ALLOWED_FXA_CONFIGS = settings.ALLOWED_FXA_CONFIGS
@@ -413,7 +373,16 @@ class AccountViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin,
         self.lookup_field = self.get_lookup_field(identifier)
         self.kwargs[self.lookup_field] = identifier
         self.instance = super(AccountViewSet, self).get_object()
-        return self.instance
+        # action won't exist for other classes that are using this ViewSet.
+        can_view_instance = (
+            not getattr(self, 'action', None) or
+            self.self_view or
+            self.admin_viewing or
+            self.instance.is_public)
+        if can_view_instance:
+            return self.instance
+        else:
+            raise Http404
 
     def get_lookup_field(self, identifier):
         lookup_field = 'pk'
@@ -429,10 +398,13 @@ class AccountViewSet(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin,
             self.request.user.is_authenticated() and
             self.get_object() == self.request.user)
 
+    @property
+    def admin_viewing(self):
+        return acl.action_allowed_user(
+            self.request.user, amo.permissions.USERS_EDIT)
+
     def get_serializer_class(self):
-        if (self.self_view or
-                acl.action_allowed_user(self.request.user,
-                                        amo.permissions.USERS_EDIT)):
+        if self.self_view or self.admin_viewing:
             return UserProfileSerializer
         else:
             return PublicUserProfileSerializer
@@ -495,7 +467,6 @@ class AccountSuperCreate(APIView):
             email=email,
             fxa_id=fxa_id,
             display_name='Super Created {}'.format(user_token),
-            is_verified=True,
             notes='auto-generated from API')
         user.save()
 

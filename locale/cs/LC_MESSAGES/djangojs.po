@@ -1,11 +1,11 @@
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: REMORA 0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-17 08:37+0000\n"
-"PO-Revision-Date: 2017-07-20 06:21+0000\n"
-"Last-Translator: Tomáš Zelina <zelitomas@gmail.com>\n"
+"POT-Creation-Date: 2017-11-02 03:33+0000\n"
+"PO-Revision-Date: 2017-08-12 12:35+0000\n"
+"Last-Translator: Michal Vašíček <michalvasicek@icloud.com>\n"
 "Language-Team: Mozilla.cz <info@mozilla.cz>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
@@ -661,18 +661,6 @@ msgstr "Souhlasím a instalovat"
 msgid "Add to {0}"
 msgstr "Přidat do aplikace {0}"
 
-msgid "Download Now"
-msgstr "Stáhnout"
-
-msgid "Add-on has not been updated to support default-to-compatible."
-msgstr "Doplněk nebyl aktualizován tak, aby byl ve výchozím nastavení kompatibilní."
-
-msgid "You need to be using Firefox 10.0 or higher."
-msgstr "Je potřeba, abyste používali Firefox 10.0 či vyšší."
-
-msgid "Mozilla has marked this version as incompatible with your Firefox version."
-msgstr "Mozilla označila tuto verzi jako nekompatibilní s vaší verzí Firefoxu."
-
 #. L10n: {0} is an platform like Windows or Linux.
 msgid "Install for {0} anyway"
 msgstr "Přesto nainstalovat do aplikace {0}"
@@ -683,9 +671,12 @@ msgstr "Přesto stáhnout pro aplikaci {0}"
 msgid "Not available for your platform"
 msgstr "Není dostupné pro vaši platformu"
 
-#. L10n: {0} is an app name, {1} is the app version.
-msgid "Not available for {0} {1}"
-msgstr "Není dostupné pro {0} {1}"
+#. L10n: {0} is an app name.
+msgid "This add-on is not compatible with your version of {0}."
+msgstr "Tento doplněk není kompatibilní s vaší verzí aplikace {0}."
+
+msgid "View other versions"
+msgstr "Zobrazit ostatní verze"
 
 msgid "Works with {app} {min} - {max}"
 msgstr "Funguje s aplikací {app} {min} - {max}"
@@ -693,17 +684,8 @@ msgstr "Funguje s aplikací {app} {min} - {max}"
 msgid "Works with {app}"
 msgstr "Funguje s aplikací {app}"
 
-msgid "View other versions"
-msgstr "Zobrazit ostatní verze"
-
 msgid "Only with Firefox — Get Firefox Now!"
 msgstr "Pouze pro Firefox — získejte Firefox nyní!"
-
-msgid "Download now"
-msgstr "Stáhnout nyní"
-
-msgid "Only available on Firefox Desktop"
-msgstr "Dostupné pouze pro Firefox pro desktop"
 
 msgid "Sorry, you need a Mozilla-based browser (such as Firefox) to install a search plugin."
 msgstr "Omlouváme se, ale pro instalaci vyhledávacího modulu potřebujete prohlížeč postavený na Mozille (jako například Firefox)."
@@ -780,17 +762,27 @@ msgstr[0] "{reviews} recenze uživatele"
 msgstr[1] "{reviews} recenzí uživatele"
 msgstr[2] "{reviews} recenzí uživatele"
 
-msgid "Learn more"
-msgstr "Dozvědět se více"
-
 msgid "Image changes being processed"
 msgstr "Jsou prováděny změny obrázku"
 
-msgid "Must be a valid e-mail address."
-msgstr "Musí se jednat o platnou e-mailovou adresu."
-
 msgid "No results found."
 msgstr "Nebyly nalezeny žádné výsledky."
+
+msgid "Loading..."
+msgstr "Probíhá načítání..."
+
+#. L10n: {0} is the number of characters left.
+msgid "<b>{0}</b> character left."
+msgid_plural "<b>{0}</b> characters left."
+msgstr[0] "Zbývá <b>{0}</b> znak."
+msgstr[1] "Zbývají <b>{0}</b> znaky."
+msgstr[2] "Zbývá <b>{0}</b> znaků."
+
+msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
+msgstr "Tato funkce je dočasně zakázána, protože provádíme údržbu webu. Zkuste to prosím o chvíli později."
+
+msgid "Remove this localization"
+msgstr "Odebrat lokalizaci"
 
 msgid "{name} was viewing this page first."
 msgstr "Uživatel {name} shlédl tuto stránku jako první."
@@ -827,22 +819,6 @@ msgstr "Průměrné hodnocení"
 
 msgid "Number of Reviews"
 msgstr "Počet hodnocení"
-
-msgid "Loading..."
-msgstr "Probíhá načítání..."
-
-#. L10n: {0} is the number of characters left.
-msgid "<b>{0}</b> character left."
-msgid_plural "<b>{0}</b> characters left."
-msgstr[0] "Zbývá <b>{0}</b> znak."
-msgstr[1] "Zbývají <b>{0}</b> znaky."
-msgstr[2] "Zbývá <b>{0}</b> znaků."
-
-msgid "This feature is temporarily disabled while we perform website maintenance. Please check back a little later."
-msgstr "Tato funkce je dočasně zakázána, protože provádíme údržbu webu. Zkuste to prosím o chvíli později."
-
-msgid "Remove this localization"
-msgstr "Odebrat lokalizaci"
 
 msgid "Requested Info"
 msgstr "Požadovány informace"

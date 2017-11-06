@@ -13,7 +13,6 @@ def admin_site_links():
             ('Discovery Pane promo modules',
              reverse('discovery.module_admin')),
             ('Monthly Pick', reverse('zadmin.monthly_pick')),
-            ('Bulk add-on validation', reverse('zadmin.validation')),
             ('Fake mail', reverse('zadmin.mail')),
             ('ACR Reports', reverse('zadmin.compat')),
             ('Email Add-on Developers', reverse('zadmin.email_devs')),
@@ -32,7 +31,7 @@ def admin_site_links():
         'tools': [
             ('Manage elasticsearch', reverse('zadmin.elastic')),
             ('Purge data from memcache', reverse('zadmin.memcache')),
-            ('View event log', reverse('admin:editors_eventlog_changelist')),
+            ('View event log', reverse('admin:reviewers_eventlog_changelist')),
             ('View addon log',
              reverse('admin:activity_activitylog_changelist')),
             ('Site Status', reverse('amo.monitor')),

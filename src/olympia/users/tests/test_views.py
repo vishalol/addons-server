@@ -240,7 +240,7 @@ class TestEditAdmin(UserViewBase):
 
     def test_edit_forbidden(self):
         self.client.logout()
-        self.client.login(email='editor@mozilla.com')
+        self.client.login(email='reviewer@mozilla.com')
         res = self.client.get(self.url)
         assert res.status_code == 403
 
@@ -316,7 +316,7 @@ class TestUnsubscribe(UserViewBase):
 
     def setUp(self):
         super(TestUnsubscribe, self).setUp()
-        self.user = UserProfile.objects.get(email='editor@mozilla.com')
+        self.user = UserProfile.objects.get(email='reviewer@mozilla.com')
 
     def test_correct_url_update_notification(self):
         # Make sure the user is subscribed
@@ -666,6 +666,9 @@ class TestProfileSections(TestCase):
         return doc('#review-218207 .item-actions a.delete-review')
 
     def test_my_reviews_delete_link(self):
+        moderator = UserProfile.objects.create(
+            username='moderator', email='moderator@mozilla.com')
+        self.grant_permission(moderator, 'Ratings:Moderate')
         review = Review.objects.filter(reply_to=None)[0]
         review.user_id = 999
         review.save()
@@ -678,9 +681,9 @@ class TestProfileSections(TestCase):
         assert r.length == 1
         assert r.attr('href') == delete_url
 
-        # Editors don't get the Delete Review link
+        # Moderators don't get the Delete Review link
         # (unless it's pending moderation).
-        r = self._get_reviews(username='editor@mozilla.com')
+        r = self._get_reviews(username='moderator@mozilla.com')
         assert r.length == 0
 
         # Author gets the Delete Review link.
@@ -693,6 +696,9 @@ class TestProfileSections(TestCase):
         assert r.length == 0
 
     def test_my_reviews_delete_link_moderated(self):
+        moderator = UserProfile.objects.create(
+            username='moderator', email='moderator@mozilla.com')
+        self.grant_permission(moderator, 'Ratings:Moderate')
         review = Review.objects.filter(reply_to=None)[0]
         review.user_id = 999
         review.editorreview = True
@@ -701,9 +707,9 @@ class TestProfileSections(TestCase):
         slug = Addon.objects.get(id=review.addon_id).slug
         delete_url = reverse('addons.reviews.delete', args=[slug, review.pk])
 
-        # Editors get the Delete Review link
+        # Moderators get the Delete Review link
         # because the review is pending moderation
-        r = self._get_reviews(username='editor@mozilla.com')
+        r = self._get_reviews(username='moderator@mozilla.com')
         assert r.length == 1
         assert r.attr('href') == delete_url
 

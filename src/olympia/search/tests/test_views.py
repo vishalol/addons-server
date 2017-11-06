@@ -11,9 +11,10 @@ import pytest
 from pyquery import PyQuery as pq
 
 from olympia import amo
-from olympia.amo.tests import create_switch, ESTestCaseWithAddons
+from olympia.amo.tests import (
+    create_switch, ESTestCaseWithAddons, ESTestCase, addon_factory)
 from olympia.amo.templatetags.jinja_helpers import (
-    locale_url, numberfmt, urlparams, datetime_filter)
+    locale_url, numberfmt, urlparams, format_date)
 
 from olympia.amo.urlresolvers import reverse
 from olympia.addons.models import (
@@ -622,20 +623,134 @@ class TestESSearch(SearchBase):
         assert addon.pk not in self.get_results(response)
 
     def test_webextension_boost(self):
-        web_extension = self.addons[1]
+        web_extension = list(sorted(
+            self.addons, key=lambda x: x.name, reverse=True))[0]
         web_extension.current_version.files.update(is_webextension=True)
         web_extension.save()
         self.refresh()
 
-        response = self.client.get(self.url, {'q': 'addon'})
+        response = self.client.get(self.url, {'q': 'Addon'})
         result = self.get_results(response, sort=False)
         assert result[0] != web_extension.pk
 
         create_switch('boost-webextensions-in-search')
         # The boost chosen should have made that addon the first one.
-        response = self.client.get(self.url, {'q': 'addon'})
+        response = self.client.get(self.url, {'q': 'Addon'})
         result = self.get_results(response, sort=False)
         assert result[0] == web_extension.pk
+
+    def test_find_addon_default_non_en_us(self):
+        with self.activate('en-GB'):
+            addon = addon_factory(
+                status=amo.STATUS_PUBLIC,
+                type=amo.ADDON_EXTENSION,
+                default_locale='en-GB',
+                name='Banana Bonkers',
+                description=u'Let your browser eat your bananas',
+                summary=u'Banana Summary',
+            )
+
+            addon.name = {'es': u'Banana Bonkers espanole'}
+            addon.description = {
+                'es': u'Deje que su navegador coma sus plátanos'}
+            addon.summary = {'es': u'resumen banana'}
+            addon.save()
+
+        addon_en = addon_factory(
+            slug='English Addon', name=u'My English Addôn')
+
+        self.refresh()
+
+        # Make sure we have en-US active
+        for locale in ('en-US', 'en-GB', 'es'):
+            with self.activate(locale):
+                url = self.url.replace('en-US', locale)
+
+                response = self.client.get(url, {'q': ''})
+                result = self.get_results(response, sort=False)
+
+                # 3 add-ons in self.addon + the two just created
+                assert addon_en.pk in result
+                assert addon.pk in result
+
+                response = self.client.get(url, {'q': 'Banana'})
+                result = self.get_results(response, sort=False)
+
+                assert result[0] == addon.pk
+
+                response = self.client.get(url, {'q': 'plátanos'})
+                result = self.get_results(response, sort=False)
+
+                assert result[0] == addon.pk
+
+
+class TestSearchResultScoring(ESTestCase):
+    fixtures = ['base/category']
+
+    def setUp(self):
+        super(TestSearchResultScoring, self).setUp()
+        self.url = reverse('search.search')
+
+    def tearDown(self):
+        self.empty_index('default')
+        super(TestSearchResultScoring, self).tearDown()
+
+    def get_results(self, response):
+        """Return pks of add-ons shown on search results page."""
+        return [a.id for a in response.context['pager'].object_list]
+
+    def test_score_boost_name_match(self):
+        addons = [
+            amo.tests.addon_factory(
+                name='Merge Windows', type=amo.ADDON_EXTENSION,
+                average_daily_users=0, weekly_downloads=0),
+            amo.tests.addon_factory(
+                name='Merge All Windows', type=amo.ADDON_EXTENSION,
+                average_daily_users=0, weekly_downloads=0),
+            amo.tests.addon_factory(
+                name='All Downloader Professional', type=amo.ADDON_EXTENSION,
+                average_daily_users=0, weekly_downloads=0),
+        ]
+
+        self.refresh()
+
+        response = self.client.get(self.url, {'q': 'merge windows'})
+        result = self.get_results(response)
+
+        # Doesn't match "All Downloader Professional"
+        assert addons[2].pk not in result
+
+        # Matches both "Merge Windows" and "Merge All Windows" but can't
+        # correctly predict their exact scoring since we don't have
+        # an exact match that would prefer 'merge windows'. Both should be
+        # the first two matches though.
+        assert addons[1].pk in result[:2]
+        assert addons[0].pk in result[:2]
+
+        response = self.client.get(self.url, {'q': 'merge all windows'})
+        result = self.get_results(response)
+
+        # Make sure we match 'All Downloader Professional' but it's
+        # term match frequency is much lower than the other two so it's
+        # last.
+        assert addons[2].pk == result[-1]
+
+        # Other two are first rank again.
+        assert addons[1].pk in result[:2]
+        assert addons[0].pk in result[:2]
+
+    def test_score_boost_name_match_slop(self):
+        addon = amo.tests.addon_factory(
+            name='Merge all Windows', type=amo.ADDON_EXTENSION,
+            average_daily_users=0, weekly_downloads=0)
+
+        self.refresh()
+
+        # direct match
+        response = self.client.get(self.url, {'q': 'merge windows'})
+        result = self.get_results(response)
+
+        assert result[0] == addon.pk
 
 
 class TestPersonaSearch(SearchBase):
@@ -668,7 +783,7 @@ class TestPersonaSearch(SearchBase):
 
     def test_sort_order_default(self):
         self._generate_personas()
-        self.check_sort_links(None, sort_by='weekly_downloads')
+        self.check_sort_links(None, sort_by='average_daily_users')
 
     def test_sort_order_unknown(self):
         self._generate_personas()
@@ -876,7 +991,7 @@ class TestCollectionSearch(SearchBase):
         items = pq(r.content)('.primary .item')
         for idx, c in enumerate(r.context['pager'].object_list):
             assert trim_whitespace(items.eq(idx).find('.modified').text()) == (
-                'Added %s' % trim_whitespace(datetime_filter(c.created)))
+                'Added %s' % trim_whitespace(format_date(c.created)))
 
     def test_updated_timestamp(self):
         self._generate()
@@ -884,7 +999,7 @@ class TestCollectionSearch(SearchBase):
         items = pq(r.content)('.primary .item')
         for idx, c in enumerate(r.context['pager'].object_list):
             assert trim_whitespace(items.eq(idx).find('.modified').text()) == (
-                'Updated %s' % trim_whitespace(datetime_filter(c.modified)))
+                'Updated %s' % trim_whitespace(format_date(c.modified)))
 
     def check_followers_count(self, sort, column):
         # Checks that we show the correct type/number of followers.
@@ -1177,17 +1292,17 @@ class TestGenericAjaxSearch(TestAjaxSearch):
 
     def test_webextension_boost(self):
         public_addons = Addon.objects.public().all()
-        web_extension = public_addons[1]
+        web_extension = public_addons.order_by('name')[0]
         web_extension.current_version.files.update(is_webextension=True)
         web_extension.save()
         self.refresh()
 
-        data = self.search_addons('q=addon', public_addons)
+        data = self.search_addons('q=Addon', public_addons)
         assert int(data[0]['id']) != web_extension.id
 
         create_switch('boost-webextensions-in-search')
         # The boost chosen should have made that addon the first one.
-        data = self.search_addons('q=addon', public_addons)
+        data = self.search_addons('q=Addon', public_addons)
         assert int(data[0]['id']) == web_extension.id
 
 

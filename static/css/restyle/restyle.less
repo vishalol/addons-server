@@ -1,5 +1,6 @@
+@import (less) '../common/fonts';
 // Needed for hovercards
-@import '../impala/hovercards';
+@import (less) '../impala/hovercards';
 
 // Colors
 @primary-blue: rgba(12, 153, 213, 1);
@@ -16,43 +17,6 @@
 // Sizes
 @containerWidth: 1018px;
 @pageWidth: 960px;
-
-// Fonts
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Open Sans'),
-       local('OpenSans'),
-       url('../impala/fonts/OpenSans-Regular.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 700;
-  src: local('Open Sans Bold'),
-       local('OpenSans-Bold'),
-       url('../impala/fonts/OpenSans-Bold.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 700;
-  src: local('Open Sans BoldItalic'),
-       local('OpenSans-BoldItalic'),
-       url('../impala/fonts/OpenSans-BoldItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 400;
-  src: local('Open Sans Italic'),
-       local('OpenSans-Italic'),
-       url('../impala/fonts/OpenSans-Italic.ttf') format('truetype');
-}
 
 h1,
 h2,
@@ -85,6 +49,7 @@ body.restyle {
   font-style: normal;
   line-height: 1.5;
   min-width: @containerWidth;
+  overflow-x: hidden;
 }
 
 h1,
@@ -563,7 +528,7 @@ body:not(.home) .amo-header,
   border: 2px solid #1f386e;
   border-radius: 6px;
   color: @default-font-color;
-  margin-top: 22px;
+  margin: 22px 0;
   padding: 15px 45px 15px 15px;
 
   .html-rtl& {
@@ -601,12 +566,62 @@ body:not(.home) .amo-header,
   }
 }
 
+#try-new-frontend {
+  background: url(../../img/zamboni/promo-background.png) #202340;
+  border: none;
+  border-radius: 0;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 26px;
+  margin: -12px 0 12px 0;  // header_bg has a 12px bottom margin.
+  padding: 17px 80px;
+
+  .close {
+    background-color: #FFF;
+    background-image: none;  // override default to use our svg mask instead.
+    mask: url(../../img/impala/x.svg) no-repeat 50% 50%;
+    right: 24px;
+    width: 13px;
+    height: 13px;
+
+    &:focus,
+    &:hover {
+      background-color: #F9F9FA;
+    }
+  }
+
+  a:link, a:visited {
+    color: #0A84FF;
+    font-weight: 600;
+  }
+
+  p {
+    margin-right: 0.5em;
+  }
+
+  * {
+      // This sucks, but there is a font-family: @primary-font !important on
+      // * at the top of this file...
+      font-family: 'Fira Sans', sans-serif !important;
+  }
+}
+
+.addon-details #try-new-frontend {
+  margin: 0;  // on addon detail page, header_bg has no bottom margin.
+}
+
 #promos {
+  float: none;
   margin: 20px 0 0;
   min-height: 0;
   opacity: 1;
   visibility: visible;
   width: @pageWidth;
+
+  hgroup {
+    margin: 0 auto 20px;
+  }
 
   &.show {
     display: block;
@@ -702,7 +717,7 @@ body:not(.home) .amo-header,
   margin-top: 0;
 }
 
-.featured li {
+.featured:not(.listing-grid) li {
   height: auto;
   width: auto;
 }
@@ -895,6 +910,7 @@ a.delete-button.delete-addon,
 #upload-file-widget .button.prominent,
 #promos .view-button a,
 .cta a.button:link,
+.cta a.button:visited,
 .theme-queue a.button,
 .theme-queue button,
 .theme .choices button,
@@ -902,6 +918,7 @@ button,
 button.button,
 .button,
 a.button:link,
+a.button:visited,
 input:not(.upvotes):not(.downvotes)[type="submit"],
 .persona-install button {
   background: #5784bf;
@@ -973,6 +990,7 @@ input:not(.upvotes):not(.downvotes)[type="submit"],
     background: #ccc;
     box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.10),
           inset 0 -2px 0 0 rgba(136, 136, 136, 0.50);
+    color: #919497;
     text-shadow: none;
 
     &:hover {
@@ -982,6 +1000,14 @@ input:not(.upvotes):not(.downvotes)[type="submit"],
 
     &:active {
       top: 0;
+    }
+
+    span:not(.os) {
+      background-position: 0 -253px;
+
+      .html-rtl & {
+        .sprite-pos-right(4, 64, 3px);
+      }
     }
   }
 
@@ -1017,11 +1043,6 @@ input:not(.upvotes):not(.downvotes)[type="submit"],
            .sprite-pos-right(5, 64, 3px);
        }
     }
-  }
-
-  &.caution.concealed,
-  &.warning.concealed {
-    pointer-events: all;
   }
 }
 
@@ -1116,7 +1137,7 @@ body:not(.developer-hub) section.secondary {
 }
 
 .secondary {
-  margin: 0 0 12px;
+  margin: 0;
   width: 21.49%;
 
   h2, h3 {
@@ -1207,10 +1228,11 @@ body:not(.developer-hub) section.secondary {
   }
 }
 
-.html-rtl.addon-details {
+.html-rtl {
    .extra .button.disabled.not-available {
     background-position: right 6px center;
     padding: 5px 25px 5px 5px;
+    text-align: right;
   }
 }
 
@@ -1227,7 +1249,6 @@ body:not(.developer-hub) section.secondary {
 .addon-details {
   .primary:first-of-type {
     min-height: 257px;
-    padding-bottom: 1em;
   }
 
   .secondary.addon-vitals {
@@ -1953,6 +1974,18 @@ h3.author .transfer-ownership {
   }
 }
 
+// (new) Contribution url button
+#contribution-url-button {
+  text-decoration: none;
+}
+// (new) Contribution url button
+.notice.c.author .button-wrapper {
+  float:right;
+}
+.html-rtl .notice.c.author .button-wrapper {
+  float:right;
+}
+
 .notice.c.author {
   h3,
   p {
@@ -2002,8 +2035,8 @@ h3.author .transfer-ownership {
   top: 0;
 }
 
-#downloadAnyway {
-  color: @link-on-color-bg;
+.download-anyway {
+  display: none;  // Shown by buttons.js
 }
 
 .action-needed {
@@ -2150,13 +2183,13 @@ h3.author .transfer-ownership {
   }
 }
 
-/* Editor pages */
-body.editor-tools {
+/* Reviewer pages */
+body.reviewer-tools {
   .site-title strong {
     color: @link-on-color-bg;
   }
 
-  .editor-menu {
+  .reviewer-menu {
     margin-top: 30px;
     width: 660px;
   }
@@ -2235,17 +2268,17 @@ body.editor-tools {
     border-radius: 0;
   }
 
-  #editors-stats-charts, #editors-stats-charts-unlisted, #editors-stats {
+  #reviewers-stats-charts, #reviewers-stats-charts-unlisted, #reviewers-stats {
     border: @detail-border;
     border-radius: 0;
   }
 
-  .editor-stats-dark {
+  .reviewer-stats-dark {
     text-align: center;
     background-color: transparent;
   }
 
-  div.editor-waiting {
+  div.reviewer-waiting {
     border-radius: 0;
     border: @detail-border;
   }
@@ -2254,15 +2287,15 @@ body.editor-tools {
     box-shadow: none;
   }
 
-  .editor-stats-table:first-child > div {
+  .reviewer-stats-table:first-child > div {
     border-left-width: 0;
   }
 
-  .editor-stats-table .int {
+  .reviewer-stats-table .int {
     color: @default-font-color;
   }
 
-  #editors_main, .section {
+  #reviewers_main, .section {
     .results {
       border: @detail-border;
       background-color: #ecf5fe;
@@ -2418,6 +2451,10 @@ body.editor-tools {
       }
     }
   }
+}
+
+.listing .item:not(.incompatible) .install-shell {
+    visibility: visible;
 }
 
 .item-info .install-button .button {

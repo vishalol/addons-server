@@ -23,15 +23,15 @@
   {% endwith %}
   <p class="byline">
     {% if is_reply %}
-      {% trans user=review.user|user_link, date=review.created|datetime %}
+      {% trans user=review.user|user_link, date=review.created|date %}
         by {{ user }} <b>(Developer)</b> on {{ date }}
       {% endtrans %}
     {% else %}
-      {% trans user=review.user|user_link, date=review.created|datetime %}
+      {% trans user=review.user|user_link, date=review.created|date %}
         by {{ user }} on {{ date }}
       {% endtrans %}
     {% endif %}
-    {% if (perms.is_admin or perms.is_editor)
+    {% if (perms.is_admin or perms.is_reviewer)
           and review.ip_address != '0.0.0.0' %}
       <span>[{{ review.ip_address }}]</span>
     {% endif %}

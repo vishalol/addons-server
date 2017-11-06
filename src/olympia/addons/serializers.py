@@ -1,21 +1,25 @@
+import re
+
 from rest_framework import serializers
 
 from olympia import amo
-from olympia.addons.models import (
-    Addon, AddonFeatureCompatibility, attach_tags, Persona, Preview)
+from olympia.accounts.serializers import BaseUserSerializer
 from olympia.amo.templatetags.jinja_helpers import absolutify
 from olympia.amo.urlresolvers import get_outgoing_url, reverse
 from olympia.api.fields import ReverseChoiceField, TranslationSerializerField
 from olympia.api.serializers import BaseESSerializer
 from olympia.applications.models import AppVersion
+from olympia.bandwagon.models import Collection
 from olympia.constants.applications import APPS_ALL
 from olympia.constants.base import ADDON_TYPE_CHOICES_API
 from olympia.constants.categories import CATEGORIES_BY_ID
 from olympia.files.models import File
 from olympia.users.models import UserProfile
-from olympia.users.serializers import (
-    AddonDeveloperSerializer, BaseUserSerializer)
 from olympia.versions.models import ApplicationsVersions, License, Version
+
+from .models import (
+    Addon, AddonFeatureCompatibility, attach_tags, Persona, Preview,
+    ReplacementAddon)
 
 
 class AddonFeatureCompatibilitySerializer(serializers.ModelSerializer):
@@ -39,8 +43,8 @@ class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
         fields = ('id', 'created', 'hash', 'is_restart_required',
-                  'is_webextension', 'platform', 'size', 'status', 'url',
-                  'permissions')
+                  'is_webextension', 'is_mozilla_signed_extension',
+                  'platform', 'size', 'status', 'url', 'permissions')
 
     def get_url(self, obj):
         # File.get_url_path() is a little different, it's already absolute, but
@@ -55,7 +59,8 @@ class PreviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Preview
-        fields = ('id', 'caption', 'image_url', 'thumbnail_url')
+        fields = ('id', 'caption', 'image_size', 'image_url', 'thumbnail_size',
+                  'thumbnail_url')
 
     def get_image_url(self, obj):
         return absolutify(obj.image_url)
@@ -73,7 +78,7 @@ class ESPreviewSerializer(BaseESSerializer, PreviewSerializer):
 
     def fake_object(self, data):
         """Create a fake instance of Preview from ES data."""
-        obj = Preview(id=data['id'])
+        obj = Preview(id=data['id'], sizes=data.get('sizes', {}))
 
         # Attach base attributes that have the same name/format in ES and in
         # the model.
@@ -88,10 +93,25 @@ class ESPreviewSerializer(BaseESSerializer, PreviewSerializer):
 class LicenseSerializer(serializers.ModelSerializer):
     name = TranslationSerializerField()
     text = TranslationSerializerField()
+    url = serializers.SerializerMethodField()
 
     class Meta:
         model = License
         fields = ('id', 'name', 'text', 'url')
+
+    def get_url(self, obj):
+        return obj.url or self.get_version_license_url(obj)
+
+    def get_version_license_url(self, obj):
+        # We need the version associated with the license, because that's where
+        # the license_url() method lives. The problem is, normally we would not
+        # be able to do that, because there can be multiple versions for a
+        # given License. However, since we're serializing through a nested
+        # serializer, we cheat and use `instance.version_instance` which is
+        # set by SimpleVersionSerializer.to_representation() while serializing.
+        if hasattr(obj, 'version_instance'):
+            return absolutify(obj.version_instance.license_url())
+        return None
 
 
 class CompactLicenseSerializer(LicenseSerializer):
@@ -106,13 +126,21 @@ class SimpleVersionSerializer(serializers.ModelSerializer):
     edit_url = serializers.SerializerMethodField()
     files = FileSerializer(source='all_files', many=True)
     license = CompactLicenseSerializer()
+    release_notes = TranslationSerializerField(source='releasenotes')
     url = serializers.SerializerMethodField()
 
     class Meta:
         model = Version
         fields = ('id', 'compatibility', 'edit_url', 'files',
-                  'is_strict_compatibility_enabled', 'license', 'reviewed',
-                  'url', 'version')
+                  'is_strict_compatibility_enabled', 'license',
+                  'release_notes', 'reviewed', 'url', 'version')
+
+    def to_representation(self, instance):
+        # Help the LicenseSerializer find the version we're currently
+        # serializing.
+        if 'license' in self.fields and instance.license:
+            instance.license.version_instance = instance
+        return super(SimpleVersionSerializer, self).to_representation(instance)
 
     def get_url(self, obj):
         return absolutify(obj.get_url_path())
@@ -132,10 +160,20 @@ class SimpleVersionSerializer(serializers.ModelSerializer):
         return any(file_.strict_compatibility for file_ in obj.all_files)
 
 
+class SimpleESVersionSerializer(SimpleVersionSerializer):
+    class Meta:
+        model = Version
+        # In ES, we don't have license and release notes info, so instead of
+        # returning null, which is not necessarily true, we omit those fields
+        # entirely.
+        fields = ('id', 'compatibility', 'edit_url', 'files',
+                  'is_strict_compatibility_enabled', 'reviewed', 'url',
+                  'version')
+
+
 class VersionSerializer(SimpleVersionSerializer):
     channel = ReverseChoiceField(choices=amo.CHANNEL_CHOICES_API.items())
     license = LicenseSerializer()
-    release_notes = TranslationSerializerField(source='releasenotes')
 
     class Meta:
         model = Version
@@ -156,12 +194,23 @@ class AddonEulaPolicySerializer(serializers.ModelSerializer):
         )
 
 
+class AddonDeveloperSerializer(BaseUserSerializer):
+    picture_url = serializers.SerializerMethodField()
+
+    class Meta(BaseUserSerializer.Meta):
+        fields = BaseUserSerializer.Meta.fields + (
+            'picture_url',)
+        read_only_fields = fields
+
+
 class AddonSerializer(serializers.ModelSerializer):
     authors = AddonDeveloperSerializer(many=True, source='listed_authors')
     categories = serializers.SerializerMethodField()
+    contributions_url = serializers.URLField(source='contributions')
     current_beta_version = SimpleVersionSerializer()
     current_version = SimpleVersionSerializer()
     description = TranslationSerializerField()
+    developer_comments = TranslationSerializerField()
     edit_url = serializers.SerializerMethodField()
     has_eula = serializers.SerializerMethodField()
     has_privacy_policy = serializers.SerializerMethodField()
@@ -189,10 +238,12 @@ class AddonSerializer(serializers.ModelSerializer):
             'authors',
             'average_daily_users',
             'categories',
+            'contributions_url',
             'current_beta_version',
             'current_version',
             'default_locale',
             'description',
+            'developer_comments',
             'edit_url',
             'guid',
             'has_eula',
@@ -223,8 +274,6 @@ class AddonSerializer(serializers.ModelSerializer):
         )
 
     def to_representation(self, obj):
-        # Set this so BaseUserSerializer doesn't need to do a query
-        self.context['is_developer'] = True
         data = super(AddonSerializer, self).to_representation(obj)
         if 'theme_data' in data and data['theme_data'] is None:
             data.pop('theme_data')
@@ -232,6 +281,16 @@ class AddonSerializer(serializers.ModelSerializer):
             data['homepage'] = self.outgoingify(data['homepage'])
         if 'support_url' in data:
             data['support_url'] = self.outgoingify(data['support_url'])
+        if obj.type == amo.ADDON_PERSONA:
+            if 'weekly_downloads' in data:
+                # weekly_downloads don't make sense for lightweight themes.
+                data.pop('weekly_downloads')
+
+            if ('average_daily_users' in data and
+                    not self.is_broken_persona(obj)):
+                # In addition, their average_daily_users number must come from
+                # the popularity field of the attached Persona.
+                data['average_daily_users'] = obj.persona.popularity
         return data
 
     def outgoingify(self, data):
@@ -279,7 +338,7 @@ class AddonSerializer(serializers.ModelSerializer):
         return absolutify(obj.get_dev_url())
 
     def get_review_url(self, obj):
-        return absolutify(reverse('editors.review', args=[obj.pk]))
+        return absolutify(reverse('reviewers.review', args=[obj.pk]))
 
     def get_icon_url(self, obj):
         if self.is_broken_persona(obj):
@@ -291,6 +350,7 @@ class AddonSerializer(serializers.ModelSerializer):
             'average': obj.average_rating,
             'bayesian_average': obj.bayesian_rating,
             'count': obj.total_reviews,
+            'text_count': obj.text_reviews_count,
         }
 
     def get_theme_data(self, obj):
@@ -332,16 +392,26 @@ class AddonSerializerWithUnlistedData(AddonSerializer):
         fields = AddonSerializer.Meta.fields + ('latest_unlisted_version',)
 
 
-class ESBaseAddonSerializer(BaseESSerializer):
+class ESAddonSerializer(BaseESSerializer, AddonSerializer):
+    # Override various fields for related objects which we don't want to expose
+    # data the same way than the regular serializer does (usually because we
+    # some of the data is not indexed in ES).
+    authors = BaseUserSerializer(many=True, source='listed_authors')
+    current_beta_version = SimpleESVersionSerializer()
+    current_version = SimpleESVersionSerializer()
+    previews = ESPreviewSerializer(many=True, source='all_previews')
+
     datetime_fields = ('created', 'last_updated', 'modified')
-    translated_fields = ('name', 'description', 'homepage', 'summary',
-                         'support_email', 'support_url')
+    translated_fields = ('name', 'description', 'developer_comments',
+                         'homepage', 'summary', 'support_email', 'support_url')
 
     def fake_file_object(self, obj, data):
         file_ = File(
             id=data['id'], created=self.handle_date(data['created']),
             hash=data['hash'], filename=data['filename'],
             is_webextension=data.get('is_webextension'),
+            is_mozilla_signed_extension=data.get(
+                'is_mozilla_signed_extension'),
             is_restart_required=data.get('is_restart_required', False),
             platform=data['platform'], size=data['size'],
             status=data['status'],
@@ -384,6 +454,7 @@ class ESBaseAddonSerializer(BaseESSerializer):
             obj, data, (
                 'average_daily_users',
                 'bayesian_rating',
+                'contributions',
                 'created',
                 'default_locale',
                 'guid',
@@ -432,7 +503,8 @@ class ESBaseAddonSerializer(BaseESSerializer):
         obj.listed_authors = [
             UserProfile(
                 id=data_author['id'], display_name=data_author['name'],
-                username=data_author['username'])
+                username=data_author['username'],
+                is_public=data_author.get('is_public', False))
             for data_author in data_authors
         ]
 
@@ -441,8 +513,10 @@ class ESBaseAddonSerializer(BaseESSerializer):
         # for us when its to_representation() method is called.
         obj.all_previews = data.get('previews', [])
 
-        obj.average_rating = data.get('ratings', {}).get('average')
-        obj.total_reviews = data.get('ratings', {}).get('count')
+        ratings = data.get('ratings', {})
+        obj.average_rating = ratings.get('average')
+        obj.total_reviews = ratings.get('count')
+        obj.text_reviews_count = ratings.get('text_count')
 
         obj._is_featured = data.get('is_featured', False)
 
@@ -458,7 +532,8 @@ class ESBaseAddonSerializer(BaseESSerializer):
                     # "New" Persona do not have a persona_id, it's a relic from
                     # old ones.
                     persona_id=0 if persona_data['is_new'] else 42,
-                    textcolor=persona_data['textcolor']
+                    textcolor=persona_data['textcolor'],
+                    popularity=data.get('average_daily_users'),
                 )
             else:
                 # Sadly, https://code.djangoproject.com/ticket/14368 prevents
@@ -472,17 +547,14 @@ class ESBaseAddonSerializer(BaseESSerializer):
         return obj
 
 
-class ESAddonSerializer(ESBaseAddonSerializer, AddonSerializer):
-    # Override authors because we don't want picture_url in serializer.
-    authors = BaseUserSerializer(many=True, source='listed_authors')
-    previews = ESPreviewSerializer(many=True, source='all_previews')
-
-
 class ESAddonSerializerWithUnlistedData(
-        ESBaseAddonSerializer, AddonSerializerWithUnlistedData):
-    # Override authors because we don't want picture_url in serializer.
-    authors = BaseUserSerializer(many=True, source='listed_authors')
-    previews = ESPreviewSerializer(many=True, source='all_previews')
+        ESAddonSerializer, AddonSerializerWithUnlistedData):
+    # Because we're inheriting from ESAddonSerializer which does set its own
+    # Meta class already, we have to repeat this from
+    # AddonSerializerWithUnlistedData, but it beats having to redeclare the
+    # fields...
+    class Meta(AddonSerializerWithUnlistedData.Meta):
+        fields = AddonSerializerWithUnlistedData.Meta.fields
 
 
 class ESAddonAutoCompleteSerializer(ESAddonSerializer):
@@ -522,6 +594,52 @@ class LanguageToolsSerializer(AddonSerializer):
 
     class Meta:
         model = Addon
-        fields = ('id', 'current_version', 'default_locale',
-                  'locale_disambiguation', 'name', 'target_locale', 'type',
-                  'url', )
+        fields = ('id', 'current_version', 'default_locale', 'guid',
+                  'locale_disambiguation', 'name', 'slug', 'target_locale',
+                  'type', 'url', )
+
+
+class ReplacementAddonSerializer(serializers.ModelSerializer):
+    replacement = serializers.SerializerMethodField()
+    ADDON_PATH_REGEX = r"""/addon/(?P<addon_id>[^/<>"']+)/$"""
+    COLLECTION_PATH_REGEX = (
+        r"""/collections/(?P<user_id>[^/<>"']+)/(?P<coll_slug>[^/]+)/$""")
+
+    class Meta:
+        model = ReplacementAddon
+        fields = ('guid', 'replacement')
+
+    def _get_addon_guid(self, addon_id):
+        try:
+            addon = Addon.objects.public().id_or_slug(addon_id).get()
+        except Addon.DoesNotExist:
+            return []
+        return [addon.guid]
+
+    def _get_collection_guids(self, user_id, collection_slug):
+        try:
+            get_args = {'slug': collection_slug, 'listed': True}
+            if isinstance(user_id, basestring) and not user_id.isdigit():
+                get_args.update(**{'author__username': user_id})
+            else:
+                get_args.update(**{'author': user_id})
+            collection = Collection.objects.get(**get_args)
+        except Collection.DoesNotExist:
+            return []
+        valid_q = Addon.objects.get_queryset().valid_q([amo.STATUS_PUBLIC])
+        return list(
+            collection.addons.filter(valid_q).values_list('guid', flat=True))
+
+    def get_replacement(self, obj):
+        if obj.has_external_url():
+            # It's an external url so no guids.
+            return []
+        addon_match = re.search(self.ADDON_PATH_REGEX, obj.path)
+        if addon_match:
+            return self._get_addon_guid(addon_match.group('addon_id'))
+
+        coll_match = re.search(self.COLLECTION_PATH_REGEX, obj.path)
+        if coll_match:
+            return self._get_collection_guids(
+                coll_match.group('user_id'), coll_match.group('coll_slug'))
+        return []

@@ -3,43 +3,48 @@ import json
 
 import jinja2
 
+import pytest
 from mock import patch, Mock
 from pyquery import PyQuery
-import pytest
 
 from olympia import amo
 from olympia.amo.tests import TestCase
 from olympia.amo.urlresolvers import reverse
 from olympia.addons.buttons import big_install_button, install_button
+from olympia.addons.models import Addon
+from olympia.files.models import File
+from olympia.versions.models import Version
 
 
 class ButtonTest(TestCase):
 
     def setUp(self):
         super(ButtonTest, self).setUp()
-        self.addon = Mock()
+        self.addon = Mock(spec=Addon)
         self.addon.is_featured.return_value = False
         self.addon.is_unreviewed.return_value = False
         self.addon.is_experimental = False
         self.addon.eula = None
         self.addon.status = amo.STATUS_PUBLIC
-        self.addon.id = 2
-        self.addon.slug = 'slug'
+        self.addon.id = self.addon.pk = 42
+        self.addon.slug = 'a-slug'
         self.addon.type = amo.ADDON_EXTENSION
         self.addon.privacy_policy = None
 
-        self.version = v = Mock()
+        self.version = v = Mock(spec=Version)
+        self.version.id = 1337
+        self.version.addon = self.addon
         v.is_compatible_by_default = False
         v.compat_override_app_versions.return_value = []
         v.is_unreviewed = False
         v.is_beta = False
-        v.version = 'v1'
+        v.version = '2.0.3.8'
         self.addon.current_version = v
 
         self.file = self.get_file(amo.PLATFORM_ALL.id)
         v.all_files = [self.file]
 
-        self.beta_version = v = Mock()
+        self.beta_version = v = Mock(spec=Version)
         v.is_compatible_by_default = False
         v.compat_override_app_versions.return_value = []
         v.is_unreviewed = False
@@ -77,11 +82,10 @@ class ButtonTest(TestCase):
         return PyQuery(install_button(self.context, self.addon, **kwargs))
 
     def get_file(self, platform):
-        file = Mock()
+        file = File()  # Real object and not a mock to get the true methods.
+        file.version = self.version
+        file.pk = 666
         file.platform = platform
-        file.latest_xpi_url.return_value = 'xpi.latest'
-        file.get_url_path.return_value = 'xpi.url'
-        file.eula_url.return_value = 'eula.url'
         file.status = amo.STATUS_PUBLIC
         file.strict_compatibility = False
         file.binary_components = False
@@ -169,22 +173,7 @@ class TestButton(ButtonTest):
         assert b.latest
         assert not b.featured
         assert not b.unreviewed
-        assert not b.show_contrib
         assert not b.show_warning
-
-    def test_show_contrib(self):
-        b = self.get_button()
-        assert not b.show_contrib
-
-        self.addon.takes_contributions = True
-        b = self.get_button()
-        assert not b.show_contrib
-
-        self.addon.annoying = amo.CONTRIB_ROADBLOCK
-        b = self.get_button()
-        assert b.show_contrib
-        assert b.button_class == ['contrib', 'go']
-        assert b.install_class == ['contrib']
 
     def test_show_warning(self):
         b = self.get_button()
@@ -242,31 +231,17 @@ class TestButton(ButtonTest):
         assert b.attrs() == {}
 
         self.addon.type = amo.ADDON_DICT
-
         b = self.get_button()
         assert b.attrs() == {
             'data-no-compat-necessary': 'true'
         }
 
-        self.addon.takes_contributions = True
-        self.addon.annoying = amo.CONTRIB_AFTER
         self.addon.type = amo.ADDON_SEARCH
-
         b = self.get_button()
         assert b.attrs() == {
-            'data-after': 'contrib',
             'data-search': 'true',
             'data-no-compat-necessary': 'true'
         }
-
-    def test_after_no_show_contrib(self):
-        self.addon.takes_contributions = True
-        self.addon.annoying = amo.CONTRIB_AFTER
-        b = self.get_button()
-        assert b.attrs() == {'data-after': 'contrib'}
-
-        b = self.get_button(show_contrib=False)
-        assert b.attrs() == {}
 
     def test_file_details(self):
         file = self.get_file(amo.PLATFORM_ALL.id)
@@ -274,34 +249,36 @@ class TestButton(ButtonTest):
         b = self.get_button()
 
         # Normal.
-        text, url, os = b.file_details(file)
+        text, url, download_url, os = b.file_details(file)
         assert text == 'Download Now'
-        assert url == 'xpi.latest'
+        assert url == '/firefox/downloads/latest/a-slug/addon-42-latest'
+        assert download_url == (
+            '/firefox/downloads/latest/a-slug/type:attachment/addon-42-latest')
         assert os is None
 
         # Platformer.
         file = self.get_file(amo.PLATFORM_MAC.id)
-        _, _, os = b.file_details(file)
+        _, _, _, os = b.file_details(file)
         assert os == amo.PLATFORM_MAC
 
         # Not the latest version.
         b.latest = False
-        _, url, _ = b.file_details(file)
-        assert url == 'xpi.url'
-
-        # Contribution roadblock.
-        b.show_contrib = True
-        text, url, _ = b.file_details(file)
-        assert text == 'Continue to Download&nbsp;&rarr;'
-        assert url == '/en-US/firefox/addon/2/contribute/roadblock/?version=v1'
+        _, url, download_url, _ = b.file_details(file)
+        assert url == 'http://testserver/firefox/downloads/file/666/?src='
+        assert download_url == (
+            'http://testserver/firefox/downloads/file/666/type:attachment/'
+            '?src=')
 
     def test_file_details_unreviewed(self):
         file = self.get_file(amo.PLATFORM_ALL.id)
         file.status = amo.STATUS_AWAITING_REVIEW
         b = self.get_button()
 
-        _, url, _ = b.file_details(file)
-        assert url == 'xpi.url'
+        _, url, download_url, _ = b.file_details(file)
+        assert url == 'http://testserver/firefox/downloads/file/666/?src='
+        assert download_url == (
+            'http://testserver/firefox/downloads/file/666/type:attachment/'
+            '?src=')
 
     def test_fix_link(self):
         b = self.get_button()
@@ -339,6 +316,16 @@ class TestButton(ButtonTest):
         self.addon.current_version = None
         assert self.get_button().links() == []
 
+    @patch('olympia.addons.buttons.install_button')
+    @patch('olympia.addons.templatetags.jinja_helpers.statusflags')
+    def test_big_install_button(self, flags_mock, install_button_mock):
+        big_install_button(self.context, self.addon)
+        assert install_button_mock.call_args[1] == {
+            'detailed': True,
+            'show_download_anyway': True,
+            'size': 'prominent'
+        }
+
 
 class TestButtonHtml(ButtonTest):
 
@@ -370,7 +357,8 @@ class TestButtonHtml(ButtonTest):
         button = doc('.button')
         assert ['button', 'download'] == button.attr('class').split()
         assert 'file hash' == button.attr('data-hash')
-        assert 'xpi.latest' == button.attr('href')
+        assert button.attr('href') == (
+            '/firefox/downloads/latest/a-slug/addon-42-latest')
 
     def test_featured(self):
         self.addon.is_featured.return_value = True
@@ -415,14 +403,6 @@ class TestButtonHtml(ButtonTest):
         install = self.render()('.install')
         assert 'min version' == install.attr('data-min')
         assert 'max version' == install.attr('data-max')
-
-    def test_contrib_text_with_platform(self):
-        self.version.all_files = self.platform_files
-        self.addon.takes_contributions = True
-        self.addon.annoying = amo.CONTRIB_ROADBLOCK
-        self.addon.meet_the_dev_url.return_value = 'addon.url'
-        doc = self.render()
-        assert doc('.contrib .os').text() == ''
 
     @patch('olympia.addons.buttons.install_button')
     @patch('olympia.addons.templatetags.jinja_helpers.statusflags')
@@ -492,6 +472,20 @@ class TestButtonHtml(ButtonTest):
         assert install.attr('data-is-compatible-by-default') == 'false'
         assert install.attr('data-is-compatible-app') == 'true'
         assert install.attr('data-compat-overrides') == '[]'
+
+    def test_show_download_anyway(self):
+        compat = Mock()
+        compat.min.version = '42.0'
+        compat.max.version = '56.0'
+        self.version.compatible_apps = {amo.FIREFOX: compat}
+        self.version.is_compatible_by_default = False
+        self.version.is_compatible_app.return_value = True
+
+        doc = self.render(impala=True)
+        assert not doc('.download-anyway')
+
+        doc = self.render(impala=True, show_download_anyway=True)
+        assert doc('.download-anyway')
 
 
 class TestViews(TestCase):

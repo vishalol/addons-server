@@ -23,7 +23,8 @@ class TestAddonIndexer(TestCase):
     # This only contains the fields for which we use the value directly,
     # see expected_fields() for the rest.
     simple_fields = [
-        'average_daily_users', 'bayesian_rating', 'created', 'default_locale',
+        'average_daily_users', 'bayesian_rating', 'contributions', 'created',
+        'default_locale',
         'guid', 'hotness', 'icon_type', 'id', 'is_disabled', 'is_experimental',
         'last_updated', 'modified', 'public_stats', 'requires_payment', 'slug',
         'status', 'type', 'view_source', 'weekly_downloads',
@@ -49,7 +50,8 @@ class TestAddonIndexer(TestCase):
         # to store in ES differs from the one in the db.
         complex_fields = [
             'app', 'boost', 'category', 'current_beta_version',
-            'current_version', 'description', 'has_eula', 'has_privacy_policy',
+            'current_version', 'description', 'featured_for',
+            'has_eula', 'has_privacy_policy',
             'has_theme_rereview', 'is_featured', 'latest_unlisted_version',
             'listed_authors', 'name', 'name_sort', 'platforms', 'previews',
             'public_stats', 'ratings', 'summary', 'tags',
@@ -75,8 +77,8 @@ class TestAddonIndexer(TestCase):
         # Each translated field that we want to return to the API.
         raw_translated_fields = [
             '%s_translations' % field for field in
-            ['name', 'description', 'homepage', 'summary', 'support_email',
-             'support_url']]
+            ['name', 'description', 'developer_comments', 'homepage',
+             'summary', 'support_email', 'support_url']]
 
         # Return a list with the base fields and the dynamic ones added.
         fields = (cls.simple_fields + complex_fields + analyzer_fields +
@@ -117,8 +119,9 @@ class TestAddonIndexer(TestCase):
         files_mapping = version_mapping['files']['properties']
         expected_file_keys = (
             'id', 'created', 'filename', 'hash', 'is_webextension',
-            'is_restart_required', 'platform', 'size', 'status',
-            'strict_compatibility', 'webext_permissions_list')
+            'is_restart_required', 'is_mozilla_signed_extension', 'platform',
+            'size', 'status', 'strict_compatibility',
+            'webext_permissions_list')
         assert set(files_mapping.keys()) == set(expected_file_keys)
 
     def test_index_setting_boolean(self):
@@ -178,11 +181,13 @@ class TestAddonIndexer(TestCase):
         assert extracted['has_theme_rereview'] is None
         assert extracted['latest_unlisted_version'] is None
         assert extracted['listed_authors'] == [
-            {'name': u'55021 التطب', 'id': 55021, 'username': '55021'}]
+            {'name': u'55021 التطب', 'id': 55021, 'username': '55021',
+             'is_public': True}]
         assert extracted['platforms'] == [PLATFORM_ALL.id]
         assert extracted['ratings'] == {
             'average': self.addon.average_rating,
             'count': self.addon.total_reviews,
+            'text_count': self.addon.text_reviews_count,
         }
         assert extracted['tags'] == []
         assert extracted['has_eula'] is True
@@ -197,6 +202,34 @@ class TestAddonIndexer(TestCase):
         assert self.addon.is_featured()
         extracted = self._extract()
         assert extracted['is_featured'] is True
+
+    def test_extract_featured_for(self):
+        collection = collection_factory()
+        FeaturedCollection.objects.create(collection=collection,
+                                          application=amo.FIREFOX.id)
+        collection.add_addon(self.addon)
+        extracted = self._extract()
+        assert extracted['featured_for'] == [
+            {'application': [amo.FIREFOX.id], 'locales': [None]}]
+
+        collection = collection_factory()
+        FeaturedCollection.objects.create(collection=collection,
+                                          application=amo.FIREFOX.id,
+                                          locale='fr')
+        collection.add_addon(self.addon)
+        extracted = self._extract()
+        assert extracted['featured_for'] == [
+            {'application': [amo.FIREFOX.id], 'locales': [None, 'fr']}]
+
+        collection = collection_factory()
+        FeaturedCollection.objects.create(collection=collection,
+                                          application=amo.ANDROID.id,
+                                          locale='de-DE')
+        collection.add_addon(self.addon)
+        extracted = self._extract()
+        assert extracted['featured_for'] == [
+            {'application': [amo.FIREFOX.id], 'locales': [None, 'fr']},
+            {'application': [amo.ANDROID.id], 'locales': ['de-DE']}]
 
     def test_extract_eula_privacy_policy(self):
         # Remove eula.
@@ -220,7 +253,11 @@ class TestAddonIndexer(TestCase):
         file_factory(version=version, platform=PLATFORM_MAC.id)
         current_beta_version = version_factory(
             addon=self.addon,
-            file_kw={'status': amo.STATUS_BETA, 'is_webextension': True})
+            file_kw={
+                'status': amo.STATUS_BETA,
+                'is_webextension': True,
+                'is_mozilla_signed_extension': True,
+            })
         # Give one of the versions some webext permissions to test that.
         WebextPermission.objects.create(
             file=current_beta_version.all_files[0],
@@ -253,6 +290,8 @@ class TestAddonIndexer(TestCase):
             assert extracted_file['is_webextension'] == file_.is_webextension
             assert extracted_file['is_restart_required'] == (
                 file_.is_restart_required)
+            assert extracted_file['is_mozilla_signed_extension'] == (
+                file_.is_mozilla_signed_extension)
             assert extracted_file['platform'] == file_.platform
             assert extracted_file['size'] == file_.size
             assert extracted_file['status'] == file_.status
@@ -283,6 +322,8 @@ class TestAddonIndexer(TestCase):
             assert extracted_file['is_webextension'] == file_.is_webextension
             assert extracted_file['is_restart_required'] == (
                 file_.is_restart_required)
+            assert extracted_file['is_mozilla_signed_extension'] == (
+                file_.is_mozilla_signed_extension)
             assert extracted_file['platform'] == file_.platform
             assert extracted_file['size'] == file_.size
             assert extracted_file['status'] == file_.status
@@ -312,6 +353,8 @@ class TestAddonIndexer(TestCase):
             assert extracted_file['filename'] == file_.filename
             assert extracted_file['hash'] == file_.hash
             assert extracted_file['is_webextension'] == file_.is_webextension
+            assert extracted_file['is_mozilla_signed_extension'] == (
+                file_.is_mozilla_signed_extension)
             assert extracted_file['is_restart_required'] == (
                 file_.is_restart_required)
             assert extracted_file['platform'] == file_.platform
@@ -369,9 +412,52 @@ class TestAddonIndexer(TestCase):
         assert (extracted['description_l10n_italian'] ==
                 ['&lt;script&gt;alert(42)&lt;/script&gt;'])
 
+    def test_extract_translations_engb_default(self):
+        """Make sure we do correctly extract things for en-GB default locale"""
+        with self.activate('en-GB'):
+            kwargs = {
+                'status': amo.STATUS_PUBLIC,
+                'type': amo.ADDON_EXTENSION,
+                'default_locale': 'en-GB',
+                'name': 'Banana Bonkers',
+                'description': u'Let your browser eat your bananas',
+                'summary': u'Banana Summary',
+            }
+
+            self.addon = Addon.objects.create(**kwargs)
+            self.addon.name = {'es': u'Banana Bonkers espanole'}
+            self.addon.description = {
+                'es': u'Deje que su navegador coma sus plátanos'}
+            self.addon.summary = {'es': u'resumen banana'}
+            self.addon.save()
+
+        extracted = self._extract()
+
+        assert sorted(extracted['name_translations']) == sorted([
+            {'lang': u'en-GB', 'string': 'Banana Bonkers'},
+            {'lang': u'es', 'string': u'Banana Bonkers espanole'},
+        ])
+        assert sorted(extracted['description_translations']) == sorted([
+            {'lang': u'en-GB', 'string': u'Let your browser eat your bananas'},
+            {
+                'lang': u'es',
+                'string': u'Deje que su navegador coma sus plátanos'
+            },
+        ])
+        assert extracted['name_l10n_english'] == ['Banana Bonkers']
+        assert extracted['name_l10n_spanish'] == [u'Banana Bonkers espanole']
+        assert (extracted['description_l10n_english'] ==
+                [u'Let your browser eat your bananas'])
+        assert (extracted['description_l10n_spanish'] ==
+                [u'Deje que su navegador coma sus plátanos'])
+
     def test_extract_persona(self):
         # Override self.addon with a persona.
         self.addon = addon_factory(persona_id=42, type=amo.ADDON_PERSONA)
+        # It's a Persona, there should not be any files attached, and the
+        # indexer should not care.
+        assert self.addon.current_version.files.count() == 0
+
         persona = self.addon.persona
         persona.header = u'myheader.jpg'
         persona.footer = u'myfooter.jpg'
@@ -379,8 +465,12 @@ class TestAddonIndexer(TestCase):
         persona.textcolor = u'f0f0f0'
         persona.author = u'Me-me-me-Myself'
         persona.display_username = u'my-username'
+        persona.popularity = 1000
         persona.save()
         extracted = self._extract()
+        assert extracted['average_daily_users'] == persona.popularity
+        assert extracted['weekly_downloads'] == persona.popularity * 7
+        assert extracted['boost'] == float(persona.popularity ** .2) * 4
         assert extracted['has_theme_rereview'] is False
         assert extracted['persona']['accentcolor'] == persona.accentcolor
         # We need the author that will go in theme_data here, which is
@@ -391,6 +481,21 @@ class TestAddonIndexer(TestCase):
         assert extracted['persona']['is_new'] is False  # It has a persona_id.
         assert extracted['persona']['textcolor'] == persona.textcolor
 
+        # Personas are always considered compatible with every platform, and
+        # all versions of all apps.
+        assert extracted['platforms'] == [amo.PLATFORM_ALL.id]
+        expected_version_compat = {
+            'max': 9999000000200100,
+            'max_human': None,
+            'min': 0,
+            'min_human': None
+        }
+        assert extracted['current_version']['compatible_apps'] == {
+            amo.ANDROID.id: expected_version_compat,
+            amo.FIREFOX.id: expected_version_compat,
+            amo.THUNDERBIRD.id: expected_version_compat,
+            amo.SEAMONKEY.id: expected_version_compat,
+        }
         self.addon = addon_factory(persona_id=0, type=amo.ADDON_PERSONA)
         extracted = self._extract()
         assert extracted['persona']['is_new'] is True  # No persona_id.
@@ -398,7 +503,8 @@ class TestAddonIndexer(TestCase):
     def test_extract_previews(self):
         second_preview = Preview.objects.create(
             addon=self.addon, position=2,
-            caption={'en-US': u'My câption', 'fr': u'Mön tîtré'})
+            caption={'en-US': u'My câption', 'fr': u'Mön tîtré'},
+            sizes={'thumbnail': [199, 99], 'image': [567, 780]})
         first_preview = Preview.objects.create(addon=self.addon, position=1)
         first_preview.reload()
         second_preview.reload()
@@ -408,11 +514,14 @@ class TestAddonIndexer(TestCase):
         assert extracted['previews'][0]['id'] == first_preview.pk
         assert extracted['previews'][0]['modified'] == first_preview.modified
         assert extracted['previews'][0]['caption_translations'] == []
+        assert extracted['previews'][0]['sizes'] == first_preview.sizes == {}
         assert extracted['previews'][1]['id'] == second_preview.pk
         assert extracted['previews'][1]['modified'] == second_preview.modified
         assert extracted['previews'][1]['caption_translations'] == [
             {'lang': 'en-US', 'string': u'My câption'},
             {'lang': 'fr', 'string': u'Mön tîtré'}]
+        assert extracted['previews'][1]['sizes'] == second_preview.sizes == {
+            'thumbnail': [199, 99], 'image': [567, 780]}
 
         # Only raw translations dict should exist, since we don't need the
         # to search against preview captions.
