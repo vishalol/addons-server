@@ -2160,6 +2160,51 @@ class TestReview(ReviewBase):
         assert response.context['form'].errors['comments'][0] == (
             'This field is required.')
 
+    def test_whiteboard_url(self):
+        # Listed review.
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        doc = pq(response.content)
+        assert (
+            doc('#whiteboard_form').attr('action') ==
+            '/en-US/editors/whiteboard/listed/public')
+
+        # Content review.
+        self.grant_permission(self.reviewer, 'Addons:ContentReview')
+        AutoApprovalSummary.objects.create(
+            version=self.addon.current_version, verdict=amo.AUTO_APPROVED)
+        self.url = reverse(
+            'reviewers.review', args=['content', self.addon.slug])
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        doc = pq(response.content)
+        assert (
+            doc('#whiteboard_form').attr('action') ==
+            '/en-US/editors/whiteboard/content/public')
+
+        # Unlisted review.
+        self.grant_permission(self.reviewer, 'Addons:ReviewUnlisted')
+        version_factory(addon=self.addon, channel=amo.RELEASE_CHANNEL_UNLISTED)
+        self.url = reverse(
+            'reviewers.review', args=['unlisted', self.addon.slug])
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        doc = pq(response.content)
+        assert (
+            doc('#whiteboard_form').attr('action') ==
+            '/en-US/editors/whiteboard/unlisted/public')
+
+        # Listed review, but deleted.
+        self.addon.delete()
+        self.url = reverse(
+            'reviewers.review', args=['listed', self.addon.pk])
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        doc = pq(response.content)
+        assert (
+            doc('#whiteboard_form').attr('action') ==
+            '/en-US/editors/whiteboard/listed/%d' % self.addon.pk)
+
     def test_comment(self):
         response = self.client.post(self.url, {'action': 'comment',
                                                'comments': 'hello sailor'})
@@ -3191,7 +3236,7 @@ class TestReview(ReviewBase):
         report = AbuseReport.objects.create(
             addon=self.addon, message=u'Et mël mazim ludus.',
             ip_address='10.1.2.3')
-        created_at = report.created.strftime('%b.%e, %Y')
+        created_at = report.created.strftime('%b. %d, %Y')
         response = self.client.get(self.url)
         doc = pq(response.content)
         assert not doc('.abuse_reports')
@@ -3215,7 +3260,7 @@ class TestReview(ReviewBase):
         report = AbuseReport.objects.create(
             user=self.addon.listed_authors[0], message=u'Foo, Bâr!',
             ip_address='10.4.5.6')
-        created_at = report.created.strftime('%b.%e, %Y')
+        created_at = report.created.strftime('%b. %d, %Y')
         AutoApprovalSummary.objects.create(
             verdict=amo.AUTO_APPROVED, version=self.version)
         self.grant_permission(self.reviewer, 'Addons:PostReview')
@@ -3232,7 +3277,7 @@ class TestReview(ReviewBase):
         user_review = Review.objects.create(
             body=u'Lôrem ipsum dolor', rating=3, ip_address='10.5.6.7',
             addon=self.addon, user=user)
-        created_at = user_review.created.strftime('%b.%e, %Y')
+        created_at = user_review.created.strftime('%b. %d, %Y')
         Review.objects.create(  # Review with no body, ignored.
             rating=1, addon=self.addon, user=user_factory())
         Review.objects.create(  # Reply to a review, ignored.
@@ -3498,13 +3543,17 @@ class TestStatusFile(ReviewBase):
 
 
 class TestWhiteboard(ReviewBase):
+    @property
+    def addon_param(self):
+        return self.addon.pk if self.addon.is_deleted else self.addon.slug
 
     def test_whiteboard_addition(self):
         whiteboard_info = u'Whiteboard info.'
-        url = reverse('reviewers.whiteboard', args=[
-            self.addon.slug if not self.addon.is_deleted else self.addon.pk])
+        url = reverse(
+            'reviewers.whiteboard', args=['listed', self.addon_param])
         response = self.client.post(url, {'whiteboard': whiteboard_info})
-        assert response.status_code == 302
+        self.assert3xx(response, reverse(
+            'reviewers.review', args=('listed', self.addon_param)))
         assert self.addon.reload().whiteboard == whiteboard_info
 
     @patch('olympia.addons.decorators.owner_or_unlisted_reviewer',
@@ -3512,10 +3561,11 @@ class TestWhiteboard(ReviewBase):
     def test_whiteboard_addition_unlisted_addon(self):
         self.make_addon_unlisted(self.addon)
         whiteboard_info = u'Whiteboard info.'
-        url = reverse('reviewers.whiteboard', args=[
-            self.addon.slug if not self.addon.is_deleted else self.addon.pk])
+        url = reverse(
+            'reviewers.whiteboard', args=['unlisted', self.addon_param])
         response = self.client.post(url, {'whiteboard': whiteboard_info})
-        assert response.status_code == 302
+        self.assert3xx(response, reverse(
+            'reviewers.review', args=('unlisted', self.addon_param)))
         assert self.addon.reload().whiteboard == whiteboard_info
 
 

@@ -179,9 +179,21 @@ class TestESSearch(SearchBase):
     def test_results_sort_name(self):
         self.check_sort_links('name', 'Name', 'name', reverse=False)
 
+    def test_new_frontend_type_redirect(self):
+        response = self.client.get(self.url + u'?q=fôo&type=extension')
+        # Can't use assert3xx because the query parameters ordering is not
+        # guaranteed.
+        assert response.status_code == 302
+        expected_params = 'q=f%C3%B4o&atype=1'
+        redirected = response.url
+        parsed = urlparse.urlparse(redirected)
+        params = parsed.query
+        assert parsed.path == self.url
+        assert urlparse.parse_qs(params) == urlparse.parse_qs(expected_params)
+
     def test_legacy_redirects(self):
-        r = self.client.get(self.url + '?sort=averagerating')
-        self.assert3xx(r, self.url + '?sort=rating', status_code=301)
+        response = self.client.get(self.url + '?sort=averagerating')
+        self.assert3xx(response, self.url + '?sort=rating', status_code=301)
 
     def test_legacy_redirects_to_non_ascii(self):
         # see http://sentry.dmz.phx1.mozilla.com/addons/group/2186/
@@ -840,7 +852,7 @@ class TestPersonaSearch(SearchBase):
         # Try to match 'The Life Aquatic with SeaVan'.
         # We have prefix_length=4 so fuzziness matching starts
         # at the 4th character for performance reasons.
-        for term in ('life', 'aquatic', 'seavan', 'seav an'):
+        for term in ('life', 'aquatic', 'seavan', 'sea van'):
             self.check_name_results({'q': term}, [p2.pk])
 
     def test_results_popularity(self):
@@ -1180,6 +1192,10 @@ class TestCollectionSearch(SearchBase):
     ('pid=2', 'platform=linux'),
     ('q=woo&lver=6.0&sort=users&pid=5',
      'q=woo&appver=6.0&sort=users&platform=windows'),
+    ('type=extension', 'atype=1'),
+    ('type=dictionary', 'atype=3'),
+    ('type=search', 'atype=4'),
+    ('type=language', 'atype=5'),
 ])
 def test_search_redirects(test_input, expected):
     assert views.fix_search_query(QueryDict(test_input)) == (

@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: REMORA 0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-11-02 03:33+0000\n"
-"PO-Revision-Date: 2017-11-02 15:45+0000\n"
-"Last-Translator: Sara Todaro <sara.todaro@mozillaitalia.org>\n"
+"POT-Creation-Date: 2017-11-07 18:41+0000\n"
+"PO-Revision-Date: 2017-11-09 16:18+0000\n"
+"Last-Translator: Sav22999 <savemore99.sm@gmail.com>\n"
 "Language-Team: Mozilla Italia\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
@@ -348,10 +348,6 @@ msgstr "Modifica"
 
 #. For datetime formatting, see the table on
 #. http://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
-#, python-format
-msgid "%%Y-%%m-%%d"
-msgstr "%%d-%%m-%%Y"
-
 msgid "by {0} on {1}"
 msgstr "di {0} del {1}"
 
@@ -536,6 +532,7 @@ msgstr "Email per il supporto"
 msgid "Info"
 msgstr "Informazioni"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "Last Updated:"
 msgstr "Ultimo aggiornamento:"
 
@@ -1874,8 +1871,8 @@ msgstr "Aggiunto {0} {1}."
 msgid "{0.name} role changed to {1} for {addon}."
 msgstr "Ruolo di {0.name} modificato a {1} per {addon}."
 
-msgid "{addon} is now licensed under {0.name}."
-msgstr "{addon} è ora disponibile sotto licenza {0.name}."
+msgid "{addon} is now licensed under {0}."
+msgstr "{addon} è ora disponibile sotto licenza {0}."
 
 msgid "{addon} policy changed."
 msgstr "{addon} ha cambiato informativa sulla privacy."
@@ -3063,10 +3060,10 @@ msgstr "Il componente aggiuntivo è a pagamento, contiene servizi o software a p
 msgid "This add-on doesn't require any additional payments, paid services or software, or additional hardware."
 msgstr "Il componente aggiuntivo non richiede pagamenti supplementari, non contiene servizi o software a pagamento né necessita di hardware aggiuntivi per funzionare."
 
-msgid "Categories are the primary way users browse through add-ons. Choose any that fit your add-on's functionality for the most exposure. It is only relevant for listed add-ons."
+msgid "Categories are the primary way users browse through add-ons. Choose any that fit your add-on's functionality for the most exposure."
 msgstr ""
 "Le categorie sono lo strumento principale attraverso cui gli utenti esplorano i componenti aggiuntivi. Per ottenere massima visibilità seleziona la categoria più adatta alle caratteristiche del "
-"componente aggiuntivo. Rilevante solo per i componenti aggiuntivi pubblici."
+"componente aggiuntivo."
 
 #, python-format
 msgid "Categories cannot be changed while your add-on is featured for this application. Please email <a href=\"mailto:%(email)s\">%(email)s</a> if there is a reason you need to modify your categories."
@@ -3074,10 +3071,16 @@ msgstr ""
 "Non è possibile modificare le categorie quando il componente aggiuntivo è consigliato per questa applicazione. Invia un’email a <a href=\"mailto:%(email)s\">%(email)s</a> se hai bisogno di fare "
 "questa modifica."
 
-msgid "Tags help users find your add-on and should be short descriptors such as tabs, toolbar, or twitter. You may have a maximum of {0} tags. It is only relevant for listed add-ons."
+#, python-format
+msgid "Categories cannot be changed while your add-on is featured. Please email <a href=\"mailto:%(email)s\">%(email)s</a> if there is a reason you need to modify your categories."
 msgstr ""
-"Le etichette consentono agli utenti di trovare i componenti aggiuntivi più facilmente. Consistono in descrittori che ne riassumono in breve le funzionalità, come “tabs”, “toolbar” o ”twitter”. Ogni "
-"componente ha a disposizione un massimo di {0} etichette. Rilevante solo per i componenti aggiuntivi pubblici."
+"Non è possibile modificare le categorie mentre il componente aggiuntivo è elencato tra i Consigliati. Per richiedere una modifica di categoria, invia un’email a <a "
+"href=\"mailto:%(email)s\">%(email)s</a>."
+
+msgid "Tags help users find your add-on and should be short descriptors such as tabs, toolbar, or twitter. You may have a maximum of {0} tags."
+msgstr ""
+"Le etichette aiutano gli utenti a trovare i componenti aggiuntivi più facilmente. Consistono in parole chiave che ne riassumono in breve le funzionalità, come “tabs”, “toolbar” o ”twitter”. Ogni "
+"componente ha a disposizione un massimo di {0} etichette."
 
 msgid "Comma-separated, minimum of {0} character."
 msgid_plural "Comma-separated, minimum of {0} characters."
@@ -3698,14 +3701,11 @@ msgstr ""
 "Il componente aggiuntivo non verrà mostrato tra i risultati delle ricerche e nella sua pagina verrà esplicitamente indicato che è stato disattivato. In questa situazione non sarà possibile caricare "
 "nuove versioni del componente aggiuntivo."
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "Created:"
 msgstr "Creato:"
 
 #. {0} is a date. dennis-ignore: E201,E202,W202
-#, python-format
-msgid "%%b %%e, %%Y"
-msgstr "%%e %%b %%Y"
-
 msgid "Add-on Multi Process Status:"
 msgstr "Stato di compatibilità con tecnologia multiprocesso:"
 
@@ -3938,6 +3938,7 @@ msgstr "Sei pronto a caricare un componente aggiuntivo? Segui i passaggi della g
 msgid "See Tutorial"
 msgstr "Segui il tutorial"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "View All Submissions"
 msgstr "Visualizza tutti i file caricati"
 
@@ -6863,6 +6864,9 @@ msgstr "Cronologia componente aggiuntivo"
 msgid "Version %(version)s &middot; %(created)s <span class=\"light\">&middot; %(version_status)s</span>"
 msgstr "Versione %(version)s &middot; %(created)s <span class=\"light\">&middot; %(version_status)s</span>"
 
+msgid "(Confirmed)"
+msgstr "(Confermato)"
+
 msgid "Compatibility:"
 msgstr "Compatibilità:"
 
@@ -7757,8 +7761,11 @@ msgstr "Logo a piè di pagina"
 msgid "Choose a category"
 msgstr "Scegliere una categoria"
 
-msgid "View Mobile Site"
-msgstr "Visualizza sito Mobile"
+msgid "The new website supports mobile and desktop clients"
+msgstr "Il nuovo sito web è ottimizzato sia per computer sia per dispositivi portatili"
+
+msgid "View the new site"
+msgstr "Visita il nuovo sito"
 
 msgid "Report a bug"
 msgstr "Segnala problemi"

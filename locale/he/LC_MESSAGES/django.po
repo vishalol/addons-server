@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: REMORA 0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-11-02 03:33+0000\n"
-"PO-Revision-Date: 2017-10-11 21:19+0000\n"
-"Last-Translator: Yaron Shahrabani <sh.yaron@gmail.com>\n"
+"POT-Creation-Date: 2017-11-07 18:41+0000\n"
+"PO-Revision-Date: 2017-11-11 20:16+0000\n"
+"Last-Translator: ItielMaN <itiel_yn8@walla.com>\n"
 "Language-Team: Hebrew\n"
 "Language: he\n"
 "MIME-Version: 1.0\n"
@@ -352,10 +352,6 @@ msgstr "עריכה"
 
 #. For datetime formatting, see the table on
 #. http://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
-#, python-format
-msgid "%%Y-%%m-%%d"
-msgstr ""
-
 msgid "by {0} on {1}"
 msgstr "מאת {0} בתאריך {1}"
 
@@ -540,6 +536,7 @@ msgstr "כתובת דוא״ל לתמיכה"
 msgid "Info"
 msgstr "מידע"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "Last Updated:"
 msgstr "עודכנה לאחרונה:"
 
@@ -941,7 +938,7 @@ msgid "Acceptable versions for all applications on AMO."
 msgstr ""
 
 msgid "Valid Application Versions"
-msgstr "גירסאות ישום חוקיות"
+msgstr "גרסאות יישום חוקיות"
 
 msgid "Add-ons submitted to Mozilla Add-ons must have a manifest file with at least one of the below applications supported. Only the versions listed below are allowed for these applications."
 msgstr ""
@@ -954,7 +951,7 @@ msgid "GUID"
 msgstr "מזהה GUID"
 
 msgid "Versions"
-msgstr "גירסאות"
+msgstr "גרסאות"
 
 #, python-format
 msgid ""
@@ -1548,7 +1545,7 @@ msgid "All locales"
 msgstr "כל השפות"
 
 msgid "List of language packs and dictionaries."
-msgstr "רשימת חבילות שפה ומילונים"
+msgstr "רשימת חבילות שפה ומילונים."
 
 #. {0} is a category name, like "Music".
 msgid "{0} :: Search Tools"
@@ -1894,8 +1891,9 @@ msgstr "{0} {1} נוסף."
 msgid "{0.name} role changed to {1} for {addon}."
 msgstr ""
 
-msgid "{addon} is now licensed under {0.name}."
-msgstr ""
+#, fuzzy
+msgid "{addon} is now licensed under {0}."
+msgstr "המצב של {addon} השתנה ל־{0}."
 
 msgid "{addon} policy changed."
 msgstr "המדיניות של התוספת {addon} השתנתה."
@@ -2095,7 +2093,7 @@ msgid "Search Engine"
 msgstr "מנוע חיפוש"
 
 msgid "Language Pack (Application)"
-msgstr "חבילות שפה (תוכנות)"
+msgstr "חבילת שפה (יישום)"
 
 msgid "Language Pack (Add-on)"
 msgstr "חבילת שפה (תוספת)"
@@ -2118,7 +2116,7 @@ msgstr "מילונים"
 
 # Plural in this context means many of the add-on type
 msgid "Language Packs (Application)"
-msgstr "חבילות שפה (תוכנות)"
+msgstr "חבילות שפה (יישום)"
 
 msgid "Language Packs (Add-on)"
 msgstr "חבילות שפה (תוספת)"
@@ -3066,14 +3064,18 @@ msgstr ""
 msgid "This add-on doesn't require any additional payments, paid services or software, or additional hardware."
 msgstr ""
 
-msgid "Categories are the primary way users browse through add-ons. Choose any that fit your add-on's functionality for the most exposure. It is only relevant for listed add-ons."
+msgid "Categories are the primary way users browse through add-ons. Choose any that fit your add-on's functionality for the most exposure."
 msgstr ""
 
 #, python-format
 msgid "Categories cannot be changed while your add-on is featured for this application. Please email <a href=\"mailto:%(email)s\">%(email)s</a> if there is a reason you need to modify your categories."
 msgstr ""
 
-msgid "Tags help users find your add-on and should be short descriptors such as tabs, toolbar, or twitter. You may have a maximum of {0} tags. It is only relevant for listed add-ons."
+#, python-format
+msgid "Categories cannot be changed while your add-on is featured. Please email <a href=\"mailto:%(email)s\">%(email)s</a> if there is a reason you need to modify your categories."
+msgstr ""
+
+msgid "Tags help users find your add-on and should be short descriptors such as tabs, toolbar, or twitter. You may have a maximum of {0} tags."
 msgstr ""
 
 msgid "Comma-separated, minimum of {0} character."
@@ -3671,14 +3673,11 @@ msgstr ""
 msgid "Your add-on won't be included in search results, and its listing page will indicate you disabled it. New version submissions for listing won't be accepted in this state."
 msgstr ""
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "Created:"
 msgstr "מועד היצירה:"
 
 #. {0} is a date. dennis-ignore: E201,E202,W202
-#, python-format
-msgid "%%b %%e, %%Y"
-msgstr ""
-
 msgid "Add-on Multi Process Status:"
 msgstr ""
 
@@ -3913,6 +3912,7 @@ msgstr ""
 msgid "See Tutorial"
 msgstr "הצגת מדריך"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "View All Submissions"
 msgstr "צפייה בכל ההגשות"
 
@@ -5740,7 +5740,7 @@ msgstr ""
 
 #, python-format
 msgid "<strong><a href=\"%(browse_url)s\">Dictionaries & Language Packs</a></strong> add support for additional languages to %(app_name)s."
-msgstr ""
+msgstr "<strong><a href=\"%(browse_url)s\">מילונים וחבילות שפה</a></strong> מוסיפים תמיכה לשפות נוספות עבור %(app_name)s."
 
 msgid "How do I install, manage, or remove an add-on?"
 msgstr "כיצד ניתן להתקין, לנהל או להסיר תוספת?"
@@ -6685,6 +6685,9 @@ msgstr "היסטוריית התוספת"
 msgid "Version %(version)s &middot; %(created)s <span class=\"light\">&middot; %(version_status)s</span>"
 msgstr ""
 
+msgid "(Confirmed)"
+msgstr ""
+
 msgid "Compatibility:"
 msgstr "תאימות:"
 
@@ -7189,23 +7192,23 @@ msgstr "כל התגים"
 
 #. {0} is the string the user was searching for
 msgid "Collection Search Results for {0}"
-msgstr ""
+msgstr "תוצאות חיפוש אוספים עבור {0}"
 
 msgid "Collection Search Results"
-msgstr ""
+msgstr "תוצאות חיפוש אוספים"
 
 msgid "Search Results"
 msgstr "תוצאות חיפוש"
 
 msgid "Search Unavailable"
-msgstr ""
+msgstr "החיפוש אינו זמין"
 
 msgid "Search is temporarily unavailable. Please try again in a few minutes."
-msgstr ""
+msgstr "החיפוש באופן זמני לא זמין. נא לנסות שוב בעוד מספר דקות."
 
 #. {0} is the string the user was searching for
 msgid "Themes Search Results for {0}"
-msgstr ""
+msgstr "תוצאות חיפוש ערכות נושא עבור {0}"
 
 msgid "Themes Search Results"
 msgstr "תוצאות חיפוש של ערכות נושא"
@@ -7260,7 +7263,7 @@ msgid "Could not find add-on with id \"{}\"."
 msgstr ""
 
 msgid "You do not own this addon."
-msgstr ""
+msgstr "אינך הבעלים של תוספת זו."
 
 msgid "Missing \"upload\" key in multipart file data."
 msgstr ""
@@ -7273,7 +7276,7 @@ msgid "Version does not match the manifest file."
 msgstr ""
 
 msgid "Version already exists."
-msgstr ""
+msgstr "הגרסה כבר קיימת."
 
 msgid "Only WebExtensions are allowed to omit the GUID"
 msgstr ""
@@ -7291,22 +7294,22 @@ msgid "Overview"
 msgstr "סקירה כללית"
 
 msgid "by Source"
-msgstr ""
+msgstr "לפי מקור"
 
 msgid "by Add-on Version"
-msgstr ""
+msgstr "לפי גרסת תוספת"
 
 msgid "by Application"
-msgstr ""
+msgstr "לפי יישום"
 
 msgid "by Language"
-msgstr ""
+msgstr "לפי שפה"
 
 msgid "by Platform"
 msgstr "לפי פלטפורמה"
 
 msgid "by Add-on Status"
-msgstr ""
+msgstr "לפי מצב תוספת"
 
 msgid "Contributions"
 msgstr "תרומות"
@@ -7394,7 +7397,7 @@ msgid "week"
 msgstr "שבוע"
 
 msgid "month"
-msgstr ""
+msgstr "חודש"
 
 msgid "For last:"
 msgstr ""
@@ -7421,7 +7424,7 @@ msgid "Loading the latest data&hellip;"
 msgstr ""
 
 msgid "No data available."
-msgstr ""
+msgstr "אין נתונים זמינים."
 
 msgid "This dashboard is currently <b>public</b>."
 msgstr ""
@@ -7433,7 +7436,7 @@ msgid "This dashboard is currently <b>private</b>."
 msgstr ""
 
 msgid "Change settings."
-msgstr ""
+msgstr "שינוי הגדרות."
 
 msgid "Add-ons Created by Date"
 msgstr "תוספות שנוצרו לפי תאריך"
@@ -7477,7 +7480,7 @@ msgid "<b>{0}</b> Downloads"
 msgstr "<b>{0}</b> הורדות"
 
 msgid "Loading..."
-msgstr ""
+msgstr "בטעינה..."
 
 msgid "<b>{0}</b> Average Daily Users"
 msgstr ""
@@ -7486,13 +7489,13 @@ msgid "Top Applications"
 msgstr ""
 
 msgid "See more applications&hellip;"
-msgstr ""
+msgstr "צפייה ביישומים נוספים&hellip;"
 
 msgid "Top Languages"
 msgstr ""
 
 msgid "See more languages&hellip;"
-msgstr ""
+msgstr "צפייה בשפות נוספות&hellip;"
 
 msgid "Top Platforms"
 msgstr ""
@@ -7566,7 +7569,7 @@ msgid "AMO is getting a new look. Would you like to see it?"
 msgstr ""
 
 msgid "Visit the new site"
-msgstr ""
+msgstr "ביקור באתר החדש"
 
 msgid "To create your own collections, you must have a Mozilla Add-ons account."
 msgstr "על מנת ליצור אוספים משלך, יש צורך בחשבון Mozilla Add-ons."
@@ -7577,8 +7580,11 @@ msgstr ""
 msgid "Choose a category"
 msgstr "בחר קטגוריה"
 
-msgid "View Mobile Site"
-msgstr "הצגת אתר בגרסה לנייד"
+msgid "The new website supports mobile and desktop clients"
+msgstr ""
+
+msgid "View the new site"
+msgstr "הצגת האתר החדש"
 
 msgid "Report a bug"
 msgstr "דיווח על תקלה"
@@ -7600,16 +7606,16 @@ msgid "Android Browser"
 msgstr "דפדפן לאנדרואיד"
 
 msgid "iOS Browser"
-msgstr ""
+msgstr "דפדפן ל־iOS"
 
 msgid "Focus Browser"
-msgstr ""
+msgstr "דפדפן Focus"
 
 msgid "Desktop Browser"
-msgstr ""
+msgstr "דפדפן שולחני"
 
 msgid "Beta, Nightly, Developer Edition"
-msgstr ""
+msgstr "‏Beta‏, Nightly ומהדורת מפתחים"
 
 msgid "Other languages"
 msgstr "שפות אחרות"
@@ -7680,24 +7686,24 @@ msgid "%(title)s <em>&middot; %(lang)s</em>"
 msgstr ""
 
 msgid "Existing Locales"
-msgstr ""
+msgstr "שפות קיימות"
 
 msgid "New Locales"
-msgstr ""
+msgstr "שפות חדשות"
 
 #. {0} is a language name, like 'French'
 msgid "You have unsaved changes in the <b>{0}</b> locale. Would you like to save your changes before switching locales?"
 msgstr ""
 
 msgid "Discard Changes"
-msgstr ""
+msgstr "ביטול שינויים"
 
 #. {0} is a language name, like 'French'
 msgid "Are you sure you want to remove all <b>{0}</b> translations? This cannot be undone."
 msgstr ""
 
 msgid "Delete Locale"
-msgstr ""
+msgstr "מחיקת שפה"
 
 msgid "Email must be {email}."
 msgstr ""
@@ -7993,13 +7999,13 @@ msgid "The email address <strong>%(email)s</strong> will no longer get messages 
 msgstr "כתובת הדוא״ל <strong>%(email)s</strong> לא תקבל יותר הודעות כאשר:"
 
 msgid "More Actions:"
-msgstr ""
+msgstr "פעולות נוספות:"
 
 msgid "edit your notification settings"
-msgstr ""
+msgstr "עריכת הגדרות ההתרעות שלך"
 
 msgid "edit your profile"
-msgstr ""
+msgstr "עריכת הפרופיל שלך"
 
 msgid "We could not unsubscribe you"
 msgstr ""
@@ -8053,13 +8059,13 @@ msgid "%s Version History"
 msgstr "היסטוריית הגרסאות של %s"
 
 msgid "Version History with Changelogs"
-msgstr "היסטורית גירסאות עם רישום שינויים"
+msgstr "היסטורית גרסאות עם רישום שינויים"
 
 msgid "{app} {min} and later"
 msgstr "{app} {min} ומעלה"
 
 msgid "Permanent link to this version"
-msgstr "קישור קבוע לגירסה זו"
+msgstr "קישור קבוע לגרסה זו"
 
 #. {0} is a timestamp, such as September 28, 2011.
 msgid "Released {0}"
@@ -8072,7 +8078,7 @@ msgstr ""
 #. {0} is an add-on name.
 # {0} is the add-on name
 msgid "{0} Version History"
-msgstr "היסטורית הגירסאות של {0}"
+msgstr "היסטורית הגרסאות של {0}"
 
 #. {0} is a number.
 msgid "<b>{0}</b> version"

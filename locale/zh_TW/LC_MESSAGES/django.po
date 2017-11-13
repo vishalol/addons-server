@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: addons-trunk // addons.mozilla.org\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-11-02 03:33+0000\n"
-"PO-Revision-Date: 2017-11-05 17:01+0000\n"
+"POT-Creation-Date: 2017-11-07 18:41+0000\n"
+"PO-Revision-Date: 2017-11-08 02:31+0000\n"
 "Last-Translator: Pin-guang Chen <petercpg@mail.moztw.org>\n"
 "Language-Team: Traditional Chinese (Taiwan) <LL@li.org>\n"
 "Language: zh_TW\n"
@@ -331,10 +331,6 @@ msgstr "編輯"
 
 #. For datetime formatting, see the table on
 #. http://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
-#, python-format
-msgid "%%Y-%%m-%%d"
-msgstr "%%Y-%%m-%%d"
-
 msgid "by {0} on {1}"
 msgstr "作者：{0} 日期：{1}"
 
@@ -512,6 +508,7 @@ msgstr "技術支援用電子郵件信箱"
 msgid "Info"
 msgstr "資訊"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "Last Updated:"
 msgstr "最近更新於:"
 
@@ -1804,8 +1801,8 @@ msgstr "已新增 {0} {1}。"
 msgid "{0.name} role changed to {1} for {addon}."
 msgstr "{0.name} 在 {addon} 的角色已變更為 {1}。"
 
-msgid "{addon} is now licensed under {0.name}."
-msgstr "{addon} 使用授權合約 {0.name}。"
+msgid "{addon} is now licensed under {0}."
+msgstr "{addon} 使用新授權停款 {0}。"
 
 msgid "{addon} policy changed."
 msgstr "{addon} 已變更政策。"
@@ -2979,15 +2976,19 @@ msgstr "此附加元件需付款購買服務或軟體，或是安裝額外硬體
 msgid "This add-on doesn't require any additional payments, paid services or software, or additional hardware."
 msgstr "此附加元件不需購買服務或軟體，或是安裝額外硬體方可使用。"
 
-msgid "Categories are the primary way users browse through add-ons. Choose any that fit your add-on's functionality for the most exposure. It is only relevant for listed add-ons."
-msgstr "使用者主要會透過分類的方式來瀏覽附加元件。請選擇符合您附加元件功能的分類以獲得最大的曝光程度。這僅與公開上架的附加元件有關。"
+msgid "Categories are the primary way users browse through add-ons. Choose any that fit your add-on's functionality for the most exposure."
+msgstr "使用者主要會透過分類的方式來瀏覽附加元件。請選擇符合您附加元件功能的分類以獲得最大的曝光程度。"
 
 #, python-format
 msgid "Categories cannot be changed while your add-on is featured for this application. Please email <a href=\"mailto:%(email)s\">%(email)s</a> if there is a reason you need to modify your categories."
 msgstr "當您的附加元件成為該應用程式的精選時，您無法更變它的隸屬類別。如有特殊理由需要更動類別，請 email 到 <a href=\"mailto:%(email)s\">%(email)s</a>。"
 
-msgid "Tags help users find your add-on and should be short descriptors such as tabs, toolbar, or twitter. You may have a maximum of {0} tags. It is only relevant for listed add-ons."
-msgstr "使用標籤能幫助使用者找到您的附加元件，這個欄位應該盡量縮短，例如輸入「分頁」、「工具列」、「twitter」就好。您最多可設定 {0} 個標籤。這僅與公開上架的附加元件有關。"
+#, python-format
+msgid "Categories cannot be changed while your add-on is featured. Please email <a href=\"mailto:%(email)s\">%(email)s</a> if there is a reason you need to modify your categories."
+msgstr "當您的附加元件成為精選元件時則無法修改類別。如有特殊理由需要修改，請 E-Mail 到 <a href=\"mailto:%(email)s\">%(email)s</a>。"
+
+msgid "Tags help users find your add-on and should be short descriptors such as tabs, toolbar, or twitter. You may have a maximum of {0} tags."
+msgstr "使用標籤能幫助使用者找到您的附加元件，這個欄位應該盡量縮短，例如輸入「twitter」就好。您最多可設定 {0} 個標籤。"
 
 msgid "Comma-separated, minimum of {0} character."
 msgid_plural "Comma-separated, minimum of {0} characters."
@@ -3576,14 +3577,11 @@ msgstr "您的附加元件已被網站管理員停用，不在網站上公開上
 msgid "Your add-on won't be included in search results, and its listing page will indicate you disabled it. New version submissions for listing won't be accepted in this state."
 msgstr "您的附加元件將不會列入於搜尋結果，上架頁面也會提示您已停用。在此狀態下也不會接受任何送出的新版本。"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "Created:"
 msgstr "建立於:"
 
 #. {0} is a date. dennis-ignore: E201,E202,W202
-#, python-format
-msgid "%%b %%e, %%Y"
-msgstr "%%Y-%%m-%%d"
-
 msgid "Add-on Multi Process Status:"
 msgstr "附加元件多程序狀態:"
 
@@ -3809,6 +3807,7 @@ msgstr "準備要送出附加元件了嗎？請閱讀上架流程的逐步教學
 msgid "See Tutorial"
 msgstr "檢視教學"
 
+#. {0} is a date. dennis-ignore: E201,E202,W202
 msgid "View All Submissions"
 msgstr "檢視所有送出的元件"
 
@@ -6562,6 +6561,9 @@ msgstr "附加元件歷史"
 msgid "Version %(version)s &middot; %(created)s <span class=\"light\">&middot; %(version_status)s</span>"
 msgstr "版本 %(version)s &middot; %(created)s <span class=\"light\">&middot; %(version_status)s</span>"
 
+msgid "(Confirmed)"
+msgstr "（已確認）"
+
 msgid "Compatibility:"
 msgstr "相容性:"
 
@@ -7428,8 +7430,11 @@ msgstr "頁尾圖示"
 msgid "Choose a category"
 msgstr "請選擇分類"
 
-msgid "View Mobile Site"
-msgstr "瀏覽行動版網站"
+msgid "The new website supports mobile and desktop clients"
+msgstr "新網站支援行動裝置與桌機使用者"
+
+msgid "View the new site"
+msgstr "檢視新網站"
 
 msgid "Report a bug"
 msgstr "回報 Bug"
