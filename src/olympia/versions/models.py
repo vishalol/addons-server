@@ -193,6 +193,7 @@ class Version(OnChangeMixin, ModelBase):
 
         version.inherit_nomination(from_statuses=[amo.STATUS_AWAITING_REVIEW])
         version.disable_old_files()
+
         # After the upload has been copied to all platforms, remove the upload.
         storage.delete(upload.path)
         if send_signal:
@@ -397,6 +398,10 @@ class Version(OnChangeMixin, ModelBase):
     def all_files(self):
         """Shortcut for list(self.files.all()).  Heavily cached."""
         return list(self.files.all())
+
+    @cached_property
+    def file(self):
+        return self.all_files[0]
 
     @cached_property
     def supported_platforms(self):

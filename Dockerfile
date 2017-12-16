@@ -32,6 +32,7 @@ RUN yum install -y \
         python-devel \
         # Git, because we're using git-checkout dependencies
         git \
+        libgit2-devel \
         # Dependencies for mysql-python
         mysql-community-devel \
         mysql-community-client \
