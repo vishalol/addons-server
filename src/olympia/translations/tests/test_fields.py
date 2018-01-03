@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import django  # noqa
+import olympia  # noqa isort:skip
+import django  # noqa isort:skip
 
 from django.db import migrations, models
 from django.db.migrations.writer import MigrationWriter
 
-import olympia  # noqa
 
 from olympia.amo.tests import safe_exec
 from olympia.translations.fields import TranslatedField
