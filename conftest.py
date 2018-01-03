@@ -5,6 +5,9 @@ from django.utils import translation
 
 import caching
 import pytest
+import shutil
+import sys
+import tempfile
 from multidb import pinning
 
 from olympia import amo, core
@@ -84,8 +87,25 @@ def default_prefixer():
     amo.urlresolvers.set_url_prefix(prefixer)
 
 
+def _test_post_teardown():
+    core.set_user(None)
+    clean_translations(None)  # Make sure queued translations are removed.
+
+    # Make sure we revert everything we might have changed to prefixers.
+    amo.urlresolvers.clean_url_prefixes()
+
+    def _rm(path):
+        try:
+            shutil.rmtree(path)
+        except Exception, exc:
+            sys.stderr.write("\n** shutil.rmtree(%r): %s\n" % (path, exc))
+
+    _rm(settings.MEDIA_ROOT)
+    _rm(settings.TMP_PATH)
+
+
 @pytest.fixture(autouse=True)
-def test_pre_setup():
+def test_pre_setup(request):
     cache.clear()
     # Override django-cache-machine caching.base.TIMEOUT because it's
     # computed too early, before settings_test.py is imported.
@@ -99,14 +119,10 @@ def test_pre_setup():
     # Reset the prefixer.
     default_prefixer()
 
+    settings.MEDIA_ROOT = tempfile.mkdtemp()
+    settings.TMP_PATH = settings.NETAPP_STORAGE = tempfile.mkdtemp()
 
-@pytest.fixture(autouse=True)
-def test_post_teardown():
-    core.set_user(None)
-    clean_translations(None)  # Make sure queued translations are removed.
-
-    # Make sure we revert everything we might have changed to prefixers.
-    amo.urlresolvers.clean_url_prefixes()
+    request.addfinalizer(_test_post_teardown)
 
 
 @pytest.fixture
