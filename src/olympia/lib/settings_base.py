@@ -530,7 +530,7 @@ INSTALLED_APPS = (
 
 # These apps are only needed in a testing environment. They are added to
 # INSTALLED_APPS by settings_test.py (which is itself loaded by setup.cfg by
-# py.test)
+# pytest)
 TEST_INSTALLED_APPS = (
     'olympia.translations.tests.testapp',
 )
