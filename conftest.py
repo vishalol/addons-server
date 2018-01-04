@@ -1,5 +1,4 @@
 from django import http, test
-from django.conf import settings
 from django.core.cache import cache
 from django.utils import translation
 
@@ -74,7 +73,7 @@ def instrument_jinja():
     jinja2.Template.render = instrumented_render
 
 
-def default_prefixer():
+def default_prefixer(settings):
     """Make sure each test starts with a default URL prefixer."""
     request = http.HttpRequest()
     request.META['SCRIPT_NAME'] = ''
@@ -84,16 +83,8 @@ def default_prefixer():
     amo.urlresolvers.set_url_prefix(prefixer)
 
 
-def _test_post_teardown():
-    core.set_user(None)
-    clean_translations(None)  # Make sure queued translations are removed.
-
-    # Make sure we revert everything we might have changed to prefixers.
-    amo.urlresolvers.clean_url_prefixes()
-
-
-@pytest.fixture(autouse=True)
-def test_pre_setup(request):
+@pytest.yield_fixture(autouse=True)
+def test_pre_setup(request, tmpdir, settings):
     cache.clear()
     # Override django-cache-machine caching.base.TIMEOUT because it's
     # computed too early, before settings_test.py is imported.
@@ -105,15 +96,18 @@ def test_pre_setup(request):
     translation.trans_real.activate(settings.LANGUAGE_CODE)
 
     # Reset the prefixer.
-    default_prefixer()
+    default_prefixer(settings)
 
-    request.addfinalizer(_test_post_teardown)
-
-
-@pytest.fixture(autouse=True)
-def configure_media_paths(tmpdir):
     settings.MEDIA_ROOT = str(tmpdir.mkdir('media'))
     settings.TMP_PATH = settings.NETAPP_STORAGE = str(tmpdir.mkdir('tmp'))
+
+    yield
+
+    core.set_user(None)
+    clean_translations(None)  # Make sure queued translations are removed.
+
+    # Make sure we revert everything we might have changed to prefixers.
+    amo.urlresolvers.clean_url_prefixes()
 
 
 @pytest.fixture
@@ -123,7 +117,7 @@ def admin_group(db):
 
 
 @pytest.fixture
-def mozilla_user(admin_group):
+def mozilla_user(admin_group, settings):
     """Create a "Mozilla User"."""
     user = UserProfile.objects.create(pk=settings.TASK_USER_ID,
                                       email='admin@mozilla.com',
