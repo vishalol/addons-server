@@ -156,6 +156,7 @@ class FileViewer(object):
                         % self.dest)
                     self.cleanup()
 
+                print('AAAAAAAAAAAA', self.dest)
                 try:
                     os.makedirs(self.dest)
                 except OSError, err:
@@ -172,6 +173,7 @@ class FileViewer(object):
                     try:
                         extracted_files = extract_xpi(
                             self.src, self.dest, expand=True)
+                        print(extracted_files, self.src, self.dest)
                         self._verify_files(extracted_files)
                     except Exception, err:
                         task_log.error(

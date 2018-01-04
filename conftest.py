@@ -84,6 +84,14 @@ def default_prefixer():
     amo.urlresolvers.set_url_prefix(prefixer)
 
 
+def _test_post_teardown():
+    core.set_user(None)
+    clean_translations(None)  # Make sure queued translations are removed.
+
+    # Make sure we revert everything we might have changed to prefixers.
+    amo.urlresolvers.clean_url_prefixes()
+
+
 @pytest.fixture(autouse=True)
 def test_pre_setup():
     cache.clear()
@@ -101,12 +109,9 @@ def test_pre_setup():
 
 
 @pytest.fixture(autouse=True)
-def test_post_teardown():
-    core.set_user(None)
-    clean_translations(None)  # Make sure queued translations are removed.
-
-    # Make sure we revert everything we might have changed to prefixers.
-    amo.urlresolvers.clean_url_prefixes()
+def configure_media_paths(tmpdir):
+    settings.MEDIA_ROOT = str(tmpdir.mkdir('media'))
+    settings.TMP_PATH = settings.NETAPP_STORAGE = str(tmpdir.mkdir('tmp'))
 
 
 @pytest.fixture
