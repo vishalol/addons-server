@@ -93,7 +93,7 @@ def _test_post_teardown():
 
 
 @pytest.fixture(autouse=True)
-def test_pre_setup():
+def test_pre_setup(request):
     cache.clear()
     # Override django-cache-machine caching.base.TIMEOUT because it's
     # computed too early, before settings_test.py is imported.
@@ -106,6 +106,8 @@ def test_pre_setup():
 
     # Reset the prefixer.
     default_prefixer()
+
+    request.addfinalizer(_test_post_teardown)
 
 
 @pytest.fixture(autouse=True)
