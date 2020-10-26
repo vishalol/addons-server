@@ -245,9 +245,9 @@ elasticsearch-dsl==6.4.0 \
     --hash=sha256:26416f4dd46ceca43d62ef74970d9de4bdd6f4b0f163316f0b432c9e61a08bec # pyup: <6
 email-reply-parser==0.5.9 \
     --hash=sha256:f92aa6fd7314c2c8833f2928c0fd6d2e26f94c04eb1de409e75c59f1ac42eef8
-feedparser==6.0.1 \
-    --hash=sha256:c9b436334258e718e224c5ef8a78088557e0d0382506360f702de10667ffde32 \
-    --hash=sha256:6ca88edcaa43f428345968df903a87f020843eda5e28d7ea24a612158d61e74c
+feedparser==6.0.2 \
+    --hash=sha256:f596c4b34fb3e2dc7e6ac3a8191603841e8d5d267210064e94d4238737452ddd \
+    --hash=sha256:1b00a105425f492f3954fd346e5b524ca9cef3a4bbf95b8809470e9857aa1074
 filtercascade==0.4.1 \
     --hash=sha256:1db4c2f1f628e3e399a6f3437738bdb304eb11521bf37684b56addaa5576a89f
 # funcsigs is required by mock
