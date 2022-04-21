@@ -17,9 +17,9 @@ alabaster==0.7.12 \
     --hash=sha256:446438bdcca0e05bd45ea2de1668c1d9b032e1a9154c2c259092d77031ddd359 \
     --hash=sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02
 # babel is required by Sphinx, django-babel, puente
-Babel==2.8.0 \
-    --hash=sha256:1aac2ae2d0d8ea368fa90906567f5c08463d98ade155c0c4bfedd6a0f7160e38 \
-    --hash=sha256:d670ea0b10f8b723672d3a6abeb87b565b244da220d76b4dba1b66269ec152d4
+Babel==2.10.1 \
+    --hash=sha256:3f349e85ad3154559ac4930c3918247d319f21910d5ce4b25d439ed8693b98d2 \
+    --hash=sha256:98aeaca086133efb3e1e2aad0396987490c8425929ddbcfe0550184fdc54cd13
 # docutils is required by Sphinx
 docutils==0.16 \
     --hash=sha256:0c5b78adfbf7762415433f5515cd5c9e762339e23369dbe8000d84a4bf4ab3af \
